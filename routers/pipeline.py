@@ -34,7 +34,7 @@ from services.agents import (
 router = APIRouter()
 
 
-@traceable(run_type="chain", name="Purchasing_Pipeline", project_name="purchasing-ai-v1")
+@traceable(run_type="chain", name="Purchasing_Pipeline")
 def _run_pipeline(
     csv_content: str,
     csv_filename: str,
@@ -99,7 +99,6 @@ def _run_pipeline(
             },
             config={
                 "run_name": f"Purchasing-Workflow-{supplier}",
-                "project_name": "purchasing-ai-v1",
                 "metadata": {"supplier": supplier, "env": "production"}
             }
         ):

@@ -15,27 +15,16 @@ import os
 import re
 
 if settings.langchain_tracing_v2:
-    # 알파뉴머릭과 언더바, 대시만 남기고 제거 (숨겨진 문자, 따옴표 완벽 차단)
+    # 하드닝: 환경 변수에서 특수문자 및 공백 제거 (Regex 기반)
     clean_key = re.sub(r'[^a-zA-Z0-9_-]', '', (settings.langchain_api_key or ""))
     
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
     os.environ["LANGSMITH_TRACING"] = "true"
     os.environ["LANGCHAIN_ENDPOINT"] = settings.langchain_endpoint
     os.environ["LANGCHAIN_API_KEY"] = clean_key
-    os.environ["LANGCHAIN_PROJECT"] = "purchasing-ai-v1"
-    
-    # --- LangSmith Debugging Section ---
-    key_len = len(clean_key)
-    masked_key = f"{clean_key[:4]}...{clean_key[-4:]}" if key_len > 8 else "INVALID_KEY"
-    
-    print(f"--- [LangSmith Debug Start] ---")
-    print(f"Project: {os.environ.get('LANGCHAIN_PROJECT')}")
-    print(f"Tracing: {os.environ.get('LANGCHAIN_TRACING_V2')}")
-    print(f"Key Masked: {masked_key}")
-    print(f"Key Length: {key_len}")
-    print(f"--- [LangSmith Debug End] ---")
+    os.environ["LANGCHAIN_PROJECT"] = settings.langchain_project
 
-import langsmith as ls  # 이제 안전하게 임포트
+import langsmith as ls
 
 from services.vector_store import get_vector_stores
 from routers import pipeline, ingest, output
