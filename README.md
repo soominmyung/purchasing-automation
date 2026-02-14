@@ -11,7 +11,7 @@ It demonstrates how **CSV-based stock snapshots, supplier and item history docum
 ---
 
 ## 🚀 Architecture Evolution: From n8n to FastAPI
-This project originally started as a low-code automation workflow in **n8n**. To ensure enterprise-grade performance, complex logic handling, and seamless containerized deployment, it was manually migrated and refactored into a **pure Python FastAPI** architecture.
+This project originally started as a low-code automation workflow in **n8n**. To ensure enterprise-grade performance, complex logic handling, and seamless containerized deployment, it was **re-engineered** and refactored into a **pure Python FastAPI** architecture.
 
 This evolution demonstrates:
 *   **Rapid Prototyping**: Leveraging low-code tools (n8n) for initial workflow validation.
