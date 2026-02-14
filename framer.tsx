@@ -403,6 +403,13 @@ type RunResult = {
         saved_path: string
         content_base64?: string
     }[]
+    evaluations: {
+        snapshot_date: string
+        supplier: string
+        filename: string
+        saved_path: string
+        content_base64?: string
+    }[]
 }
 type StreamEvent = {
     step: string
@@ -586,6 +593,11 @@ function PipelineRunBlock({
                 Upload a stock list CSV and run. Analysis report, PR document,
                 and email draft are generated as Word (.docx) and downloaded to
                 your browser.
+                <br />
+                <span style={{ fontSize: 11, color: "#07c", display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8 }}>
+                    <span style={{ width: 8, height: 8, background: "#00c853", borderRadius: "50%", display: "inline-block", boxShadow: "0 0 4px #00c853" }}></span>
+                    LLMOps Monitoring Active (LangSmith Tracing Enabled)
+                </span>
             </p>
             <div
                 style={{
@@ -644,6 +656,7 @@ function PipelineRunBlock({
                             ...(result.reports ?? []),
                             ...(result.requests ?? []),
                             ...(result.emails ?? []),
+                            ...(result.evaluations ?? []),
                         ].map((r, i) => (
                             <li
                                 key={`${r.filename}-${i}`}
