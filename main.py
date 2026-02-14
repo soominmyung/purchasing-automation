@@ -65,7 +65,9 @@ def health():
     return {
         "status": "ok",
         "openai_configured": bool(settings.openai_api_key),
-        "langsmith_tracing": settings.langchain_tracing_v2,
-        "langsmith_key_present": bool(settings.langchain_api_key),
-        "langsmith_project": settings.langchain_project
+        "langsmith_tracing_env": os.environ.get("LANGCHAIN_TRACING_V2"),
+        "langsmith_project_env": os.environ.get("LANGCHAIN_PROJECT"),
+        "langsmith_key_present": bool(os.environ.get("LANGCHAIN_API_KEY")),
+        "settings_langsmith_tracing": settings.langchain_tracing_v2,
+        "settings_langsmith_project": settings.langchain_project
     }
