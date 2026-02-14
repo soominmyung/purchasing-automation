@@ -8,16 +8,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from services.vector_store import get_vector_stores
-from routers import pipeline, ingest, output
 
 # --- LangSmith (Observability) Setup ---
-# LangChain libraries look for these env vars. We export them from Pydantic settings.
+# MUST BE DONE BEFORE IMPORTING ROUTERS/AGENTS
+import os
 if settings.langchain_tracing_v2:
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
     os.environ["LANGCHAIN_ENDPOINT"] = settings.langchain_endpoint
     os.environ["LANGCHAIN_API_KEY"] = settings.langchain_api_key or ""
     os.environ["LANGCHAIN_PROJECT"] = settings.langchain_project
+
+from services.vector_store import get_vector_stores
+from routers import pipeline, ingest, output
 
 
 @asynccontextmanager
