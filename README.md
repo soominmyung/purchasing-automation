@@ -53,27 +53,28 @@ Beyond simple CSV parsing, the system implements complex business logic to trans
 *   **Dynamic Document Routing**: Orchestrates different document types (Analysis vs. PR vs. Email) based on the specific risk score and history of each supplier group.
 
 ### 2️⃣ Real-time Event Streaming (SSE)
+Beyond a simple request-response model, this system utilizes **Server-Sent Events (SSE)** to provide real-time feedback to the user at every stage of the pipeline: CSV parsing → Item Grouping → AI Analysis → Document Generation.
+
+### 3️⃣ Scalable RAG-based Data Ingestion
 * **Bulk Processing**: Developed a scalable API capable of ingesting multiple PDFs or **ZIP archives** for high-volume data training.
 * **Robust Folder Traversal**: Implemented an advanced recursive folder traversal algorithm in React/TypeScript to handle large-scale document uploads from local directories.
 * **Automated Metadata Extraction**: Utilizes Regex to automatically identify Supplier names and ItemCodes within documents, mapping them to Vector DB metadata for high-precision retrieval.
 
-### 3️⃣ Agentic Workflow with LangGraph
+### 4️⃣ Agentic Workflow with LangGraph
 Evolved from a linear pipeline to a **state-based agentic graph** using **LangGraph**. This architecture supports complex, non-linear workflows including:
 *   **Self-Correction Loop**: A dedicated **Validator Node** audits generated emails for sensitive internal data (stock levels, risk scores). If a leak is detected, the graph automatically loops back to the Email Agent with corrective feedback for a rewrite.
 *   **State Management**: Orchestrates shared state across five specialized agents, ensuring consistency and data integrity throughout the analysis.
 
-### 4️⃣ Production Security & Observability
-*   **LangSmith Integration**: Full telemetry tracing for every node in the graph, enabling deep debugging and performance monitoring.
-*   **Intelligent Rate Limiting**: Balanced security that allows unlimited ingestion while protecting expensive LLM executions.
+### 5️⃣ Cloud-Native Architecture (GCP Cloud Run)
+Optimized for serverless deployment on **Google Cloud Platform**, utilizing a scale-to-zero model for cost efficiency. The system supports a **memory-first approach** where documents are generated as bytes and encoded to **Base64** for instant client-side download.
 
-### 6️⃣ LLMOps & Observability
-Integrated **LangSmith** for comprehensive telemetry across the multi-agent pipeline. This enables real-time monitoring of agent token consumption, execution latency, and prompt tracing to ensure cost-efficiency and mitigate LLM hallucination risks in a production environment.
+### 6️⃣ Automated CI/CD Pipeline (GitHub Actions)
+Fully automated deployment pipeline using **GitHub Actions**. Every push to the `main` branch triggers an automated build, containerization (Docker), and deployment to GCP Cloud Run, ensuring stable and repeatable delivery.
 
-### 7️⃣ Production Security & Error Handling
-Implemented a robust security layer to protect resources and ensure reliability:
-*   **Header-based Authentication**: Secure access via `X-API-Key` validation for all API endpoints.
-*   **Intelligent Rate Limiting**: Selective IP-based daily limits; allowing unlimited file ingestion while strictly controlling expensive LLM-powered pipeline executions.
-*   **Permissive CORS for Portfolio**: Configured for seamless interaction with Framer frontend while maintaining backend security.
+### 7️⃣ Production Security & LLMOps (LangSmith)
+Implemented a robust observability and security layer to ensure reliability:
+*   **LangSmith Integration**: Full telemetry tracing for every node in the graph, enabling real-time monitoring of token consumption, latency, and prompt tracing.
+*   **Intelligent Security**: Combines **Header-based Authentication** (`X-API-Key`) with selective **IP-based Rate Limiting** to protect expensive LLM resources.
 *   **Robust Error Handling**: Graceful management of OpenAI API rate limits and data validation errors.
 
 ---
