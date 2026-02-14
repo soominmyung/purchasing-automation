@@ -46,10 +46,13 @@ This project implements a production-ready architecture using the following tech
 
 ## Key Technical Competencies
 
-### 1️⃣ Real-time Event Streaming (SSE)
-Beyond a simple request-response model, this system utilizes **Server-Sent Events (SSE)** to provide real-time feedback to the user at every stage of the pipeline: CSV parsing → Item Grouping → AI Analysis → Document Generation.
+### 1️⃣ Intelligent Inventory-to-Procurement Orchestration
+Beyond simple CSV parsing, the system implements complex business logic to transform raw data into actionable intelligence:
+*   **Contextual Supplier Grouping**: Automatically clusters hundreds of individual SKU requirements into consolidated supplier-based batches, reducing procurement overhead.
+*   **Predictive Lead-Time Reasoning**: Analyzes `WksToOOS` (Weeks to Out of Stock) and `CurrentStock` to prioritize urgent replenishments, ensuring supply chain continuity.
+*   **Dynamic Document Routing**: Orchestrates different document types (Analysis vs. PR vs. Email) based on the specific risk score and history of each supplier group.
 
-### 2️⃣ Scalable RAG-based Data Ingestion
+### 2️⃣ Real-time Event Streaming (SSE)
 * **Bulk Processing**: Developed a scalable API capable of ingesting multiple PDFs or **ZIP archives** for high-volume data training.
 * **Robust Folder Traversal**: Implemented an advanced recursive folder traversal algorithm in React/TypeScript to handle large-scale document uploads from local directories.
 * **Automated Metadata Extraction**: Utilizes Regex to automatically identify Supplier names and ItemCodes within documents, mapping them to Vector DB metadata for high-precision retrieval.
