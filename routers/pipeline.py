@@ -92,6 +92,10 @@ def _run_pipeline(
                 "risk_level": risk_level,
                 "iteration_count": 0,
                 "is_valid_email": False
+            },
+            config={
+                "run_name": f"Purchasing-Workflow-{supplier}",
+                "metadata": {"supplier": supplier, "env": "production"}
             }
         ):
             # event는 { "node_name": { "state_key": value } } 형태

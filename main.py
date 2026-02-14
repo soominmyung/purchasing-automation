@@ -16,7 +16,7 @@ if settings.langchain_tracing_v2:
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
     os.environ["LANGCHAIN_ENDPOINT"] = settings.langchain_endpoint
     os.environ["LANGCHAIN_API_KEY"] = settings.langchain_api_key or ""
-    os.environ["LANGCHAIN_PROJECT"] = settings.langchain_project
+    os.environ["LANGCHAIN_PROJECT"] = "purchasing-ai-v1"
 
 from services.vector_store import get_vector_stores
 from routers import pipeline, ingest, output
