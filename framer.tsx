@@ -60,86 +60,81 @@ interface FileSystemDirectoryReader {
         error?: (e: Error) => void
     ): void
 }
-function collectFilesFromDrop(
+/**
+ * Collects PDF files from a Drag & Drop event, including traversing folders.
+ */
+async function collectFilesFromDrop(
     items: DataTransferItemList,
     acceptExt: string[] = [".pdf"]
 ): Promise<File[]> {
     const files: File[] = []
-    const pending: Promise<void>[] = []
 
-    function addFile(file: File) {
-        if (acceptExt.length === 0) {
-            files.push(file)
-            return
-        }
-        const ext = "." + (file.name.split(".").pop() || "").toLowerCase()
-        if (acceptExt.some((e) => e.toLowerCase() === ext)) files.push(file)
+    const isAccepted = (name: string) => {
+        if (!acceptExt.length) return true
+        const ext = "." + (name.split(".").pop() || "").toLowerCase()
+        return acceptExt.some((e) => e.toLowerCase() === ext)
     }
 
-    function traverse(
-        entry: FileSystemFileEntry | FileSystemDirectoryEntry
-    ): Promise<void> {
-        return new Promise((resolve, reject) => {
-            if ((entry as FileSystemFileEntry).isFile) {
-                ; (entry as FileSystemFileEntry).file((file) => {
-                    addFile(file)
-                    resolve()
-                }, reject)
-                return
-            }
-            const dir = entry as FileSystemDirectoryEntry
-            const reader = dir.createReader()
-            function readAll(): Promise<void> {
-                return new Promise((res, rej) => {
-                    reader.readEntries((entries) => {
-                        if (entries.length === 0) {
-                            res()
-                            return
-                        }
-                        Promise.all(
-                            entries.map((e) =>
-                                traverse(
-                                    e as unknown as
-                                    | FileSystemFileEntry
-                                    | FileSystemDirectoryEntry
-                                )
-                            )
-                        )
-                            .then(() => readAll())
-                            .then(res)
-                            .catch(rej)
-                    }, rej)
-                })
-            }
-            readAll().then(resolve).catch(reject)
-        })
-    }
-
+    // 1. Get entries synchronously to avoid data loss after the event loop
+    const topLevelEntries: any[] = []
     for (let i = 0; i < items.length; i++) {
         const item = items[i]
         if (item.kind !== "file") continue
-        const entry = (
-            item as DataTransferItem & {
-                webkitGetAsEntry?: () =>
-                    | FileSystemFileEntry
-                    | FileSystemDirectoryEntry
-                    | null
-            }
-        ).webkitGetAsEntry?.()
-        if (entry)
-            pending.push(
-                traverse(
-                    entry as unknown as
-                    | FileSystemFileEntry
-                    | FileSystemDirectoryEntry
-                )
-            )
-        else {
+        const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null
+        if (entry) {
+            topLevelEntries.push(entry)
+        } else {
+            // Fallback for simple files if entry is not available
             const file = item.getAsFile()
-            if (file) addFile(file)
+            if (file && isAccepted(file.name)) files.push(file)
         }
     }
-    return Promise.all(pending).then(() => files)
+
+    // 2. Recursive traversal function
+    async function traverse(entry: any) {
+        if (entry.isFile) {
+            return new Promise<void>((resolve) => {
+                entry.file(
+                    (file: File) => {
+                        if (isAccepted(file.name)) files.push(file)
+                        resolve()
+                    },
+                    () => resolve()
+                )
+            })
+        } else if (entry.isDirectory) {
+            const reader = entry.createReader()
+            let allSubEntries: any[] = []
+
+            // readEntries only returns up to 100 items; must loop until empty
+            const readAll = (): Promise<void> => {
+                return new Promise((resolve, reject) => {
+                    reader.readEntries(
+                        (results: any[]) => {
+                            if (results.length === 0) {
+                                resolve()
+                            } else {
+                                allSubEntries = allSubEntries.concat(results)
+                                readAll().then(resolve).catch(reject)
+                            }
+                        },
+                        (err: Error) => reject(err)
+                    )
+                })
+            }
+
+            try {
+                await readAll()
+                await Promise.all(allSubEntries.map((e) => traverse(e)))
+            } catch (e) {
+                console.error("Folder traversal error:", e)
+            }
+        }
+    }
+
+    // 3. Process all top-level entries
+    await Promise.all(topLevelEntries.map((e) => traverse(e)))
+    return files
 }
 
 // --- Ingest ---
@@ -719,7 +714,7 @@ function PipelineRunBlock({
     )
 }
 
-const DEFAULT_API_BASE = "https://ozworth-purchasing-automation.hf.space"
+const DEFAULT_API_BASE = "https://purchasing-automation-531560336160.us-central1.run.app"
 
 export default function PurchasingAutomationFramer({
     apiBaseUrl = "",
@@ -745,11 +740,26 @@ export default function PurchasingAutomationFramer({
             <br></br>
             <PipelineRunBlock apiBase={apiBase} apiToken={apiToken} />
             <h2>Knowledge Base & Reference Library</h2>
-            <p style={{ color: "#666", marginBottom: 24 }}>
+            <p style={{ color: "#666", marginBottom: 8 }}>
                 Provide the AI with previous purchase records and document
                 samples to ensure tailored and high-quality outputs. Drag and
                 drop a folder or PDF files (Chrome, Edge). PDFs inside a folder
                 are collected automatically.
+            </p>
+            <p style={{ marginBottom: 24 }}>
+                <a
+                    href="https://github.com/soominmyung/purchasing-automation/raw/main/docs/Examples.zip"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                        fontSize: 13,
+                        color: "#07c",
+                        textDecoration: "none",
+                        fontWeight: "bold",
+                    }}
+                >
+                    📥 Download Sample Dataset (.zip)
+                </a>
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <FolderDropZone
