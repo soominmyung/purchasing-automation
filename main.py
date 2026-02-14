@@ -30,13 +30,12 @@ app = FastAPI(
 # --- 보안 및 사용량 제한 (Rate Limiting) ---
 # services/security.py 로 이동됨.
 
-_cors_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
-if settings.extra_cors_origins:
-    _cors_origins = _cors_origins + [o.strip() for o in settings.extra_cors_origins.split(",") if o.strip()]
+# --- CORS 설정 ---
+# 포트폴리오의 편의성을 위해 모든 Origin 허용 (보안은 X-API-Key 토큰으로 수행)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,  # allow_origins=["*"] 인 경우 False여야 함
     allow_methods=["*"],
     allow_headers=["*"],
 )
