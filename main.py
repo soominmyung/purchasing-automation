@@ -60,4 +60,10 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "openai_configured": bool(settings.openai_api_key)}
+    return {
+        "status": "ok",
+        "openai_configured": bool(settings.openai_api_key),
+        "langsmith_tracing": settings.langchain_tracing_v2,
+        "langsmith_key_present": bool(settings.langchain_api_key),
+        "langsmith_project": settings.langchain_project
+    }
