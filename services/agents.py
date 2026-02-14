@@ -1,6 +1,6 @@
 """
 에이전트: Analysis, Report Doc, PR Draft, PR Doc, Email Draft.
-n8n LangChain Agent 노드 동작을 OpenAI + LangChain으로 구현.
+OpenAI + LangChain으로 에이전트 워크플로우를 구현.
 """
 import json
 import re

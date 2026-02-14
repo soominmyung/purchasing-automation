@@ -1,4 +1,4 @@
-"""n8n 워크플로에서 사용하는 에이전트 시스템 프롬프트 (Analysis, Report, PR Draft, PR Doc, Email)."""
+"""에이전트 시스템 프롬프트 (Analysis, Report, PR Draft, PR Doc, Email)."""
 
 ANALYSIS_AGENT_SYSTEM = """You are the Analysis Agent for purchasing and inventory operations.
 You ALWAYS receive exactly ONE JSON object as the user message.

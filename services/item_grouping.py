@@ -1,5 +1,5 @@
 """
-Item Grouping, Suggested dates & quantities (n8n Code 노드 로직 Python 포팅).
+Item Grouping, Suggested dates & quantities 로직.
 - CSV 행을 supplier별로 그룹화
 - 품목별 recommended_latest_po_date, recommended_latest_delivery_date, timing 라벨 계산
 - suggested_quantity: 최근 납기일 이후 26주 커버용 수량

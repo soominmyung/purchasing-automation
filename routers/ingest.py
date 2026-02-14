@@ -24,7 +24,7 @@ router = APIRouter()
 
 
 def _extract_supplier_name(text: str) -> str:
-    """Supplier: ... 헤더에서 이름 추출 (n8n Extract Supplier Name)."""
+    """Supplier: ... 헤더에서 이름 추출."""
     m = re.search(r"Supplier\s*:\s*(.+?)(?:\r?\n|$)", text, re.IGNORECASE | re.DOTALL)
     if not m:
         raise ValueError("Missing 'Supplier: ...' header in supplier history document.")
@@ -32,7 +32,7 @@ def _extract_supplier_name(text: str) -> str:
 
 
 def _extract_item_code(text: str) -> str | None:
-    """ItemCode: 100004 패턴 추출 (n8n Extract ItemCode)."""
+    """ItemCode: 100004 패턴 추출."""
     m = re.search(r"ItemCode\s*[:\-]?\s*(\d+)", text, re.IGNORECASE)
     return m.group(1) if m else None
 
@@ -161,7 +161,7 @@ async def ingest_item_history_zip(
 async def ingest_analysis_examples_pdf(
     files: list[UploadFile] = File(..., description="PDF 파일 여러 개 (폴더에서 다 선택 후 업로드 가능)"),
 ):
-    """Purchasing analysis examples PDF 업로드. 여러 파일 한 번에 가능 (n8n Analysis-examples 폴더 대응)."""
+    """Purchasing analysis examples PDF 업로드. 여러 파일 한 번에 가능."""
     if not files:
         raise HTTPException(status_code=400, detail="At least one PDF file required.")
     results = []
@@ -211,7 +211,7 @@ async def ingest_analysis_examples_zip(
 async def ingest_request_examples_pdf(
     files: list[UploadFile] = File(..., description="PDF 파일 여러 개 (폴더에서 다 선택 후 업로드 가능)"),
 ):
-    """PR (purchase request) examples PDF 업로드. 여러 파일 한 번에 가능 (n8n Request-examples 폴더 대응)."""
+    """PR (purchase request) examples PDF 업로드. 여러 파일 한 번에 가능."""
     if not files:
         raise HTTPException(status_code=400, detail="At least one PDF file required.")
     results = []
@@ -261,7 +261,7 @@ async def ingest_request_examples_zip(
 async def ingest_email_examples_pdf(
     files: list[UploadFile] = File(..., description="PDF 파일 여러 개 (폴더에서 다 선택 후 업로드 가능)"),
 ):
-    """Email draft examples PDF 업로드. 여러 파일 한 번에 가능 (n8n Email-examples 폴더 대응)."""
+    """Email draft examples PDF 업로드. 여러 파일 한 번에 가능."""
     if not files:
         raise HTTPException(status_code=400, detail="At least one PDF file required.")
     results = []
