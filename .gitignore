@@ -1,0 +1,48 @@
+# Environments
+.env
+.venv/
+venv/
+ENV/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# Project Specific
+data/
+output/
+.gemini/
+.agent/
+.cortex/
+brain/
