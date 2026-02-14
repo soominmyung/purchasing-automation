@@ -14,6 +14,6 @@ COPY --chown=appuser routers ./routers
 COPY --chown=appuser services ./services
 COPY --chown=appuser utils ./utils
 
-# Space listens on 7860
-EXPOSE 7860
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
+# Cloud Run: port 8080, Framer frontend calls this API
+EXPOSE 8080
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
