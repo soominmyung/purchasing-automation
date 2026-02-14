@@ -54,11 +54,14 @@ Beyond a simple request-response model, this system utilizes **Server-Sent Event
 * **Robust Folder Traversal**: Implemented an advanced recursive folder traversal algorithm in React/TypeScript to handle large-scale document uploads from local directories.
 * **Automated Metadata Extraction**: Utilizes Regex to automatically identify Supplier names and ItemCodes within documents, mapping them to Vector DB metadata for high-precision retrieval.
 
-### 3️⃣ Multi-Agent Orchestration
-Instead of relying on a single prompt, the system orchestrates **five specialized agents**. The Analysis Agent uses Tools to search the knowledge base, while specialized Documentation Agents transform those findings into various professional formats.
+### 3️⃣ Agentic Workflow with LangGraph
+Evolved from a linear pipeline to a **state-based agentic graph** using **LangGraph**. This architecture supports complex, non-linear workflows including:
+*   **Self-Correction Loop**: A dedicated **Validator Node** audits generated emails for sensitive internal data (stock levels, risk scores). If a leak is detected, the graph automatically loops back to the Email Agent with corrective feedback for a rewrite.
+*   **State Management**: Orchestrates shared state across five specialized agents, ensuring consistency and data integrity throughout the analysis.
 
-### 4️⃣ Cloud-Native Architecture (GCP Cloud Run)
-Optimized for serverless deployment on **Google Cloud Platform**, utilizing a scale-to-zero model for cost efficiency. The system supports a **memory-first approach** where documents are generated as bytes and encoded to **Base64** for instant client-side download.
+### 4️⃣ Production Security & Observability
+*   **LangSmith Integration**: Full telemetry tracing for every node in the graph, enabling deep debugging and performance monitoring.
+*   **Intelligent Rate Limiting**: Balanced security that allows unlimited ingestion while protecting expensive LLM executions.
 
 ### 6️⃣ LLMOps & Observability
 Integrated **LangSmith** for comprehensive telemetry across the multi-agent pipeline. This enables real-time monitoring of agent token consumption, execution latency, and prompt tracing to ensure cost-efficiency and mitigate LLM hallucination risks in a production environment.

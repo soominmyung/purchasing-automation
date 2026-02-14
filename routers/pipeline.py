@@ -25,11 +25,8 @@ from utils.docx_utils import (
 )
 from services.item_grouping import group_by_supplier_and_recommend
 from services.agents import (
-    run_analysis_agent,
-    run_report_doc_agent,
-    run_pr_draft_agent,
-    run_pr_doc_agent,
-    run_email_draft_agent,
+    run_purchasing_pipeline_graph,
+    purchasing_graph,
 )
 
 router = APIRouter()
@@ -76,109 +73,95 @@ def _run_pipeline(
         supplier = group["supplier"]
         items = group["items"]
         risk_level = items[0].get("risk_level", "N/A") if items else "N/A"
+        safe_supplier = _sanitize_filename(supplier)
 
-        progress("analysis", {"supplier": supplier})
-        input_json = {
+        # --- LangGraph Execution with Progress Streaming ---
+        input_data = {
             "snapshot_date": snapshot_date,
             "supplier": supplier,
             "items": items,
         }
-        analysis_output = run_analysis_agent(input_json)
+        
+        final_state = {}
+        # 그래프 스트리밍을 통해 각 노드 완료 시 진행 상황 알림
+        for event in purchasing_graph.stream(
+            {
+                "snapshot_date": snapshot_date,
+                "supplier": supplier,
+                "items": items,
+                "risk_level": risk_level,
+                "iteration_count": 0,
+                "is_valid_email": False
+            }
+        ):
+            # event는 { "node_name": { "state_key": value } } 형태
+            node_name = list(event.keys())[0]
+            progress(node_name, {"supplier": supplier})
+            
+            # 마지막 상태를 계속 업데이트
+            for k, v in event[node_name].items():
+                final_state[k] = v
 
-        if not in_memory:
-            progress("report", {"supplier": supplier})
-        analysis_result = {
-            "snapshot_date": snapshot_date,
-            "supplier": supplier,
-            "purchasing_report_markdown": analysis_output.get("purchasing_report_markdown", ""),
-            "critical_questions": analysis_output.get("critical_questions", []),
-            "replenishment_timeline": analysis_output.get("replenishment_timeline", items),
-        }
-        report_md = run_report_doc_agent(analysis_result)
-        safe_supplier = _sanitize_filename(supplier)
+        # --- 결과 추출 및 파일 생성 (기존 로직 유지) ---
+        analysis_output = final_state.get("analysis_output", {})
+        report_md = final_state.get("report_md", "")
+        pr_md = final_state.get("pr_md", "")
+        email_text = final_state.get("email_text", "")
+
+        # 1. Report 처리
         analysis_filename = f"analysis_{snapshot_date}_{safe_supplier}.docx"
         if in_memory:
-            if stream_mode:
-                progress("generating_file", {"filename": analysis_filename})
             docx_bytes = markdown_to_docx_bytes(report_md)
             b64 = base64.b64encode(docx_bytes).decode("ascii")
             reports.append({
-                "snapshot_date": snapshot_date,
-                "supplier": supplier,
-                "markdown": report_md,
-                "filename": analysis_filename,
-                "saved_path": "",
-                "content_base64": b64,
+                "snapshot_date": snapshot_date, "supplier": supplier, "markdown": report_md,
+                "filename": analysis_filename, "saved_path": "", "content_base64": b64,
             })
             if stream_mode:
                 progress("file_ready", {"filename": analysis_filename, "content_base64": b64})
         else:
             analysis_saved_path = save_analysis_docx(snapshot_date, supplier, report_md)
             reports.append({
-                "snapshot_date": snapshot_date,
-                "supplier": supplier,
-                "markdown": report_md,
-                "filename": analysis_filename,
-                "saved_path": analysis_saved_path,
+                "snapshot_date": snapshot_date, "supplier": supplier, "markdown": report_md,
+                "filename": analysis_filename, "saved_path": analysis_saved_path,
                 "content_base64": _read_file_base64(analysis_saved_path),
             })
 
-        progress("pr", {"supplier": supplier})
-        pr_draft = run_pr_draft_agent(snapshot_date, supplier, risk_level, analysis_output)
-        pr_md = run_pr_doc_agent(pr_draft)
+        # 2. PR 처리
         pr_filename = f"pr_{snapshot_date}_{safe_supplier}.docx"
         if in_memory:
-            if stream_mode:
-                progress("generating_file", {"filename": pr_filename})
             docx_bytes = markdown_to_docx_bytes(pr_md)
             b64 = base64.b64encode(docx_bytes).decode("ascii")
             requests_list.append({
-                "snapshot_date": snapshot_date,
-                "supplier": supplier,
-                "markdown": pr_md,
-                "filename": pr_filename,
-                "saved_path": "",
-                "content_base64": b64,
+                "snapshot_date": snapshot_date, "supplier": supplier, "markdown": pr_md,
+                "filename": pr_filename, "saved_path": "", "content_base64": b64,
             })
             if stream_mode:
                 progress("file_ready", {"filename": pr_filename, "content_base64": b64})
         else:
             pr_saved_path = save_pr_docx(snapshot_date, supplier, pr_md)
             requests_list.append({
-                "snapshot_date": snapshot_date,
-                "supplier": supplier,
-                "markdown": pr_md,
-                "filename": pr_filename,
-                "saved_path": pr_saved_path,
+                "snapshot_date": snapshot_date, "supplier": supplier, "markdown": pr_md,
+                "filename": pr_filename, "saved_path": pr_saved_path,
                 "content_base64": _read_file_base64(pr_saved_path),
             })
 
-        progress("email", {"supplier": supplier})
-        email_text = run_email_draft_agent(snapshot_date, supplier, risk_level, items, analysis_output)
+        # 3. Email 처리
         email_filename = f"email_draft_{snapshot_date}_{safe_supplier}.docx"
         if in_memory:
-            if stream_mode:
-                progress("generating_file", {"filename": email_filename})
             docx_bytes = markdown_to_docx_bytes(email_text)
             b64 = base64.b64encode(docx_bytes).decode("ascii")
             emails.append({
-                "snapshot_date": snapshot_date,
-                "supplier": supplier,
-                "text": email_text,
-                "filename": email_filename,
-                "saved_path": "",
-                "content_base64": b64,
+                "snapshot_date": snapshot_date, "supplier": supplier, "text": email_text,
+                "filename": email_filename, "saved_path": "", "content_base64": b64,
             })
             if stream_mode:
                 progress("file_ready", {"filename": email_filename, "content_base64": b64})
         else:
             email_saved_path = save_email_draft_docx(snapshot_date, supplier, email_text)
             emails.append({
-                "snapshot_date": snapshot_date,
-                "supplier": supplier,
-                "text": email_text,
-                "filename": email_filename,
-                "saved_path": email_saved_path,
+                "snapshot_date": snapshot_date, "supplier": supplier, "text": email_text,
+                "filename": email_filename, "saved_path": email_saved_path,
                 "content_base64": _read_file_base64(email_saved_path),
             })
 

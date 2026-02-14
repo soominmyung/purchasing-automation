@@ -4,10 +4,12 @@ OpenAI + LangChain으로 에이전트 워크플로우를 구현.
 """
 import json
 import re
-from typing import Any
+from typing import Any, TypedDict, Annotated, List, Union
+import operator
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
 from langchain_core.tools import tool
+from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 
 from config import settings
@@ -193,3 +195,182 @@ def run_email_draft_agent(
         HumanMessage(content=user),
     ])
     return out.content if hasattr(out, "content") else str(out)
+# ----- LangGraph Implementation -----
+
+class PurchasingState(TypedDict):
+    """LangGraph 상태 정의."""
+    # 하위 호환성을 위해 기존 변수들 유지
+    snapshot_date: str
+    supplier: str
+    risk_level: str
+    items: list[dict]
+    
+    # 에이전트 간 결과 전달
+    analysis_output: dict[str, Any]
+    report_md: str
+    pr_draft: dict[str, Any]
+    pr_md: str
+    email_text: str
+    
+    # 루프 제어
+    iteration_count: int
+    correction_feedback: str
+    is_valid_email: bool
+
+def analysis_node(state: PurchasingState):
+    input_json = {
+        "snapshot_date": state["snapshot_date"],
+        "supplier": state["supplier"],
+        "items": state["items"],
+    }
+    out = run_analysis_agent(input_json)
+    return {"analysis_output": out}
+
+def report_node(state: PurchasingState):
+    analysis_result = {
+        "snapshot_date": state["snapshot_date"],
+        "supplier": state["supplier"],
+        "purchasing_report_markdown": state["analysis_output"].get("purchasing_report_markdown", ""),
+        "critical_questions": state["analysis_output"].get("critical_questions", []),
+        "replenishment_timeline": state["analysis_output"].get("replenishment_timeline", state["items"]),
+    }
+    out = run_report_doc_agent(analysis_result)
+    return {"report_md": out}
+
+def pr_draft_node(state: PurchasingState):
+    out = run_pr_draft_agent(
+        state["snapshot_date"], 
+        state["supplier"], 
+        state["risk_level"], 
+        state["analysis_output"]
+    )
+    return {"pr_draft": out}
+
+def pr_doc_node(state: PurchasingState):
+    out = run_pr_doc_agent(state["pr_draft"])
+    return {"pr_md": out}
+
+def email_draft_node(state: PurchasingState):
+    # 만약 피드백이 있다면 프롬프트를 보강하거나 시스템 메시지 수정 가능
+    # 여기서는 간단히 기존 함수를 호출하되, 피드백이 있으면 인자로 전달하는 방식으로 구현 가능
+    # 현재 run_email_draft_agent는 고정된 프롬프트를 쓰므로, 피드백이 있을 때만 로직 보강
+    
+    if state.get("correction_feedback") and state["iteration_count"] > 0:
+        # 피드백이 있는 경우: 자가 수정을 지원하기 위해 에이전트 직접 호출 (프롬프트 보강)
+        llm = _llm(model="gpt-4o") # 수정을 위해선 더 강력한 모델 사용
+        feedback_prompt = f"\n\n[REVISION REQUEST]\nYour previous draft was rejected for the following reason: {state['correction_feedback']}\nPlease rewrite the email while strictly avoiding those issues."
+        
+        payload = {
+            "snapshot_date": state["snapshot_date"],
+            "supplier": state["supplier"],
+            "risk_level": state["risk_level"],
+            "items": state["items"],
+            "analysis_output": state["analysis_output"],
+        }
+        user = json.dumps(payload, ensure_ascii=False) + feedback_prompt
+        
+        out = llm.invoke([
+            SystemMessage(content=EMAIL_DRAFT_AGENT_SYSTEM + "\nSTRICT: Ensure no internal analysis terminology or stock levels are leaked."),
+            HumanMessage(content=user),
+        ])
+        email_text = out.content if hasattr(out, "content") else str(out)
+    else:
+        email_text = run_email_draft_agent(
+            state["snapshot_date"],
+            state["supplier"],
+            state["risk_level"],
+            state["items"],
+            state["analysis_output"]
+        )
+    
+    return {"email_text": email_text, "iteration_count": state.get("iteration_count", 0) + 1}
+
+def validator_node(state: PurchasingState):
+    """이메일 초안이 외부 공개 가능한 수준인지 검사 (Validator)."""
+    email = state["email_text"]
+    
+    # 1. 휴리스틱 검사 (단어 기반)
+    leak_keywords = ["stock level", "weeks to oos", "risk level", "internal analysis", "replenishment timeline", "wks_to_oos"]
+    leaks = [k for k in leak_keywords if k in email.lower()]
+    
+    if leaks:
+        return {
+            "is_valid_email": False, 
+            "correction_feedback": f"Found internal terminology: {', '.join(leaks)}"
+        }
+    
+    # 2. LLM 기반 정밀 검사
+    llm = _llm(model="gpt-4o-mini")
+    check_prompt = f"""Analyze the following email draft to a supplier. 
+Does it contain ANY internal-only information such as:
+- Internal stock quantities
+- "Weeks to Out of Stock" (WksToOOS)
+- Internal risk assessments (High/Medium/Low risk)
+- Mentions of internal analysis logic or tools
+
+Email Draft:
+---
+{email}
+---
+If it contains any internal leaks, respond with 'FAIL: <reason>'. 
+If it is safe for external communication, respond with 'PASS'."""
+
+    out = llm.invoke([
+        SystemMessage(content="You are a strict data loss prevention (DLP) auditor."),
+        HumanMessage(content=check_prompt)
+    ])
+    result = out.content.strip()
+    
+    if result.startswith("PASS"):
+        return {"is_valid_email": True, "correction_feedback": ""}
+    else:
+        return {"is_valid_email": False, "correction_feedback": result.replace("FAIL:", "").strip()}
+
+def should_continue(state: PurchasingState):
+    if state.get("is_valid_email") or state.get("iteration_count", 0) >= 3:
+        return END
+    return "email_draft"
+
+# 그래프 구축
+workflow = StateGraph(PurchasingState)
+
+workflow.add_node("analysis", analysis_node)
+workflow.add_node("report", report_node)
+workflow.add_node("pr_draft", pr_draft_node)
+workflow.add_node("pr_doc", pr_doc_node)
+workflow.add_node("email_draft", email_draft_node)
+workflow.add_node("validator", validator_node)
+
+workflow.set_entry_point("analysis")
+workflow.add_edge("analysis", "report")
+workflow.add_edge("report", "pr_draft")
+workflow.add_edge("pr_draft", "pr_doc")
+workflow.add_edge("pr_doc", "email_draft")
+workflow.add_edge("email_draft", "validator")
+
+workflow.add_conditional_edges(
+    "validator",
+    should_continue,
+    {
+        "email_draft": "email_draft",
+        END: END
+    }
+)
+
+purchasing_graph = workflow.compile()
+
+def run_purchasing_pipeline_graph(input_data: dict[str, Any]) -> dict[str, Any]:
+    """LangGraph를 사용하여 전체 파이프라인(1개 공급사 그룹) 실행."""
+    initial_state = {
+        "snapshot_date": input_data["snapshot_date"],
+        "supplier": input_data["supplier"],
+        "items": input_data["items"],
+        "risk_level": input_data["items"][0].get("risk_level", "N/A") if input_data["items"] else "N/A",
+        "iteration_count": 0,
+        "correction_feedback": "",
+        "is_valid_email": False
+    }
+    
+    # 그래프 실행
+    final_state = purchasing_graph.invoke(initial_state)
+    return final_state
