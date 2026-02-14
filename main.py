@@ -10,16 +10,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 
 # --- LangSmith (Observability) Setup ---
-# MUST BE DONE BEFORE IMPORTING ROUTERS/AGENTS
+# MUST BE DONE BEFORE ANY OTHER IMPORTS
 import os
-import langsmith as ls  # Explicit import to verify package
+import re
 
 if settings.langchain_tracing_v2:
-    # 환경 변수에서 따옴표와 공백을 강제로 제거 (Cloud Run/Secrets 환경의 흔한 실수 방지)
-    clean_key = (settings.langchain_api_key or "").strip().replace('"', "").replace("'", "")
+    # 알파뉴머릭과 언더바, 대시만 남기고 제거 (숨겨진 문자, 따옴표 완벽 차단)
+    clean_key = re.sub(r'[^a-zA-Z0-9_-]', '', (settings.langchain_api_key or ""))
     
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
-    os.environ["LANGSMITH_TRACING"] = "true"  # 일부 SDK 호환성용
+    os.environ["LANGSMITH_TRACING"] = "true"
     os.environ["LANGCHAIN_ENDPOINT"] = settings.langchain_endpoint
     os.environ["LANGCHAIN_API_KEY"] = clean_key
     os.environ["LANGCHAIN_PROJECT"] = "purchasing-ai-v1"
@@ -34,6 +34,8 @@ if settings.langchain_tracing_v2:
     print(f"Key Masked: {masked_key}")
     print(f"Key Length: {key_len}")
     print(f"--- [LangSmith Debug End] ---")
+
+import langsmith as ls  # 이제 안전하게 임포트
 
 from services.vector_store import get_vector_stores
 from routers import pipeline, ingest, output
