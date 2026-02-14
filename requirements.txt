@@ -1,0 +1,29 @@
+# Purchasing Automation - Python/FastAPI (n8n workflow port)
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# OpenAI
+openai>=1.12.0
+
+# LangChain (agents, tools, embeddings)
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-community>=0.0.20
+
+# Vector store (in-memory / Chroma)
+chromadb>=0.4.22
+
+# PDF extraction
+pypdf>=4.0.0
+
+# CSV / data
+pandas>=2.1.0
+
+# Word 문서 저장
+python-docx>=1.1.0
+
+# Env
+python-dotenv>=1.0.0
