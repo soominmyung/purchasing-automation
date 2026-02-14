@@ -5,8 +5,9 @@ This project is an **enterprise-grade AI solution** designed to automate the end
 It demonstrates how **CSV-based stock snapshots, supplier and item history documents, and structured examples** are orchestrated through a multi-agent LLM pipeline to produce:
 
 **1. Purchasing Analysis Report** — structured insights and risk assessments   
-**2. Purchase Request Document** — grouped by supplier for approval workflows  
-**3. Supplier Email Drafts** — external communication requesting timelines or availability
+**2. AI Quality Evaluation Report** — critical review of analysis logic and data adherence  
+**3. Purchase Request Document** — grouped by supplier for approval workflows  
+**4. Supplier Email Drafts** — external communication requesting timelines or availability
 
 ---
 
@@ -62,8 +63,9 @@ Beyond a simple request-response model, this system utilizes **Server-Sent Event
 
 ### 4️⃣ Agentic Workflow with LangGraph
 Evolved from a linear pipeline to a **state-based agentic graph** using **LangGraph**. This architecture supports complex, non-linear workflows including:
-*   **Self-Correction Loop**: A dedicated **Validator Node** audits generated emails for sensitive internal data (stock levels, risk scores). If a leak is detected, the graph automatically loops back to the Email Agent with corrective feedback for a rewrite.
-*   **State Management**: Orchestrates shared state across five specialized agents, ensuring consistency and data integrity throughout the analysis.
+*   **Self-Correction Loop**: A dedicated **Validator Node** audits generated emails for sensitive internal data. If a leak is detected, the graph automatically loops back for a rewrite.
+*   **AI Quality Evaluator**: An independent agent node that critiques the primary analysis, scoring it across data accuracy, reasoning logic, and operational readiness to ensure boardroom-ready output.
+*   **State Management**: Orchestrates shared state across specialized agents, ensuring consistency throughout the analysis.
 
 ### 5️⃣ Cloud-Native Architecture (GCP Cloud Run)
 Optimized for serverless deployment on **Google Cloud Platform**, utilizing a scale-to-zero model for cost efficiency. The system supports a **memory-first approach** where documents are generated as bytes and encoded to **Base64** for instant client-side download.
@@ -73,8 +75,9 @@ Fully automated deployment pipeline using **GitHub Actions**. Every push to the 
 
 ### 7️⃣ Production Security & LLMOps (LangSmith)
 Implemented a robust observability and security layer to ensure reliability:
-*   **LangSmith Integration**: Full telemetry tracing for every node in the graph, enabling real-time monitoring of token consumption, latency, and prompt tracing.
-*   **Intelligent Security**: Combines **Header-based Authentication** (`X-API-Key`) with selective **IP-based Rate Limiting** to protect expensive LLM resources.
+*   **LangSmith Integration**: Full telemetry tracing for every node in the graph, providing deep visibility into token consumption, latency, and prompt performance.
+*   **Manual Instrumentation**: Utilizes `@traceable` for end-to-end tracing of custom business logic, ensuring that even non-LangChain code is fully visible in the observability stack.
+*   **Intelligent Security**: Combines **Header-based Authentication** (`X-API-Key`) with **Stricter API Key Hardening** (Regex-based sanitization) to prevent environment-specific injection errors.
 *   **Robust Error Handling**: Graceful management of OpenAI API rate limits and data validation errors.
 
 ---
