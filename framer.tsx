@@ -740,26 +740,11 @@ export default function PurchasingAutomationFramer({
             <br></br>
             <PipelineRunBlock apiBase={apiBase} apiToken={apiToken} />
             <h2>Knowledge Base & Reference Library</h2>
-            <p style={{ color: "#666", marginBottom: 8 }}>
+            <p style={{ color: "#666", marginBottom: 24 }}>
                 Provide the AI with previous purchase records and document
                 samples to ensure tailored and high-quality outputs. Drag and
                 drop a folder or PDF files (Chrome, Edge). PDFs inside a folder
                 are collected automatically.
-            </p>
-            <p style={{ marginBottom: 24 }}>
-                <a
-                    href="https://github.com/soominmyung/purchasing-automation/raw/main/docs/Examples.zip"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                        fontSize: 13,
-                        color: "#07c",
-                        textDecoration: "none",
-                        fontWeight: "bold",
-                    }}
-                >
-                    📥 Download Sample Dataset (.zip)
-                </a>
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <FolderDropZone
