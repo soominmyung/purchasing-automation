@@ -18,12 +18,23 @@ if settings.langchain_tracing_v2:
     os.environ["LANGCHAIN_API_KEY"] = settings.langchain_api_key or ""
     os.environ["LANGCHAIN_PROJECT"] = "purchasing-ai-v1"
     
-    # 디버깅 로그 (GCP Cloud Run 로그에서 확인 가능)
-    # 키에 불필요한 따옴표나 공백이 있는지 확인하기 위함
-    raw_key = os.environ["LANGCHAIN_API_KEY"]
-    masked_key = (raw_key[:6] + "...") if raw_key else "None"
-    print(f"[LangSmith Debug] Project: {os.environ['LANGCHAIN_PROJECT']}")
-    print(f"[LangSmith Debug] Key starts with: {masked_key} (Length: {len(raw_key)})")
+    # --- LangSmith Debugging Section ---
+    raw_key = os.environ.get("LANGCHAIN_API_KEY", "")
+    key_len = len(raw_key)
+    # 보안을 위해 앞 4자리, 뒤 4자리만 출력
+    masked_key = f"{raw_key[:4]}...{raw_key[-4:]}" if key_len > 8 else "INVALID_KEY"
+    
+    print(f"--- [LangSmith Debug Start] ---")
+    print(f"Project: {os.environ.get('LANGCHAIN_PROJECT')}")
+    print(f"Key Masked: {masked_key}")
+    print(f"Key Length: {key_len}")
+    if raw_key.startswith('"') or raw_key.endswith('"'):
+        print(f"WARNING: API Key contains double quotes! Please remove them from Secrets.")
+    if raw_key.startswith("'") or raw_key.endswith("'"):
+        print(f"WARNING: API Key contains single quotes! Please remove them from Secrets.")
+    if raw_key.strip() != raw_key:
+        print(f"WARNING: API Key contains leading or trailing spaces!")
+    print(f"--- [LangSmith Debug End] ---")
 
 from services.vector_store import get_vector_stores
 from routers import pipeline, ingest, output
