@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # 보안: IP당 일일 요청 제한
     rate_limit_per_day: int = 5
     
-    # Hugging Face Space 등: 생성 파일을 output/temp 에 저장하고 max_age 분 후 삭제
+    # 휘발성 서버 환경 대응: 생성 파일을 output/temp 에 저장하고 max_age 분 후 삭제
     use_temp_for_output: bool = False
     temp_output_max_age_minutes: int = 5
 

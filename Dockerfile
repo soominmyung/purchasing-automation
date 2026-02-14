@@ -1,4 +1,4 @@
-# Hugging Face Spaces: port 7860, Framer frontend calls this API
+# Production Dockerfile for Cloud Run
 FROM python:3.11-slim
 
 RUN useradd -m -u 1000 appuser
