@@ -17,6 +17,13 @@ if settings.langchain_tracing_v2:
     os.environ["LANGCHAIN_ENDPOINT"] = settings.langchain_endpoint
     os.environ["LANGCHAIN_API_KEY"] = settings.langchain_api_key or ""
     os.environ["LANGCHAIN_PROJECT"] = "purchasing-ai-v1"
+    
+    # 디버깅 로그 (GCP Cloud Run 로그에서 확인 가능)
+    # 키에 불필요한 따옴표나 공백이 있는지 확인하기 위함
+    raw_key = os.environ["LANGCHAIN_API_KEY"]
+    masked_key = (raw_key[:6] + "...") if raw_key else "None"
+    print(f"[LangSmith Debug] Project: {os.environ['LANGCHAIN_PROJECT']}")
+    print(f"[LangSmith Debug] Key starts with: {masked_key} (Length: {len(raw_key)})")
 
 from services.vector_store import get_vector_stores
 from routers import pipeline, ingest, output
