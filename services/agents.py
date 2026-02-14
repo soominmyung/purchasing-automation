@@ -26,6 +26,7 @@ from services.prompts import (
     PR_DRAFT_AGENT_SYSTEM,
     PR_DOC_AGENT_SYSTEM,
     EMAIL_DRAFT_AGENT_SYSTEM,
+    EVALUATION_AGENT_SYSTEM,
 )
 
 
@@ -195,6 +196,26 @@ def run_email_draft_agent(
         HumanMessage(content=user),
     ])
     return out.content if hasattr(out, "content") else str(out)
+
+
+def run_evaluation_agent(
+    supplier: str,
+    items: list[dict],
+    analysis_output: dict[str, Any]
+) -> str:
+    """Evaluation Agent: Critique the analysis and provide a score report."""
+    llm = _llm(model="gpt-4o") # Use strong model for evaluation
+    payload = {
+        "supplier": supplier,
+        "items": items,
+        "analysis_output": analysis_output
+    }
+    user = json.dumps(payload, ensure_ascii=False)
+    out = llm.invoke([
+        SystemMessage(content=EVALUATION_AGENT_SYSTEM),
+        HumanMessage(content=user),
+    ])
+    return out.content if hasattr(out, "content") else str(out)
 # ----- LangGraph Implementation -----
 
 class PurchasingState(TypedDict):
@@ -211,6 +232,7 @@ class PurchasingState(TypedDict):
     pr_draft: dict[str, Any]
     pr_md: str
     email_text: str
+    evaluation_md: str
     
     # 루프 제어
     iteration_count: int
@@ -225,6 +247,15 @@ def analysis_node(state: PurchasingState):
     }
     out = run_analysis_agent(input_json)
     return {"analysis_output": out}
+
+def evaluation_node(state: PurchasingState):
+    """분석 결과의 품질을 평가하는 노드."""
+    out = run_evaluation_agent(
+        state["supplier"],
+        state["items"],
+        state["analysis_output"]
+    )
+    return {"evaluation_md": out}
 
 def report_node(state: PurchasingState):
     analysis_result = {
@@ -335,6 +366,7 @@ def should_continue(state: PurchasingState):
 workflow = StateGraph(PurchasingState)
 
 workflow.add_node("analysis", analysis_node)
+workflow.add_node("evaluation", evaluation_node)
 workflow.add_node("report", report_node)
 workflow.add_node("pr_draft", pr_draft_node)
 workflow.add_node("pr_doc", pr_doc_node)
@@ -342,7 +374,8 @@ workflow.add_node("email_draft", email_draft_node)
 workflow.add_node("validator", validator_node)
 
 workflow.set_entry_point("analysis")
-workflow.add_edge("analysis", "report")
+workflow.add_edge("analysis", "evaluation")
+workflow.add_edge("evaluation", "report")
 workflow.add_edge("report", "pr_draft")
 workflow.add_edge("pr_draft", "pr_doc")
 workflow.add_edge("pr_doc", "email_draft")

@@ -82,3 +82,4 @@ class RunPipelineResponse(BaseModel):
     reports: list[dict[str, Any]] = Field(default_factory=list)  # snapshot_date_supplier → markdown
     requests: list[dict[str, Any]] = Field(default_factory=list)  # purchase request markdown
     emails: list[dict[str, Any]] = Field(default_factory=list)  # email draft text
+    evaluations: list[dict[str, Any]] = Field(default_factory=list)  # AI quality report

@@ -17,6 +17,7 @@ OUTPUT_ROOT = Path(__file__).resolve().parent.parent / "output"
 ANALYSIS_DIR = OUTPUT_ROOT / "analysis"
 PR_DIR = OUTPUT_ROOT / "pr"
 EMAIL_DRAFT_DIR = OUTPUT_ROOT / "email_draft"
+EVALUATION_DIR = OUTPUT_ROOT / "evaluation"
 TEMP_DIR = OUTPUT_ROOT / "temp"
 
 
@@ -24,6 +25,7 @@ def _ensure_dirs() -> None:
     ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
     PR_DIR.mkdir(parents=True, exist_ok=True)
     EMAIL_DRAFT_DIR.mkdir(parents=True, exist_ok=True)
+    EVALUATION_DIR.mkdir(parents=True, exist_ok=True)
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -199,4 +201,20 @@ def save_email_draft_docx(snapshot_date: str, supplier: str, text_content: str) 
     dir_ = TEMP_DIR if getattr(settings, "use_temp_for_output", False) else EMAIL_DRAFT_DIR
     path = dir_ / filename
     save_markdown_to_docx(path, text_content)
+    return str(path)
+
+
+def save_evaluation_docx(snapshot_date: str, supplier: str, markdown_content: str) -> str:
+    """
+    output/evaluation/ or output/temp (when use_temp_for_output)에 저장.
+    반환: 저장된 파일 경로(문자열).
+    """
+    _ensure_dirs()
+    if getattr(settings, "use_temp_for_output", False):
+        cleanup_temp_output()
+    safe_supplier = _sanitize_filename(supplier)
+    filename = f"evaluation_{snapshot_date}_{safe_supplier}.docx"
+    dir_ = TEMP_DIR if getattr(settings, "use_temp_for_output", False) else EVALUATION_DIR
+    path = dir_ / filename
+    save_markdown_to_docx(path, markdown_content)
     return str(path)

@@ -20,6 +20,7 @@ from utils.docx_utils import (
     save_analysis_docx,
     save_pr_docx,
     save_email_draft_docx,
+    save_evaluation_docx,
     markdown_to_docx_bytes,
     _sanitize_filename,
 )
@@ -67,6 +68,7 @@ def _run_pipeline(
     reports = []
     requests_list = []
     emails = []
+    evaluations = []
 
     for group in groups:
         snapshot_date = group["snapshot_date"]
@@ -111,6 +113,26 @@ def _run_pipeline(
         report_md = final_state.get("report_md", "")
         pr_md = final_state.get("pr_md", "")
         email_text = final_state.get("email_text", "")
+        evaluation_md = final_state.get("evaluation_md", "")
+
+        # 0. Evaluation Report 처리
+        evaluation_filename = f"evaluation_{snapshot_date}_{safe_supplier}.docx"
+        if in_memory:
+            docx_bytes = markdown_to_docx_bytes(evaluation_md)
+            b64 = base64.b64encode(docx_bytes).decode("ascii")
+            evaluations.append({
+                "snapshot_date": snapshot_date, "supplier": supplier, "markdown": evaluation_md,
+                "filename": evaluation_filename, "saved_path": "", "content_base64": b64,
+            })
+            if stream_mode:
+                progress("file_ready", {"filename": evaluation_filename, "content_base64": b64})
+        else:
+            evaluation_saved_path = save_evaluation_docx(snapshot_date, supplier, evaluation_md)
+            evaluations.append({
+                "snapshot_date": snapshot_date, "supplier": supplier, "markdown": evaluation_md,
+                "filename": evaluation_filename, "saved_path": evaluation_saved_path,
+                "content_base64": _read_file_base64(evaluation_saved_path),
+            })
 
         # 1. Report 처리
         analysis_filename = f"analysis_{snapshot_date}_{safe_supplier}.docx"
@@ -174,6 +196,7 @@ def _run_pipeline(
         reports=reports,
         requests=requests_list,
         emails=emails,
+        evaluations=evaluations,
     )
     result_dump = response.model_dump()
     if stream_mode:
