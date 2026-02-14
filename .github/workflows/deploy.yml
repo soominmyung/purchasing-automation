@@ -45,4 +45,4 @@ jobs:
             --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }},API_ACCESS_TOKEN=${{ secrets.API_ACCESS_TOKEN }},LANGCHAIN_TRACING_V2=${{ secrets.LANGCHAIN_TRACING_V2 }},LANGCHAIN_API_KEY=${{ secrets.LANGCHAIN_API_KEY }},LANGCHAIN_PROJECT=${{ secrets.LANGCHAIN_PROJECT }}"
+            --set-env-vars "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }},API_ACCESS_TOKEN=${{ secrets.API_ACCESS_TOKEN }},LANGCHAIN_TRACING_V2=${{ secrets.LANGCHAIN_TRACING_V2 }},LANGSMITH_TRACING=${{ secrets.LANGCHAIN_TRACING_V2 }},LANGCHAIN_API_KEY=${{ secrets.LANGCHAIN_API_KEY }},LANGCHAIN_PROJECT=${{ secrets.LANGCHAIN_PROJECT }}"

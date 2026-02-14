@@ -11,6 +11,7 @@ from typing import Any, Callable
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, Depends
 from fastapi.responses import StreamingResponse
+from langsmith import traceable
 
 from services.security import verify_api_access
 from config import settings
@@ -33,6 +34,7 @@ from services.agents import (
 router = APIRouter()
 
 
+@traceable(run_type="chain", name="Purchasing_Pipeline")
 def _run_pipeline(
     csv_content: str,
     csv_filename: str,

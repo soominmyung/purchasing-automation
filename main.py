@@ -12,28 +12,27 @@ from config import settings
 # --- LangSmith (Observability) Setup ---
 # MUST BE DONE BEFORE IMPORTING ROUTERS/AGENTS
 import os
+import langsmith as ls  # Explicit import to verify package
+
 if settings.langchain_tracing_v2:
+    # 환경 변수에서 따옴표와 공백을 강제로 제거 (Cloud Run/Secrets 환경의 흔한 실수 방지)
+    clean_key = (settings.langchain_api_key or "").strip().replace('"', "").replace("'", "")
+    
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGSMITH_TRACING"] = "true"  # 일부 SDK 호환성용
     os.environ["LANGCHAIN_ENDPOINT"] = settings.langchain_endpoint
-    os.environ["LANGCHAIN_API_KEY"] = settings.langchain_api_key or ""
+    os.environ["LANGCHAIN_API_KEY"] = clean_key
     os.environ["LANGCHAIN_PROJECT"] = "purchasing-ai-v1"
     
     # --- LangSmith Debugging Section ---
-    raw_key = os.environ.get("LANGCHAIN_API_KEY", "")
-    key_len = len(raw_key)
-    # 보안을 위해 앞 4자리, 뒤 4자리만 출력
-    masked_key = f"{raw_key[:4]}...{raw_key[-4:]}" if key_len > 8 else "INVALID_KEY"
+    key_len = len(clean_key)
+    masked_key = f"{clean_key[:4]}...{clean_key[-4:]}" if key_len > 8 else "INVALID_KEY"
     
     print(f"--- [LangSmith Debug Start] ---")
     print(f"Project: {os.environ.get('LANGCHAIN_PROJECT')}")
+    print(f"Tracing: {os.environ.get('LANGCHAIN_TRACING_V2')}")
     print(f"Key Masked: {masked_key}")
     print(f"Key Length: {key_len}")
-    if raw_key.startswith('"') or raw_key.endswith('"'):
-        print(f"WARNING: API Key contains double quotes! Please remove them from Secrets.")
-    if raw_key.startswith("'") or raw_key.endswith("'"):
-        print(f"WARNING: API Key contains single quotes! Please remove them from Secrets.")
-    if raw_key.strip() != raw_key:
-        print(f"WARNING: API Key contains leading or trailing spaces!")
     print(f"--- [LangSmith Debug End] ---")
 
 from services.vector_store import get_vector_stores
