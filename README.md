@@ -60,18 +60,54 @@ Instead of relying on a single prompt, the system orchestrates **five specialize
 ### 4️⃣ Cloud-Native Architecture (GCP Cloud Run)
 Optimized for serverless deployment on **Google Cloud Platform**, utilizing a scale-to-zero model for cost efficiency. The system supports a **memory-first approach** where documents are generated as bytes and encoded to **Base64** for instant client-side download.
 
-### 5️⃣ Automated CI/CD Pipeline
-Fully automated deployment pipeline using **GitHub Actions**. Every push to the `main` branch triggers an automated build, containerization (Docker), and deployment to GCP Cloud Run, ensuring stable and repeatable delivery.
+### 6️⃣ LLMOps & Observability
+Integrated **LangSmith** for comprehensive telemetry across the multi-agent pipeline. This enables real-time monitoring of agent token consumption, execution latency, and prompt tracing to ensure cost-efficiency and mitigate LLM hallucination risks in a production environment.
+
+### 7️⃣ Production Security & Error Handling
+Implemented a robust security layer to protect resources and ensure reliability:
+*   **Header-based Authentication**: Secure access via `X-API-Key` validation for all API endpoints.
+*   **Intelligent Rate Limiting**: Selective IP-based daily limits; allowing unlimited file ingestion while strictly controlling expensive LLM-powered pipeline executions.
+*   **Permissive CORS for Portfolio**: Configured for seamless interaction with Framer frontend while maintaining backend security.
+*   **Robust Error Handling**: Graceful management of OpenAI API rate limits and data validation errors.
+
+---
+
+## 💻 Local Setup & Quick Start
+
+Get the project running on your local machine in minutes using Docker.
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/soominmyung/purchasing-automation.git
+cd purchasing-automation
+```
+
+### 2. Set environment variables
+```bash
+cp .env.example .env
+```
+Open the `.env` file and add your `OPENAI_API_KEY`. You can also set a custom `API_ACCESS_TOKEN` for header-based authentication.
+
+### 3. Run with Docker
+```bash
+# Build the image
+docker build -t purchasing-ai .
+
+# Run the container
+docker run -p 8080:8080 --env-file .env purchasing-ai
+```
+The API will be available at `http://localhost:8080`. You can explore the interactive docs at `http://localhost:8080/docs`.
 
 ---
 
 ## Project Structure
 
-* **main.py**: FastAPI Entry point & Permissive CORS for portfolio accessibility
+* **main.py**: FastAPI Entry point & Environment configuration
 * **routers/**: API Layer (Pipeline, Ingest, Output)
 * **services/**: Business Logic (AI Agents, Vector Store, Security, Grouping)
 * **utils/**: Utilities (CSV Parsing, PDF Extraction, Word Generation)
 * **docs/**: Project documentation and **Sample Dataset (Examples.zip)**
+* **.env.example**: Template for environment variables
 * **.github/workflows/deploy.yml**: CI/CD pipeline configuration
 * **Dockerfile**: Containerization configuration for Cloud Run (Port 8080)
 
@@ -80,6 +116,6 @@ Fully automated deployment pipeline using **GitHub Actions**. Every push to the 
 ## Key API Endpoints
 
 * **POST /api/run/stream**: Upload inventory CSV and execute real-time streaming analysis.
-* **POST /api/ingest/{type}**: Batch-learn historical documents via PDF or folder upload.
+* **POST /api/ingest/{type}**: Batch-learn historical documents via PDF or folder upload (CORS-friendly).
 * **POST /api/run/embed**: Generate and return documents as Base64 encoded strings for client-side download.
 

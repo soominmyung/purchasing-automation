@@ -1,7 +1,7 @@
 """
 Purchasing Automation - FastAPI 앱.
-n8n 'Purchasing Automation' 워크플로를 Python 기반으로 재구현.
 """
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -10,6 +10,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from services.vector_store import get_vector_stores
 from routers import pipeline, ingest, output
+
+# --- LangSmith (Observability) Setup ---
+# LangChain libraries look for these env vars. We export them from Pydantic settings.
+if settings.langchain_tracing_v2:
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_ENDPOINT"] = settings.langchain_endpoint
+    os.environ["LANGCHAIN_API_KEY"] = settings.langchain_api_key or ""
+    os.environ["LANGCHAIN_PROJECT"] = settings.langchain_project
 
 
 @asynccontextmanager
@@ -22,7 +30,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Purchasing Automation API",
-    description="n8n Purchasing Automation 워크플로 기반 구매 자동화 API (Python/FastAPI)",
+    description="Asynchronous multi-agent pipeline for automated purchasing analysis and documentation.",
     version="1.0.0",
     lifespan=lifespan,
 )

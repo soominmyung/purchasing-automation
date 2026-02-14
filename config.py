@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     use_temp_for_output: bool = False
     temp_output_max_age_minutes: int = 5
 
+    # LangSmith: Observability (tracing)
+    langchain_tracing_v2: bool = False
+    langchain_endpoint: str = "https://api.smith.langchain.com"
+    langchain_api_key: Optional[str] = None
+    langchain_project: str = "purchasing-automation"
+
     class Config:
         env_file = ".env"
         extra = "ignore"
