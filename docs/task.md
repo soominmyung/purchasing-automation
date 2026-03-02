@@ -6,12 +6,12 @@
     - [x] Anti-hallucination Evaluation Agent
     - [x] Teacher dataset generation (teacher_dataset_20260225.jsonl)
 
-- [/] Phase 1.5: Code Quality & Git Setup
+- [x] Phase 1.5: Code Quality & Git Setup
     - [x] Create `legacy/gpt4o` branch (preserve current main)
     - [x] Convert all comments/docstrings to English
     - [x] Enhance prompts (Few-shot, persona, error handling)
-    - [ ] Regenerate teacher dataset with improved prompts
-    - [ ] Phase 1 commits (4 commits) → PR #1 merge to main
+    - [x] Regenerate teacher dataset with improved prompts
+    - [x] Phase 1 commits + push to main
 
 - [ ] Phase 2: Fine-tuning on Vertex AI
     - [ ] SFT training script (`scripts/train_sft.py`) + W&B tracking

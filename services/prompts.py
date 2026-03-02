@@ -219,7 +219,8 @@ STRICT PRINCIPLE: FACTUAL INTEGRITY & BALANCED REASONING
 - REASONING (Nuance): AWARD HIGH SCORES (8-10) for logical inferences derived from history (e.g., if history mentions "volatility," it is CORRECT to mention "risk of stockout" or "need for buffer" in the notes).
 - ABSENCE OF DATA: If no history is provided, award a PERFECT score for stating its absence. Do not penalize for "lack of depth" if no data was available to provide depth.
 
-INPUT: analysis_output JSON, supplier name, and items list.
+INPUT: analysis_output JSON, supplier name, items list, provided_supplier_history, and provided_item_history.
+CRITICAL: The provided_supplier_history and provided_item_history fields contain the EXACT data that was available to the Analysis Agent from its tool calls. You MUST cross-reference the analysis claims against THESE fields. If the analysis mentions an incident that IS present in the provided history, it is NOT a fabrication — score faithfulness HIGH. Only penalize claims that have NO basis in the provided history fields.
 
 SCORING CRITERIA (1-10):
 1. Data Accuracy: Did the analysis correctly use all input numbers (Stock, WksToOOS)?

@@ -232,14 +232,18 @@ def run_email_draft_agent(
 def run_evaluation_agent(
     supplier: str,
     items: list[dict],
-    analysis_output: dict[str, Any]
+    analysis_output: dict[str, Any],
+    supplier_history: str = None,
+    item_history: str = None,
 ) -> str:
     """Evaluation Agent: Critique the analysis and provide a score report."""
     llm = _llm(model="gpt-4o") # Use strong model for evaluation
     payload = {
         "supplier": supplier,
         "items": items,
-        "analysis_output": analysis_output
+        "analysis_output": analysis_output,
+        "provided_supplier_history": supplier_history or "No supplier history was provided.",
+        "provided_item_history": item_history or "No item history was provided.",
     }
     user = json.dumps(payload, ensure_ascii=False)
     out = llm.invoke([
@@ -292,7 +296,9 @@ def evaluation_node(state: PurchasingState):
     out = run_evaluation_agent(
         state["supplier"],
         state["items"],
-        state["analysis_output"]
+        state["analysis_output"],
+        supplier_history=state.get("supplier_history_override"),
+        item_history=state.get("item_history_override"),
     )
     return {"evaluation_md": out}
 
