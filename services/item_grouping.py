@@ -1,15 +1,15 @@
 """
-Item Grouping, Suggested dates & quantities 로직.
-- CSV 행을 supplier별로 그룹화
-- 품목별 recommended_latest_po_date, recommended_latest_delivery_date, timing 라벨 계산
-- suggested_quantity: 최근 납기일 이후 26주 커버용 수량
+Item Grouping, Suggested dates & quantities logic.
+- Groups CSV rows by supplier
+- Calculates per-item recommended_latest_po_date, recommended_latest_delivery_date, timing labels
+- suggested_quantity: order quantity to cover 26 weeks after latest delivery
 """
 from datetime import datetime, timedelta
 from typing import Any
 
 from utils.csv_utils import find_field
 
-# n8n 상수와 동일
+# Constants matching n8n workflow
 IMPORT_LEAD_WEEKS = 16
 INTERNAL_LEAD_WEEKS = 2
 TOTAL_LEAD_WEEKS = IMPORT_LEAD_WEEKS + INTERNAL_LEAD_WEEKS
@@ -46,7 +46,7 @@ def _build_timing_label_from_weeks(weeks_diff: float) -> str:
 
 
 def build_recommendations_for_item(snapshot_date_str: str, wks_to_oos_raw: Any) -> dict[str, Any]:
-    """품목별 권장 PO일/납기일 및 timing 라벨."""
+    """Per-item recommended PO date, delivery date, and timing labels."""
     snapshot_date = _parse_date(snapshot_date_str)
     try:
         wks = float(wks_to_oos_raw)
@@ -54,9 +54,9 @@ def build_recommendations_for_item(snapshot_date_str: str, wks_to_oos_raw: Any) 
         wks = TOTAL_LEAD_WEEKS
     effective_wks_to_oos = wks if wks > 0 else TOTAL_LEAD_WEEKS
 
-    # 현재 재고로 버틸 수 있는 마지막 날 = 최종 납기 필요일
+    # Last day current stock can sustain = latest required delivery date
     latest_delivery_date = _add_days(snapshot_date, int(effective_wks_to_oos * 7))
-    # 그 날에서 리드타임만큼 역산 = PO 발주 마감일
+    # Subtract lead time from that date = PO deadline
     latest_po_date = _add_days(latest_delivery_date, -TOTAL_LEAD_WEEKS * 7)
     if latest_po_date < snapshot_date:
         latest_po_date = snapshot_date
@@ -76,7 +76,7 @@ def compute_suggested_quantity_at_latest_delivery(
     current_stock_raw: Any,
     wks_to_oos_raw: Any,
 ) -> int | None:
-    """납기일 이후 26주 커버용 주문 수량."""
+    """Order quantity to cover 26 weeks after delivery date."""
     try:
         stock = float(current_stock_raw)
         wks = float(wks_to_oos_raw)
@@ -96,8 +96,8 @@ def group_by_supplier_and_recommend(
     csv_rows: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     """
-    CSV 파싱 결과(각 행에 snapshot_date 등)를 supplier별로 그룹화하고,
-    품목별 권장일/수량을 붙여서 반환.
+    Groups CSV rows by supplier and attaches
+    per-item recommended dates and quantities.
     """
     groups: dict[str, dict[str, Any]] = {}
 

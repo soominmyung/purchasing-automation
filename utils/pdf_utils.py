@@ -1,11 +1,11 @@
-"""PDF에서 텍스트 추출 (n8n extractFromFile)."""
+"""Extract text from PDF files (corresponds to n8n extractFromFile)."""
 from pathlib import Path
 
 from pypdf import PdfReader
 
 
 def extract_text_from_pdf(file_path: str | Path) -> str:
-    """PDF 파일 경로에서 전체 텍스트 추출."""
+    """Extract full text from a PDF file path."""
     path = Path(file_path)
     if not path.exists():
         raise FileNotFoundError(str(path))

@@ -1,27 +1,28 @@
-"""설정: 환경변수 기반."""
+"""Configuration: environment variable based."""
 from typing import Optional
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """앱 설정."""
+    """Application settings."""
 
-    # 보안: .env 또는 환경변수에서 로드 (기본값 없음)
+    # Security: loaded from .env or environment variables (no defaults)
     openai_api_key: Optional[str] = None
     
-    # API 접근 토큰 (X-API-Key 헤더 확인용)
+    # API access token (X-API-Key header verification)
     api_access_token: Optional[str] = None
 
-    # 벡터스토어: "memory" | "chroma"
+
+    # Vector store backend: "memory" | "chroma"
     vector_store_backend: str = "memory"
     
-    # Framer 등 외부 도메인 허용
+    # Allow external domains (e.g., Framer)
     extra_cors_origins: str = ""
     
-    # 보안: IP당 일일 요청 제한
+    # Security: per-IP daily request limit
     rate_limit_per_day: int = 5
     
-    # 휘발성 서버 환경 대응: 생성 파일을 output/temp 에 저장하고 max_age 분 후 삭제
+    # Ephemeral server support: save generated files to output/temp, delete after max_age
     use_temp_for_output: bool = False
     temp_output_max_age_minutes: int = 5
 

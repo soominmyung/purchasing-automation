@@ -138,7 +138,7 @@ def _content_to_docx_paragraphs(doc: Document, content: str) -> None:
 
 
 def save_markdown_to_docx(file_path: Path, content: str) -> Path:
-    """마크다운 내용을 .docx로 저장."""
+    """Save markdown content as .docx file."""
     doc = Document()
     _content_to_docx_paragraphs(doc, content)
     file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -158,8 +158,8 @@ def markdown_to_docx_bytes(content: str) -> bytes:
 
 def save_analysis_docx(snapshot_date: str, supplier: str, markdown_content: str) -> str:
     """
-    output/analysis/ or output/temp (when use_temp_for_output)에 저장.
-    반환: 저장된 파일 경로(문자열).
+    Save to output/analysis/ or output/temp (when use_temp_for_output).
+    Returns: saved file path (string).
     """
     _ensure_dirs()
     if getattr(settings, "use_temp_for_output", False):
@@ -174,8 +174,8 @@ def save_analysis_docx(snapshot_date: str, supplier: str, markdown_content: str)
 
 def save_pr_docx(snapshot_date: str, supplier: str, markdown_content: str) -> str:
     """
-    output/pr/ or output/temp (when use_temp_for_output)에 저장.
-    반환: 저장된 파일 경로(문자열).
+    Save to output/pr/ or output/temp (when use_temp_for_output).
+    Returns: saved file path (string).
     """
     _ensure_dirs()
     if getattr(settings, "use_temp_for_output", False):
@@ -190,8 +190,8 @@ def save_pr_docx(snapshot_date: str, supplier: str, markdown_content: str) -> st
 
 def save_email_draft_docx(snapshot_date: str, supplier: str, text_content: str) -> str:
     """
-    output/email_draft/ or output/temp (when use_temp_for_output)에 저장.
-    반환: 저장된 파일 경로(문자열).
+    Save to output/email_draft/ or output/temp (when use_temp_for_output).
+    Returns: saved file path (string).
     """
     _ensure_dirs()
     if getattr(settings, "use_temp_for_output", False):
@@ -206,8 +206,8 @@ def save_email_draft_docx(snapshot_date: str, supplier: str, text_content: str) 
 
 def save_evaluation_docx(snapshot_date: str, supplier: str, markdown_content: str) -> str:
     """
-    output/evaluation/ or output/temp (when use_temp_for_output)에 저장.
-    반환: 저장된 파일 경로(문자열).
+    Save to output/evaluation/ or output/temp (when use_temp_for_output).
+    Returns: saved file path (string).
     """
     _ensure_dirs()
     if getattr(settings, "use_temp_for_output", False):
