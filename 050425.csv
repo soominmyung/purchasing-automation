@@ -1,0 +1,6 @@
+﻿ItemCode,ItemName,SupplierName,RiskLevel,CurrentStock,WksToOOS
+100000,ItemA,SupplierA,High,100,25
+100001,ItemB,SupplierA,Medium,90,41
+100002,ItemC,SupplierB,Medium,300,46
+100003,ItemD,SupplierC,High,500,23
+100004,ItemE,SupplierC,High,100,24
