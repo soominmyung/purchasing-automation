@@ -1,13 +1,13 @@
 """
-에이전트: Analysis, Report Doc, PR Draft, PR Doc, Email Draft.
-OpenAI + LangChain으로 에이전트 워크플로우를 구현.
+Agents: Analysis, Report Doc, PR Draft, PR Doc, Email Draft.
+Implements agent workflows using OpenAI + LangChain + LangGraph.
 """
 import json
 import re
 from typing import Any, TypedDict, Annotated, List, Union
 import operator
 
-from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
+from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage, ToolMessage, AIMessage
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
@@ -54,22 +54,26 @@ def item_history(query: str) -> str:
 
 
 def _extract_json_from_text(text: str) -> dict | list:
-    """마크다운/텍스트에서 JSON 블록 추출."""
-    # ```json ... ``` 또는 ``` ... ```
+    """Extract JSON block from markdown/text."""
+    # ```json ... ``` or ``` ... ```
     m = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
     if m:
         return json.loads(m.group(1).strip())
-    # {...} 또는 [...]
+    # {...} or [...]
     m = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", text)
     if m:
         return json.loads(m.group(1))
     return json.loads(text.strip())
 
 
-def run_analysis_agent(input_json: dict[str, Any]) -> dict[str, Any]:
+def run_analysis_agent(
+    input_json: dict[str, Any],
+    supplier_history_override: str = None,
+    item_history_override: str = None
+) -> dict[str, Any]:
     """
     Analysis Agent: input = { snapshot_date, supplier, items[] }.
-    Tools: supplier_history, item_history.
+    Tools: supplier_history, item_history (unless overridden).
     Output: { purchasing_report_markdown, critical_questions[], replenishment_timeline[] }.
     """
     llm = _llm().bind_tools([supplier_history, item_history])
@@ -78,33 +82,60 @@ def run_analysis_agent(input_json: dict[str, Any]) -> dict[str, Any]:
         SystemMessage(content=ANALYSIS_AGENT_SYSTEM),
         HumanMessage(content=user_text),
     ]
-    # 1회 호출로 도구 사용 유도 후, 도구 결과를 넣고 다시 호출하는 루프 (간단히 2회까지)
-    from langchain_core.messages import ToolMessage
+    
+    # Synthetic history injection for training or testing
+    if supplier_history_override or item_history_override:
+        # Manually construct tool results
+        synthetic_results = []
+        fake_tool_calls_list = []
+        
+        if supplier_history_override:
+            synthetic_results.append(ToolMessage(content=supplier_history_override, tool_call_id="synth_s_1"))
+            fake_tool_calls_list.append({"name": "supplier_history", "args": {"query": "synthetic"}, "id": "synth_s_1"})
+        
+        if item_history_override:
+            synthetic_results.append(ToolMessage(content=item_history_override, tool_call_id="synth_i_1"))
+            fake_tool_calls_list.append({"name": "item_history", "args": {"query": "synthetic"}, "id": "synth_i_1"})
+            
+        # Create message as if AI called the tools
+        ai_msg = AIMessage(content="", tool_calls=fake_tool_calls_list)
+        
+        # Construct [System, Human, AI_with_ToolCalls, ToolResults] sequence for LLM
+        extended_messages = messages + [ai_msg] + synthetic_results
+        final_response = llm.invoke(extended_messages)
+    else:
+        # Standard tool-call loop (dynamic history lookup)
+        first_resp = llm.invoke(messages)
+        
+        t_calls = getattr(first_resp, "tool_calls", []) or []
+        if t_calls:
+            t_results = []
+            for tc in t_calls:
+                t_name = (tc.get("name") if isinstance(tc, dict) else getattr(tc, "name", None)) or "supplier_history"
+                t_args = (tc.get("args") if isinstance(tc, dict) else getattr(tc, "args", {})) or {}
+                t_id = (tc.get("id") if isinstance(tc, dict) else getattr(tc, "id", "")) or ""
+                
+                if t_name == "supplier_history":
+                    t_out = supplier_history.invoke(t_args.get("query", str(input_json.get("supplier", ""))))
+                elif t_name == "item_history":
+                    t_query = t_args.get("query", " ".join(f"item_code: {i.get('item_code')}" for i in input_json.get("items", [])))
+                    t_out = item_history.invoke(t_query)
+                else:
+                    t_out = ""
+                
+                t_results.append(ToolMessage(content=str(t_out), tool_call_id=t_id))
+            
+            # Re-invoke with tool results
+            final_response = llm.invoke(messages + [first_resp] + t_results)
+        else:
+            final_response = first_resp
 
-    response = llm.invoke(messages)
-    tool_calls = getattr(response, "tool_calls", []) or []
-    if tool_calls:
-        tool_results = []
-        for tc in tool_calls:
-            name = (tc.get("name") if isinstance(tc, dict) else getattr(tc, "name", None)) or "supplier_history"
-            args = (tc.get("args") if isinstance(tc, dict) else getattr(tc, "args", {})) or {}
-            tid = (tc.get("id") if isinstance(tc, dict) else getattr(tc, "id", "")) or ""
-            if name == "supplier_history":
-                out = supplier_history.invoke(args.get("query", str(input_json.get("supplier", ""))))
-            elif name == "item_history":
-                q = args.get("query", " ".join(f"item_code: {i.get('item_code')}" for i in input_json.get("items", [])))
-                out = item_history.invoke(q)
-            else:
-                out = ""
-            tool_results.append(ToolMessage(content=str(out), tool_call_id=tid))
-        messages = messages + [response] + tool_results
-        response = llm.invoke(messages)
-    text = response.content if hasattr(response, "content") else str(response)
+    final_text = final_response.content if hasattr(final_response, "content") else str(final_response)
     try:
-        return _extract_json_from_text(text)
-    except json.JSONDecodeError:
+        return _extract_json_from_text(final_text)
+    except Exception:
         return {
-            "purchasing_report_markdown": text,
+            "purchasing_report_markdown": final_text,
             "critical_questions": [],
             "replenishment_timeline": input_json.get("items", []),
         }
@@ -219,14 +250,14 @@ def run_evaluation_agent(
 # ----- LangGraph Implementation -----
 
 class PurchasingState(TypedDict):
-    """LangGraph 상태 정의."""
-    # 하위 호환성을 위해 기존 변수들 유지
+    """LangGraph state definition."""
+    # Core fields retained for backward compatibility
     snapshot_date: str
     supplier: str
     risk_level: str
     items: list[dict]
     
-    # 에이전트 간 결과 전달
+    # Inter-agent result passing
     analysis_output: dict[str, Any]
     report_md: str
     pr_draft: dict[str, Any]
@@ -234,10 +265,14 @@ class PurchasingState(TypedDict):
     email_text: str
     evaluation_md: str
     
-    # 루프 제어
+    # Loop control
     iteration_count: int
     correction_feedback: str
     is_valid_email: bool
+    
+    # Synthetic history override for training (Optional)
+    supplier_history_override: str
+    item_history_override: str
 
 def analysis_node(state: PurchasingState):
     input_json = {
@@ -245,11 +280,15 @@ def analysis_node(state: PurchasingState):
         "supplier": state["supplier"],
         "items": state["items"],
     }
-    out = run_analysis_agent(input_json)
+    out = run_analysis_agent(
+        input_json, 
+        supplier_history_override=state.get("supplier_history_override"),
+        item_history_override=state.get("item_history_override")
+    )
     return {"analysis_output": out}
 
 def evaluation_node(state: PurchasingState):
-    """분석 결과의 품질을 평가하는 노드."""
+    """Node that evaluates the quality of analysis output."""
     out = run_evaluation_agent(
         state["supplier"],
         state["items"],
@@ -282,13 +321,13 @@ def pr_doc_node(state: PurchasingState):
     return {"pr_md": out}
 
 def email_draft_node(state: PurchasingState):
-    # 만약 피드백이 있다면 프롬프트를 보강하거나 시스템 메시지 수정 가능
-    # 여기서는 간단히 기존 함수를 호출하되, 피드백이 있으면 인자로 전달하는 방식으로 구현 가능
-    # 현재 run_email_draft_agent는 고정된 프롬프트를 쓰므로, 피드백이 있을 때만 로직 보강
+    # If feedback exists, augment the prompt or override system message.
+    # Currently run_email_draft_agent uses a fixed prompt,
+    # so we only apply revision logic when correction_feedback is present.
     
     if state.get("correction_feedback") and state["iteration_count"] > 0:
-        # 피드백이 있는 경우: 자가 수정을 지원하기 위해 에이전트 직접 호출 (프롬프트 보강)
-        llm = _llm(model="gpt-4o") # 수정을 위해선 더 강력한 모델 사용
+        # Feedback present: invoke agent directly for self-correction (prompt augmentation)
+        llm = _llm(model="gpt-4o")  # Use stronger model for revision
         feedback_prompt = f"\n\n[REVISION REQUEST]\nYour previous draft was rejected for the following reason: {state['correction_feedback']}\nPlease rewrite the email while strictly avoiding those issues."
         
         payload = {
@@ -317,10 +356,10 @@ def email_draft_node(state: PurchasingState):
     return {"email_text": email_text, "iteration_count": state.get("iteration_count", 0) + 1}
 
 def validator_node(state: PurchasingState):
-    """이메일 초안이 외부 공개 가능한 수준인지 검사 (Validator)."""
+    """DLP validator: checks if email draft is safe for external communication."""
     email = state["email_text"]
     
-    # 1. 휴리스틱 검사 (단어 기반)
+    # 1. Heuristic check (keyword-based)
     leak_keywords = ["stock level", "weeks to oos", "risk level", "internal analysis", "replenishment timeline", "wks_to_oos"]
     leaks = [k for k in leak_keywords if k in email.lower()]
     
@@ -330,7 +369,7 @@ def validator_node(state: PurchasingState):
             "correction_feedback": f"Found internal terminology: {', '.join(leaks)}"
         }
     
-    # 2. LLM 기반 정밀 검사
+    # 2. LLM-based precision check
     llm = _llm(model="gpt-4o-mini")
     check_prompt = f"""Analyze the following email draft to a supplier. 
 Does it contain ANY internal-only information such as:
@@ -362,7 +401,7 @@ def should_continue(state: PurchasingState):
         return END
     return "email_draft"
 
-# 그래프 구축
+# Build the graph
 workflow = StateGraph(PurchasingState)
 
 workflow.add_node("analysis", analysis_node)
@@ -393,7 +432,7 @@ workflow.add_conditional_edges(
 purchasing_graph = workflow.compile()
 
 def run_purchasing_pipeline_graph(input_data: dict[str, Any]) -> dict[str, Any]:
-    """LangGraph를 사용하여 전체 파이프라인(1개 공급사 그룹) 실행."""
+    """Execute full pipeline for one supplier group via LangGraph."""
     initial_state = {
         "snapshot_date": input_data["snapshot_date"],
         "supplier": input_data["supplier"],
@@ -401,9 +440,11 @@ def run_purchasing_pipeline_graph(input_data: dict[str, Any]) -> dict[str, Any]:
         "risk_level": input_data["items"][0].get("risk_level", "N/A") if input_data["items"] else "N/A",
         "iteration_count": 0,
         "correction_feedback": "",
-        "is_valid_email": False
+        "is_valid_email": False,
+        "supplier_history_override": input_data.get("supplier_history_override"),
+        "item_history_override": input_data.get("item_history_override")
     }
     
-    # 그래프 실행
+    # Execute graph
     final_state = purchasing_graph.invoke(initial_state)
     return final_state
