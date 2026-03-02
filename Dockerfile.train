@@ -1,30 +1,18 @@
 # Training Dockerfile for Vertex AI Custom Training
 # Uses Unsloth + QLoRA for efficient Llama-3 fine-tuning
-FROM nvidia/cuda:12.1.0-devel-ubuntu22.04
-
-# System dependencies
-RUN apt-get update && apt-get install -y \
-    python3.11 python3.11-dev python3-pip git \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN ln -s /usr/bin/python3.11 /usr/bin/python
+FROM pytorch/pytorch:2.2.0-cuda12.1-cudnn8-devel
 
 WORKDIR /app
 
-# Install PyTorch (CUDA 12.1)
-RUN pip install --no-cache-dir \
-    torch==2.2.0 \
-    --index-url https://download.pytorch.org/whl/cu121
+# Install git (required for pip install from GitHub)
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
 # Install Unsloth and training dependencies
 RUN pip install --no-cache-dir \
-    "unsloth[cu121-ampere] @ git+https://github.com/unslothai/unsloth.git" \
+    "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git" \
+    xformers \
     trl>=0.7.0 \
-    transformers>=4.38.0 \
     datasets>=2.16.0 \
-    accelerate>=0.26.0 \
-    peft>=0.8.0 \
-    bitsandbytes>=0.42.0 \
     wandb>=0.16.0 \
     sentencepiece \
     protobuf

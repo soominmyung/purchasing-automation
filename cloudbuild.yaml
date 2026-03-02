@@ -1,0 +1,19 @@
+# Cloud Build config for SFT training image
+# Uses Dockerfile.train (not the production Dockerfile)
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-f'
+      - 'Dockerfile.train'
+      - '-t'
+      - '${_IMAGE_URI}'
+      - '.'
+
+images:
+  - '${_IMAGE_URI}'
+
+timeout: '1800s'
+
+substitutions:
+  _IMAGE_URI: 'us-central1-docker.pkg.dev/${PROJECT_ID}/purchasing-automation/sft-trainer:latest'
