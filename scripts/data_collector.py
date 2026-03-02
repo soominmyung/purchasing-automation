@@ -3,7 +3,7 @@ import os
 import sys
 from datetime import datetime
 
-# 프로젝트 루트를 path에 추가하여 부모 디렉토리의 모듈을 가져올 수 있게 함
+# Add project root to path for parent directory module imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.agents import run_purchasing_pipeline_graph
@@ -11,7 +11,7 @@ from config import settings
 
 def process_synthetic_scenarios(input_file: str, output_file: str):
     """
-    합성 데이터 시나리오(JSONL)를 읽어와서 GPT-4o(Teacher) 파이프라인을 실행하고 결과를 저장합니다.
+    Reads synthetic data scenarios (JSONL) and runs the GPT-4o (Teacher) pipeline, saving results.
     """
     if not os.path.exists(input_file):
         print(f"Error: Input file {input_file} not found.")
@@ -29,7 +29,7 @@ def process_synthetic_scenarios(input_file: str, output_file: str):
     for i, scene in enumerate(scenarios):
         print(f"[{i+1}/{len(scenarios)}] Processing scenario for supplier: {scene.get('supplier')}...")
         
-        # 파이프라인 입력 구성 (합성 히스토리 포함)
+        # Construct pipeline input (include synthetic history)
         input_data = {
             "snapshot_date": datetime.now().strftime("%Y-%m-%d"),
             "supplier": scene.get("supplier"),
@@ -38,14 +38,14 @@ def process_synthetic_scenarios(input_file: str, output_file: str):
             "item_history_override": scene.get("item_history")
         }
 
-        # Teacher 모델(GPT-4o) 실행
+        # Run Teacher model (GPT-4o)
         try:
             result = run_purchasing_pipeline_graph(input_data)
         except Exception as e:
             print(f"Error processing scenario {i+1}: {e}")
             continue
         
-        # 학습용 트레이스 구성
+        # Construct training trace
         trace = {
             "instruction": "Analyze the purchasing data and supplier/item history to generate reports and drafts.",
             "input": {
@@ -63,7 +63,7 @@ def process_synthetic_scenarios(input_file: str, output_file: str):
         }
         traces.append(trace)
 
-    # 결과 저장
+    # Save results
     with open(output_file, 'w', encoding='utf-8') as f:
         for t in traces:
             f.write(json.dumps(t, ensure_ascii=False) + '\n')
@@ -71,7 +71,7 @@ def process_synthetic_scenarios(input_file: str, output_file: str):
     print(f"Successfully processed {len(traces)} scenarios. Saved to {output_file}")
 
 if __name__ == "__main__":
-    # 합성 데이터 세트를 사용하여 Teacher 응답 생성
+    # Generate teacher responses using synthetic dataset
     synthetic_input = "training_data/synthetic_set.jsonl"
     final_output = f"training_data/teacher_dataset_{datetime.now().strftime('%Y%m%d')}.jsonl"
     
