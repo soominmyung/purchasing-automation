@@ -1,6 +1,6 @@
 """
-벡터스토어: supplier_history, item_history, analysis_examples, request_examples, email_examples.
-n8n의 Vector Store In-Memory + Embeddings OpenAI에 대응.
+Vector stores: supplier_history, item_history, analysis_examples, request_examples, email_examples.
+Corresponds to n8n Vector Store In-Memory + OpenAI Embeddings.
 """
 from pathlib import Path
 from typing import Any
@@ -12,7 +12,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from config import settings
 
-# Chroma 저장 경로 (로컬 디렉터리)
+# Chroma storage path (local directory)
 _CHROMA_DIR = Path(__file__).resolve().parent.parent / "data" / "chroma"
 _CHROMA_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -24,7 +24,7 @@ def _get_embeddings():
     global _embeddings
     if _embeddings is None:
         if not settings.openai_api_key:
-            # 설정되지 않은 경우 오류를 내지 않고 None 반환 (나중에 호출 시 에러 발생)
+            # Return None gracefully if API key is not set (will error on actual use)
             return None
         _embeddings = OpenAIEmbeddings(api_key=settings.openai_api_key)
     return _embeddings
@@ -34,7 +34,7 @@ def _get_or_create_store(collection_name: str) -> Chroma:
     if collection_name not in _stores:
         emb = _get_embeddings()
         if emb is None:
-            # 키가 없으면 스토어 생성을 건너뜀 (나중에 다시 시도 가능)
+            # Skip store creation if API key is missing (can retry later)
             return None
         _stores[collection_name] = Chroma(
             collection_name=collection_name,
@@ -60,7 +60,7 @@ def _add_docs(collection_name: str, documents: list[Document]) -> None:
 
 
 def ingest_supplier_history(text: str, supplier_name: str) -> None:
-    """Supplier history PDF 텍스트 + metadata supplier_name."""
+    """Ingest supplier history text with supplier_name metadata."""
     _add_docs(
         "supplier_history",
         [Document(page_content=text, metadata={"supplier_name": supplier_name, "doc_type": "supplier_history"})],
@@ -68,7 +68,7 @@ def ingest_supplier_history(text: str, supplier_name: str) -> None:
 
 
 def ingest_item_history(text: str, item_code: str | None) -> None:
-    """Item history PDF 텍스트 + metadata item_code."""
+    """Ingest item history text with item_code metadata."""
     _add_docs(
         "item_history",
         [Document(page_content=text, metadata={"item_code": item_code or "", "doc_type": "item_history"})],
@@ -76,7 +76,7 @@ def ingest_item_history(text: str, item_code: str | None) -> None:
 
 
 def ingest_analysis_examples(text: str) -> None:
-    """Purchasing analysis examples (n8n Analysis-examples 폴더)."""
+    """Ingest purchasing analysis reference examples."""
     _add_docs(
         "analysis_examples",
         [Document(page_content=text, metadata={"doc_type": "analysis_examples"})],
@@ -84,7 +84,7 @@ def ingest_analysis_examples(text: str) -> None:
 
 
 def ingest_request_examples(text: str) -> None:
-    """PR (purchase request) examples (n8n Request-examples 폴더)."""
+    """Ingest purchase request reference examples."""
     _add_docs(
         "request_examples",
         [Document(page_content=text, metadata={"doc_type": "request_examples"})],
@@ -92,7 +92,7 @@ def ingest_request_examples(text: str) -> None:
 
 
 def ingest_email_examples(text: str) -> None:
-    """Email draft examples (n8n Email-examples 폴더)."""
+    """Ingest email draft reference examples."""
     _add_docs(
         "email_examples",
         [Document(page_content=text, metadata={"doc_type": "email_examples"})],
