@@ -46,3 +46,6 @@ output/
 .agent/
 .cortex/
 brain/
+
+# Secrets — never commit
+job.json

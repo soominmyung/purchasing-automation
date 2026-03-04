@@ -8,12 +8,17 @@ steps:
       - 'Dockerfile.train'
       - '-t'
       - '${_IMAGE_URI}'
+      - '--cache-from'
+      - '${_IMAGE_URI}'
       - '.'
 
 images:
   - '${_IMAGE_URI}'
 
-timeout: '1800s'
+timeout: '3600s'
+
+options:
+  machineType: 'E2_HIGHCPU_8'
 
 substitutions:
   _IMAGE_URI: 'us-central1-docker.pkg.dev/${PROJECT_ID}/purchasing-automation/sft-trainer:latest'

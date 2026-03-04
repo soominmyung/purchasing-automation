@@ -1,21 +1,14 @@
 # Training Dockerfile for Vertex AI Custom Training
-# Uses Unsloth + QLoRA for efficient Llama-3 fine-tuning
-FROM pytorch/pytorch:2.2.0-cuda12.1-cudnn8-devel
+# Uses Unsloth official image — torch, unsloth, peft, bitsandbytes, trl pre-installed
+FROM unslothai/unsloth-cli:latest
 
 WORKDIR /app
 
-# Install git (required for pip install from GitHub)
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
-
-# Install Unsloth and training dependencies
+# Add only what's not in the base image
 RUN pip install --no-cache-dir \
-    "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git" \
-    xformers \
-    trl>=0.7.0 \
-    datasets>=2.16.0 \
-    wandb>=0.16.0 \
-    sentencepiece \
-    protobuf
+    "wandb>=0.16.0" \
+    "sentencepiece" \
+    "protobuf"
 
 # Copy training script and data
 COPY scripts/train_sft.py scripts/train_sft.py
