@@ -50,6 +50,21 @@ To reduce inference cost and latency, the GPT-4o purchasing analysis agent was d
 - **Artifact**: `gs://purchasing-automation-models/sft-runs/lora_adapter/`
 - **Experiment tracking**: [W&B — purchasing-automation-sft](https://wandb.ai/msm1640-/purchasing-automation-sft)
 
+### Evaluation: Llama-3-8B SFT vs GPT-4o Baseline
+
+Evaluated on 5 holdout examples using GPT-4o-as-judge (data accuracy + reasoning quality, scored 1–10).
+
+| Model | Avg Score | JSON Valid |
+|-------|-----------|-----------|
+| GPT-4o (baseline) | 9.3 / 10 | 100% |
+| **Llama-3-8B SFT** | **7.0 / 10** | **80%** |
+
+- Valid outputs averaged **8.75 / 10** — near GPT-4o quality
+- Correctly references supplier names, item codes, stock levels, and risk levels
+- Gap areas: replenishment quantity/timing detail and depth of critical questions
+- Merged model (fp16): `gs://purchasing-automation-models/gguf/`
+- Eval results: `gs://purchasing-automation-models/eval-results/eval_20260305_0613.json`
+
 ### Infrastructure
 
 | Component | Detail |
