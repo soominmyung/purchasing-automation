@@ -19,10 +19,11 @@ RUN pip install --no-cache-dir \
     "wandb>=0.16.0" \
     "sentencepiece" \
     "protobuf" \
-    "google-cloud-storage"
+    "google-cloud-storage" \
+    "openai>=1.0.0"
 
-# Copy training script and data
-COPY scripts/train_sft.py scripts/train_sft.py
+# Copy all scripts and training data
+COPY scripts/ scripts/
 COPY training_data/ training_data/
 
 ENV DATASET_PATH=training_data/teacher_dataset_20260302.jsonl

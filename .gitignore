@@ -49,3 +49,4 @@ brain/
 
 # Secrets — never commit
 job.json
+*_job.json
