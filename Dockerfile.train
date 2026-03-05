@@ -1,23 +1,32 @@
 # Training Dockerfile for Vertex AI Custom Training
-# Uses Unsloth official image — torch, unsloth, peft, bitsandbytes, trl pre-installed
-FROM unslothai/unsloth-cli:latest
+# torch 2.6.0 + CUDA 12.4 — required: unsloth_zoo>=2026.3 pulls torchao>=0.13 which needs torch.int1 (added in 2.6)
+FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel
 
 WORKDIR /app
 
-# Add only what's not in the base image
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
+# Pin torch version explicitly so pip install unsloth does NOT upgrade it
+# xformers omitted — version must match torch exactly; unsloth works without it
 RUN pip install --no-cache-dir \
+    "torch==2.6.0" \
+    "unsloth" \
+    "trl" \
+    "peft" \
+    "accelerate" \
+    "bitsandbytes" \
+    "datasets>=2.16.0" \
     "wandb>=0.16.0" \
     "sentencepiece" \
-    "protobuf"
+    "protobuf" \
+    "google-cloud-storage"
 
 # Copy training script and data
 COPY scripts/train_sft.py scripts/train_sft.py
 COPY training_data/ training_data/
 
-# Set default environment variables
 ENV DATASET_PATH=training_data/teacher_dataset_20260302.jsonl
 ENV OUTPUT_DIR=/app/output/llama3-purchasing-sft
 ENV WANDB_PROJECT=purchasing-automation-sft
 
-# Run training
 CMD ["python", "scripts/train_sft.py"]

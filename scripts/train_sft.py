@@ -16,12 +16,12 @@ import os
 import sys
 from datetime import datetime
 
+from unsloth import FastLanguageModel  # Must be first — before trl/transformers/peft
+
 import torch
 import wandb
 from datasets import Dataset
-from trl import SFTTrainer
-from transformers import TrainingArguments
-from unsloth import FastLanguageModel
+from trl import SFTTrainer, SFTConfig
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 
@@ -164,7 +164,7 @@ def train(model, tokenizer, dataset):
         },
     )
 
-    training_args = TrainingArguments(
+    training_args = SFTConfig(
         output_dir=OUTPUT_DIR,
         num_train_epochs=EPOCHS,
         per_device_train_batch_size=BATCH_SIZE,
@@ -179,16 +179,16 @@ def train(model, tokenizer, dataset):
         optim="adamw_8bit",
         seed=42,
         report_to="wandb",
+        max_seq_length=MAX_SEQ_LENGTH,
+        packing=True,
+        dataset_text_field="text",
     )
 
     trainer = SFTTrainer(
         model=model,
         tokenizer=tokenizer,
         train_dataset=dataset,
-        dataset_text_field="text",
-        max_seq_length=MAX_SEQ_LENGTH,
         args=training_args,
-        packing=True,  # Pack short examples together for efficiency
     )
 
     print("Starting SFT training...")
@@ -201,21 +201,32 @@ def train(model, tokenizer, dataset):
 # ── Save & Upload ──────────────────────────────────────────────────────────────
 
 def save_model(model, tokenizer):
-    """Save the LoRA adapter (not the full model) for efficient storage."""
+    """Save the LoRA adapter locally then upload to GCS."""
+    from pathlib import Path
+
     adapter_path = os.path.join(OUTPUT_DIR, "lora_adapter")
     model.save_pretrained(adapter_path)
     tokenizer.save_pretrained(adapter_path)
     print(f"LoRA adapter saved to {adapter_path}")
 
-    # Log adapter to W&B as artifact
-    artifact = wandb.Artifact(
-        name="llama3-purchasing-sft-lora",
-        type="model",
-        description="QLoRA adapter for Llama-3-8B fine-tuned on purchasing analysis",
-    )
-    artifact.add_dir(adapter_path)
-    wandb.log_artifact(artifact)
-    print("LoRA adapter logged to W&B as artifact.")
+    # Upload to GCS for persistence (container storage is ephemeral)
+    gcs_uri = os.environ.get("GCS_OUTPUT_URI", "").rstrip("/")
+    if gcs_uri:
+        from google.cloud import storage as gcs
+        # gcs_uri format: gs://bucket-name/path
+        uri_parts = gcs_uri.replace("gs://", "").split("/", 1)
+        bucket_name = uri_parts[0]
+        prefix = uri_parts[1] if len(uri_parts) > 1 else ""
+        client = gcs.Client()
+        bucket = client.bucket(bucket_name)
+        for local_file in Path(adapter_path).rglob("*"):
+            if local_file.is_file():
+                blob_path = f"{prefix}/lora_adapter/{local_file.relative_to(adapter_path)}"
+                bucket.blob(blob_path).upload_from_filename(str(local_file))
+        dest = f"{gcs_uri}/lora_adapter"
+        print(f"Adapter uploaded to {dest}")
+    else:
+        print("GCS_OUTPUT_URI not set — adapter only in ephemeral container storage.")
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
@@ -237,8 +248,6 @@ def main():
     # 4. Save LoRA adapter
     save_model(model, tokenizer)
 
-    # 5. Cleanup
-    wandb.finish()
     print("Done! LoRA adapter ready for deployment.")
 
 
