@@ -30,17 +30,50 @@ This evolution demonstrates:
 
 ---
 
+## SFT Fine-Tuning: Llama-3-8B with QLoRA
+
+To reduce inference cost and latency, the GPT-4o purchasing analysis agent was distilled into a fine-tuned **Llama-3-8B** model via QLoRA (4-bit quantization + LoRA adapters) using [Unsloth](https://github.com/unslothai/unsloth).
+
+### Training Results
+
+| Epoch | Loss   |
+|-------|--------|
+| 1     | 1.141  |
+| 2     | 0.844  |
+| 3     | 0.582  |
+| 4     | 0.498  |
+| 5     | **0.409** |
+
+- **Runtime**: 367s on a single NVIDIA Tesla T4 (Vertex AI Custom Training)
+- **Trainable parameters**: ~41M / 8B (0.51% — LoRA rank 16)
+- **Dataset**: 12 teacher examples distilled from GPT-4o with avg quality score 9.2/10
+- **Artifact**: `gs://purchasing-automation-models/sft-runs/lora_adapter/`
+- **Experiment tracking**: [W&B — purchasing-automation-sft](https://wandb.ai/msm1640-/purchasing-automation-sft)
+
+### Infrastructure
+
+| Component | Detail |
+|-----------|--------|
+| Base image | `pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel` |
+| Fine-tuning framework | Unsloth 2026.3 + TRL SFTTrainer |
+| GPU | NVIDIA Tesla T4 (16GB VRAM) |
+| Build | GCP Cloud Build (E2_HIGHCPU_8, ~4 min) |
+| Artifact storage | Google Cloud Storage |
+
+---
+
 ## Tech Stack
 
 This project implements a production-ready architecture using the following technologies:
 
 * **Backend**: Python, FastAPI (Asynchronous API, SSE Streaming)
 * **AI Framework**: LangChain (Multi-agent Orchestration, Tool Binding)
-* **LLM**: OpenAI GPT-4o / GPT-4o-mini
+* **LLM**: OpenAI GPT-4o / GPT-4o-mini → Fine-tuned Llama-3-8B (QLoRA)
+* **Fine-tuning**: Unsloth + TRL SFTTrainer, QLoRA (4-bit), Vertex AI Custom Training
 * **Vector Database**: ChromaDB (RAG - Retrieval Augmented Generation)
 * **Frontend Interface**: React, Framer (Custom Code Components), TypeScript
 * **Data Processing**: Pandas (CSV), PyPDF (Extraction), Python-docx (Word Generation)
-* **Infrastructure**: **GCP Cloud Run** (Serverless Container Platform), **Google Artifact Registry**
+* **Infrastructure**: **GCP Cloud Run** (Serverless), **Vertex AI** (Custom Training), **Google Artifact Registry**
 * **CI/CD**: **GitHub Actions** (Automated build and deployment pipeline)
 
 ---
