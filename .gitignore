@@ -50,3 +50,12 @@ brain/
 # Secrets — never commit
 job.json
 *_job.json
+
+# Temp / debug files
+*.txt
+tmp_*.json
+test_*.py
+SESSION_HISTORY.md
+
+# Claude internal
+.claude/
