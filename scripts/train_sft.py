@@ -79,10 +79,14 @@ def format_training_example(example: dict) -> str:
     response = json.dumps(analysis, ensure_ascii=False, indent=2)
 
     items_str = json.dumps(inp.get("inventory", []), ensure_ascii=False)
+    inventory = inp.get("inventory", [])
+    # Use "SupplierName" key — matches the actual data schema
+    # (was "supplier" lowercase → always returned "Unknown", causing SFT to train on Wrong supplier info)
+    supplier = inventory[0].get("SupplierName", "Unknown") if inventory else "Unknown"
 
     return PROMPT_TEMPLATE.format(
         instruction=example.get("instruction", "Analyze the purchasing data."),
-        supplier=inp.get("inventory", [{}])[0].get("supplier", "Unknown") if inp.get("inventory") else "Unknown",
+        supplier=supplier,
         items=items_str,
         supplier_history=inp.get("supplier_history", "No supplier history available."),
         item_history=inp.get("item_history", "No item history available."),
