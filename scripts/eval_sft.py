@@ -114,7 +114,7 @@ def load_finetuned_model(adapter_path: str):
     return model, tokenizer
 
 
-def run_llama_inference(model, tokenizer, prompt: str, max_new_tokens: int = 1024) -> str:
+def run_llama_inference(model, tokenizer, prompt: str, max_new_tokens: int = 900) -> str:
     inputs = tokenizer(prompt, return_tensors="pt").to("cuda" if torch.cuda.is_available() else "cpu")
     with torch.no_grad():
         outputs = model.generate(
@@ -154,16 +154,25 @@ def run_gpt4o_inference(prompt: str) -> str:
 # ── Scoring ────────────────────────────────────────────────────────────────────
 
 def is_valid_json(text: str) -> tuple[bool, dict | None]:
-    """Try to parse JSON, handling code fences."""
+    """Try to parse JSON, handling code fences and trailing text (mirrors production _extract_json_from_text)."""
     text = text.strip()
     # Strip markdown code fences if present
     if text.startswith("```"):
         lines = text.splitlines()
         text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+    # Direct parse first
     try:
         return True, json.loads(text)
     except json.JSONDecodeError:
-        return False, None
+        pass
+    # Extract first JSON object (handles over-generation / trailing text)
+    m = re.search(r"(\{[\s\S]*\})", text)
+    if m:
+        try:
+            return True, json.loads(m.group(1))
+        except json.JSONDecodeError:
+            pass
+    return False, None
 
 
 def score_with_gpt4o(prompt: str, reference: dict, candidate: str, model_name: str) -> dict:
@@ -177,10 +186,10 @@ def score_with_gpt4o(prompt: str, reference: dict, candidate: str, model_name: s
 {prompt}
 
 === Reference (GPT-4o ground truth) ===
-{json.dumps(reference, ensure_ascii=False, indent=2)[:2000]}
+{json.dumps(reference, ensure_ascii=False, indent=2)[:3000]}
 
 === Candidate Response ({model_name}) ===
-{candidate[:2000]}
+{candidate[:3000]}
 
 Evaluate:
 1. data_accuracy (1-10): Does the candidate correctly reference the supplier names, item codes, stock levels, and risk levels from the input?
