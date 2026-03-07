@@ -59,3 +59,8 @@ SESSION_HISTORY.md
 
 # Claude internal
 .claude/
+
+# Internal planning docs (personal reference only)
+docs/task.md
+docs/implementation_plan.md
+docs/project_overview.md
