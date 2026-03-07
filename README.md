@@ -1,6 +1,6 @@
-# Purchasing Automation Suite (FastAPI + LLM + Docker)
+# Purchasing Automation Suite (FastAPI + LangGraph + Docker)
 
-This project is an **enterprise-grade AI solution** designed to automate the end-to-end purchasing workflow. By combining a high-performance **FastAPI** backend with a **LangChain Multi-agent** architecture, it transforms raw inventory data into deep analytical reports and ready-to-use procurement documents.
+This project is an **enterprise-grade AI solution** designed to automate the end-to-end purchasing workflow. By combining a high-performance **FastAPI** backend with a **LangGraph Multi-agent** architecture, it transforms raw inventory data into deep analytical reports and ready-to-use procurement documents.
 
 It demonstrates how **CSV-based stock snapshots, supplier and item history documents, and structured examples** are orchestrated through a multi-agent LLM pipeline to produce:
 
@@ -30,11 +30,13 @@ This evolution demonstrates:
 
 ---
 
-## SFT Fine-Tuning: Llama-3-8B with QLoRA
+## Fine-Tuning Research: SFT + DPO on Llama-3-8B
 
-To reduce inference cost and latency, the GPT-4o purchasing analysis agent was distilled into a fine-tuned **Llama-3-8B** model via QLoRA (4-bit quantization + LoRA adapters) using [Unsloth](https://github.com/unslothai/unsloth).
+To validate replacing the GPT-4o Analysis Agent with a self-hosted model, a two-stage fine-tuning pipeline was built on Vertex AI using GPT-4o knowledge distillation.
 
-### Training Results
+### Stage 1: SFT (Supervised Fine-Tuning)
+
+Fine-tuned **Llama-3-8B** via QLoRA (4-bit quantization + LoRA adapters) using [Unsloth](https://github.com/unslothai/unsloth).
 
 | Epoch | Loss   |
 |-------|--------|
@@ -46,34 +48,44 @@ To reduce inference cost and latency, the GPT-4o purchasing analysis agent was d
 
 - **Runtime**: 367s on a single NVIDIA Tesla T4 (Vertex AI Custom Training)
 - **Trainable parameters**: ~41M / 8B (0.51% — LoRA rank 16)
-- **Dataset**: 12 teacher examples distilled from GPT-4o with avg quality score 9.2/10
+- **Dataset**: 12 teacher examples distilled from GPT-4o
 - **Artifact**: `gs://purchasing-automation-models/sft-runs/lora_adapter/`
 - **Experiment tracking**: [W&B — purchasing-automation-sft](https://wandb.ai/msm1640-/purchasing-automation-sft)
 
-### Evaluation: Llama-3-8B SFT vs GPT-4o Baseline
+### Stage 2: DPO (Direct Preference Optimization)
 
-Evaluated on 5 holdout examples using GPT-4o-as-judge (data accuracy + reasoning quality, scored 1–10).
+Generated 25 preference pairs (chosen: GPT-4o output, rejected: SFT output) and ran DPO alignment training on the SFT adapter.
+
+- **Runtime**: ~14 min on NVIDIA Tesla T4
+- **Artifact**: `gs://purchasing-automation-models/dpo-runs/lora_adapter/`
+- **Experiment tracking**: [W&B — purchasing-automation-dpo](https://wandb.ai/msm1640-/purchasing-automation-dpo)
+
+### Before/After Evaluation
+
+Evaluated on 5 holdout examples using GPT-4o-as-judge (data_accuracy + reasoning_quality, scored 1–10 against GPT-4o ground truth as reference).
 
 | Model | Avg Score | JSON Valid |
 |-------|-----------|-----------|
-| GPT-4o (baseline) | 9.3 / 10 | 100% |
-| **Llama-3-8B SFT** | **7.0 / 10** | **80%** |
+| Base Llama-3-8B (no fine-tuning) | 0.0 / 10 | 0% |
+| **Llama-3-8B SFT** | **9.3 / 10** | **100%** |
+| Llama-3-8B SFT+DPO | 7.4 / 10 | 100% |
+| GPT-4o (reference ceiling) | 10.0 / 10 | 100% |
 
-- Valid outputs averaged **8.75 / 10** — near GPT-4o quality
-- Correctly references supplier names, item codes, stock levels, and risk levels
-- Gap areas: replenishment quantity/timing detail and depth of critical questions
-- Merged model (fp16): `gs://purchasing-automation-models/gguf/`
-- Eval results: `gs://purchasing-automation-models/eval-results/eval_20260305_0613.json`
+- SFT reached **93% of GPT-4o quality** — validates local model viability
+- DPO regressed (9.3 → 7.4): only 7 training pairs available; model retained data accuracy (8–9) but lost reasoning depth — a known limitation of DPO on small datasets
+- Eval results: `gs://purchasing-automation-models/eval-results/eval_dpo_20260306_0549.json`
 
 ### Infrastructure
 
 | Component | Detail |
 |-----------|--------|
 | Base image | `pytorch/pytorch:2.6.0-cuda12.4-cudnn9-devel` |
-| Fine-tuning framework | Unsloth 2026.3 + TRL SFTTrainer |
+| SFT framework | Unsloth 2026.3 + TRL SFTTrainer |
+| DPO framework | Unsloth + PatchDPOTrainer() + TRL DPOTrainer |
 | GPU | NVIDIA Tesla T4 (16GB VRAM) |
 | Build | GCP Cloud Build (E2_HIGHCPU_8, ~4 min) |
 | Artifact storage | Google Cloud Storage |
+| Experiment tracking | Weights & Biases (W&B) |
 
 ---
 
@@ -82,9 +94,9 @@ Evaluated on 5 holdout examples using GPT-4o-as-judge (data accuracy + reasoning
 This project implements a production-ready architecture using the following technologies:
 
 * **Backend**: Python, FastAPI (Asynchronous API, SSE Streaming)
-* **AI Framework**: LangChain (Multi-agent Orchestration, Tool Binding)
+* **AI Framework**: LangGraph (Multi-agent Orchestration), LangChain (Tool Binding), LangSmith (LLMOps)
 * **LLM**: OpenAI GPT-4o / GPT-4o-mini → Fine-tuned Llama-3-8B (QLoRA)
-* **Fine-tuning**: Unsloth + TRL SFTTrainer, QLoRA (4-bit), Vertex AI Custom Training
+* **Fine-tuning**: Unsloth + TRL SFTTrainer/DPOTrainer, QLoRA (4-bit), Vertex AI Custom Training, W&B
 * **Vector Database**: ChromaDB (RAG - Retrieval Augmented Generation)
 * **Frontend Interface**: React, Framer (Custom Code Components), TypeScript
 * **Data Processing**: Pandas (CSV), PyPDF (Extraction), Python-docx (Word Generation)
@@ -164,7 +176,9 @@ The API will be available at `http://localhost:8080`. You can explore the intera
 * **routers/**: API Layer (Pipeline, Ingest, Output)
 * **services/**: Business Logic (AI Agents, Vector Store, Security, Grouping)
 * **utils/**: Utilities (CSV Parsing, PDF Extraction, Word Generation)
-* **docs/**: Project documentation and **Sample Dataset (Examples.zip)**
+* **scripts/**: Fine-tuning pipeline (`train_sft.py`, `train_dpo.py`, `generate_dpo_pairs.py`, `eval_dpo.py`)
+* **training_data/**: GPT-4o distilled teacher dataset (JSONL)
+* **docs/**: Project documentation, walkthrough, and **Sample Dataset (Examples.zip)**
 * **.env.example**: Template for environment variables
 * **.github/workflows/deploy.yml**: CI/CD pipeline configuration
 * **Dockerfile**: Containerization configuration for Cloud Run (Port 8080)
