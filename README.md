@@ -48,7 +48,7 @@ Fine-tuned **Llama-3-8B** via QLoRA (4-bit quantization + LoRA adapters) using [
 
 - **Runtime**: 367s on a single NVIDIA Tesla T4 (Vertex AI Custom Training)
 - **Trainable parameters**: ~41M / 8B (0.51% — LoRA rank 16)
-- **Dataset**: 12 teacher examples distilled from GPT-4o
+- **Dataset**: 30 teacher examples distilled from GPT-4o
 - **Artifact**: `gs://purchasing-automation-models/sft-runs/lora_adapter/`
 - **Experiment tracking**: [W&B — purchasing-automation-sft](https://wandb.ai/msm1640-/purchasing-automation-sft)
 
