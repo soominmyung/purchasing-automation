@@ -46,6 +46,10 @@ DATASET_PATH = os.environ.get(
 )
 OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "models/llama3-purchasing-sft")
 
+# Reserve the last N examples as a holdout evaluation set (matches eval_sft.py).
+# Excluded from training to prevent train/eval leakage.
+HOLDOUT_SIZE = int(os.environ.get("HOLDOUT_SIZE", "5"))
+
 # W&B
 WANDB_PROJECT = os.environ.get("WANDB_PROJECT", "purchasing-automation-sft")
 WANDB_RUN_NAME = f"sft-llama3-8b-{datetime.now().strftime('%Y%m%d-%H%M')}"
@@ -96,18 +100,27 @@ def format_training_example(example: dict) -> str:
 
 # ── Data Loading ───────────────────────────────────────────────────────────────
 
-def load_dataset_from_jsonl(path: str) -> Dataset:
-    """Load teacher dataset JSONL and convert to HuggingFace Dataset."""
+def load_dataset_from_jsonl(path: str, holdout_size: int = 0) -> Dataset:
+    """Load teacher dataset JSONL and convert to HuggingFace Dataset.
+
+    The last `holdout_size` examples are reserved for evaluation (see eval_sft.py)
+    and excluded from training to avoid train/eval leakage.
+    """
     examples = []
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
             if line.strip():
                 examples.append(json.loads(line))
 
+    total = len(examples)
+    if holdout_size > 0 and total > holdout_size:
+        examples = examples[:-holdout_size]
+        print(f"Reserved last {holdout_size} example(s) as holdout — excluded from training.")
+
     formatted = [{"text": format_training_example(ex)} for ex in examples]
     dataset = Dataset.from_list(formatted)
 
-    print(f"Loaded {len(dataset)} training examples from {path}")
+    print(f"Loaded {len(dataset)} training examples from {path} (of {total} total)")
     print(f"Sample (first 300 chars):\n{formatted[0]['text'][:300]}...")
     return dataset
 
@@ -240,8 +253,8 @@ def main():
     print("SFT Training: Llama-3-8B for Purchasing Analysis")
     print("=" * 60)
 
-    # 1. Load data
-    dataset = load_dataset_from_jsonl(DATASET_PATH)
+    # 1. Load data (exclude holdout so eval_sft.py's holdout is unseen during training)
+    dataset = load_dataset_from_jsonl(DATASET_PATH, holdout_size=HOLDOUT_SIZE)
 
     # 2. Setup model with QLoRA
     model, tokenizer = setup_model()
