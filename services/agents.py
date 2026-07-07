@@ -74,7 +74,8 @@ def run_analysis_agent(
     """
     Analysis Agent: input = { snapshot_date, supplier, items[] }.
     Tools: supplier_history, item_history (unless overridden).
-    Output: { purchasing_report_markdown, critical_questions[], replenishment_timeline[] }.
+    Returns: (analysis_dict, used_supplier_history, used_item_history) — the history
+    texts are the exact tool outputs the analysis was grounded in, for the Evaluator.
     """
     llm = _llm().bind_tools([supplier_history, item_history])
     user_text = json.dumps(input_json, ensure_ascii=False)
@@ -82,9 +83,17 @@ def run_analysis_agent(
         SystemMessage(content=ANALYSIS_AGENT_SYSTEM),
         HumanMessage(content=user_text),
     ]
-    
+
+    # Track the history text actually used, so the Evaluation Agent can
+    # cross-reference the analysis against the SAME source it was grounded in
+    # (otherwise grounded claims get flagged as hallucinations).
+    used_supplier_history = ""
+    used_item_history = ""
+
     # Synthetic history injection for training or testing
     if supplier_history_override or item_history_override:
+        used_supplier_history = supplier_history_override or ""
+        used_item_history = item_history_override or ""
         # Manually construct tool results
         synthetic_results = []
         fake_tool_calls_list = []
@@ -117,9 +126,11 @@ def run_analysis_agent(
                 
                 if t_name == "supplier_history":
                     t_out = supplier_history.invoke(t_args.get("query", str(input_json.get("supplier", ""))))
+                    used_supplier_history = str(t_out)
                 elif t_name == "item_history":
                     t_query = t_args.get("query", " ".join(f"item_code: {i.get('item_code')}" for i in input_json.get("items", [])))
                     t_out = item_history.invoke(t_query)
+                    used_item_history = str(t_out)
                 else:
                     t_out = ""
                 
@@ -132,13 +143,14 @@ def run_analysis_agent(
 
     final_text = final_response.content if hasattr(final_response, "content") else str(final_response)
     try:
-        return _extract_json_from_text(final_text)
+        analysis = _extract_json_from_text(final_text)
     except Exception:
-        return {
+        analysis = {
             "purchasing_report_markdown": final_text,
             "critical_questions": [],
             "replenishment_timeline": input_json.get("items", []),
         }
+    return analysis, used_supplier_history, used_item_history
 
 
 def run_report_doc_agent(analysis_result: dict[str, Any]) -> str:
@@ -278,18 +290,27 @@ class PurchasingState(TypedDict):
     supplier_history_override: str
     item_history_override: str
 
+    # History actually used by the Analysis Agent (tool output or override),
+    # passed to the Evaluation Agent to verify grounding.
+    retrieved_supplier_history: str
+    retrieved_item_history: str
+
 def analysis_node(state: PurchasingState):
     input_json = {
         "snapshot_date": state["snapshot_date"],
         "supplier": state["supplier"],
         "items": state["items"],
     }
-    out = run_analysis_agent(
-        input_json, 
+    out, used_supplier_history, used_item_history = run_analysis_agent(
+        input_json,
         supplier_history_override=state.get("supplier_history_override"),
         item_history_override=state.get("item_history_override")
     )
-    return {"analysis_output": out}
+    return {
+        "analysis_output": out,
+        "retrieved_supplier_history": used_supplier_history,
+        "retrieved_item_history": used_item_history,
+    }
 
 def evaluation_node(state: PurchasingState):
     """Node that evaluates the quality of analysis output."""
@@ -297,8 +318,8 @@ def evaluation_node(state: PurchasingState):
         state["supplier"],
         state["items"],
         state["analysis_output"],
-        supplier_history=state.get("supplier_history_override"),
-        item_history=state.get("item_history_override"),
+        supplier_history=state.get("retrieved_supplier_history") or state.get("supplier_history_override"),
+        item_history=state.get("retrieved_item_history") or state.get("item_history_override"),
     )
     return {"evaluation_md": out}
 
