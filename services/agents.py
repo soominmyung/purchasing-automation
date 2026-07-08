@@ -125,12 +125,23 @@ def run_analysis_agent(
                 t_id = (tc.get("id") if isinstance(tc, dict) else getattr(tc, "id", "")) or ""
                 
                 if t_name == "supplier_history":
-                    t_out = supplier_history.invoke(t_args.get("query", str(input_json.get("supplier", ""))))
-                    used_supplier_history = str(t_out)
+                    t_query = t_args.get("query", str(input_json.get("supplier", "")))
+                    supplier_name = str(input_json.get("supplier", ""))
+                    docs = search_supplier_history(
+                        t_query, k=5,
+                        filter={"supplier_name": supplier_name} if supplier_name else None,
+                    )
+                    t_out = "\n\n".join(d.page_content for d in docs) if docs else "No supplier history found."
+                    used_supplier_history = t_out
                 elif t_name == "item_history":
-                    t_query = t_args.get("query", " ".join(f"item_code: {i.get('item_code')}" for i in input_json.get("items", [])))
-                    t_out = item_history.invoke(t_query)
-                    used_item_history = str(t_out)
+                    item_codes = [str(i.get("item_code")) for i in input_json.get("items", []) if i.get("item_code")]
+                    t_query = t_args.get("query", " ".join(f"item_code: {c}" for c in item_codes))
+                    docs = search_item_history(
+                        t_query, k=5,
+                        filter={"item_code": {"$in": item_codes}} if item_codes else None,
+                    )
+                    t_out = "\n\n".join(d.page_content for d in docs) if docs else "No item history found."
+                    used_item_history = t_out
                 else:
                     t_out = ""
                 

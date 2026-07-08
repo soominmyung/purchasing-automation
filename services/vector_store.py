@@ -99,14 +99,14 @@ def ingest_email_examples(text: str) -> None:
     )
 
 
-def search_supplier_history(query: str, k: int = 5) -> list[Document]:
+def search_supplier_history(query: str, k: int = 5, filter: dict[str, Any] | None = None) -> list[Document]:
     store = _get_or_create_store("supplier_history")
-    return store.similarity_search(query, k=k)
+    return store.similarity_search(query, k=k, filter=filter)
 
 
-def search_item_history(query: str, k: int = 5) -> list[Document]:
+def search_item_history(query: str, k: int = 5, filter: dict[str, Any] | None = None) -> list[Document]:
     store = _get_or_create_store("item_history")
-    return store.similarity_search(query, k=k)
+    return store.similarity_search(query, k=k, filter=filter)
 
 
 def search_analysis_examples(query: str, k: int = 3) -> list[Document]:

@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ko" xml:lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>구매 자동화 시스템 — 포트폴리오</title>
+  <style>
+    html {
+      line-height: 1.5;
+      font-family: Georgia, serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      word-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 1em;
+      }
+    }
+    @media print {
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
+      font-size: 85%;
+      margin: 0;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <style>
+    :root {
+      --ink: #1f252b;
+      --muted: #535f6a;
+      --soft: #7a858f;
+      --paper: #ffffff;
+      --canvas: #eef1f0;
+      --line: #dce2e0;
+      --line-strong: #b7c3c0;
+      --charcoal: #24303a;
+      --navy: #21384d;
+      --blue: #2f6f95;
+      --teal: #167e70;
+      --amber: #a66f2d;
+      --red: #a84b49;
+      --blue-soft: #eff5f8;
+      --teal-soft: #eef7f4;
+      --amber-soft: #fbf4e8;
+      --stone: #f7f8f7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 15mm 15mm 16mm 15mm;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      background: var(--canvas);
+    }
+
+    body {
+      width: 210mm;
+      min-height: 297mm;
+      max-width: none;
+      margin: 18px auto;
+      padding: 15mm;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(31, 37, 43, 0.14);
+      color: var(--ink);
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 10.2pt;
+      line-height: 1.68;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: var(--ink);
+      line-height: 1.28;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h1 {
+      margin: 0 0 6.5mm 0;
+      padding: 8.5mm 10mm 8mm;
+      color: #ffffff;
+      background: var(--charcoal);
+      border-left: 5mm solid var(--teal);
+      border-radius: 6px;
+      box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.16);
+      font-size: 20.4pt;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    h1 .title-main,
+    h1 .title-sub {
+      display: block;
+    }
+
+    h1 .title-sub {
+      margin-top: 2.2mm;
+      color: #d7e5e2;
+      font-size: 11.8pt;
+      font-weight: 650;
+      letter-spacing: 0.01em;
+    }
+
+    h1 + p,
+    h1 + p + p {
+      color: #344150;
+      font-size: 10.7pt;
+      line-height: 1.72;
+      margin-right: 2mm;
+    }
+
+    h2 {
+      margin: 10mm 0 4mm;
+      padding: 0 0 0 3.6mm;
+      border-left: 4px solid var(--blue);
+      font-size: 14.2pt;
+      font-weight: 800;
+    }
+
+    h3 {
+      margin: 6.5mm 0 2.5mm;
+      color: var(--blue);
+      font-size: 11.2pt;
+      font-weight: 800;
+    }
+
+    p {
+      margin: 0 0 3.2mm;
+      color: var(--muted);
+    }
+
+    strong {
+      color: var(--ink);
+      font-weight: 800;
+    }
+
+    a {
+      color: var(--blue);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(37, 99, 169, 0.35);
+    }
+
+    blockquote {
+      margin: 5mm 0 7mm;
+      padding: 3.3mm 4.6mm;
+      background: var(--stone);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+
+    blockquote p {
+      margin: 0;
+      color: #34414c;
+      font-size: 9.5pt;
+    }
+
+    blockquote p + p {
+      margin-top: 1.6mm;
+      padding-top: 1.6mm;
+      border-top: 1px solid var(--line);
+    }
+
+    hr {
+      margin: 8mm 0 2mm;
+      border: 0;
+      border-top: 1px solid var(--line);
+    }
+
+    ul,
+    ol {
+      margin: 2.5mm 0 4.5mm;
+      padding-left: 6mm;
+      color: var(--muted);
+    }
+
+    li {
+      margin: 0 0 2.1mm;
+      padding-left: 0.7mm;
+    }
+
+    li::marker {
+      color: var(--blue);
+      font-weight: 700;
+    }
+
+    li > ul,
+    li > ol {
+      margin-top: 2mm;
+      margin-bottom: 1mm;
+    }
+
+    table {
+      width: 100%;
+      margin: 4mm 0 6mm;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      overflow: hidden;
+      font-size: 9.4pt;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    th,
+    td {
+      padding: 2.6mm 3.2mm;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--charcoal);
+      color: #ffffff;
+      font-weight: 800;
+      text-align: left;
+    }
+
+    tr:nth-child(even) td {
+      background: #fafbfa;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    td:first-child {
+      color: var(--blue);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    h2 + table {
+      background: #fbfcfb;
+    }
+
+    h2 + table td:first-child {
+      width: 32mm;
+      background: #eef3f1;
+    }
+
+    code {
+      padding: 0.15em 0.42em;
+      border-radius: 4px;
+      background: #eef2f1;
+      color: #2e4552;
+      font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+      font-size: 0.9em;
+    }
+
+    pre {
+      margin: 4mm 0 6mm;
+      padding: 5mm 6mm;
+      background:
+        linear-gradient(90deg, rgba(37, 99, 169, 0.08), transparent 34%),
+        #f7fafc;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--teal);
+      border-radius: 8px;
+      color: #243342;
+      font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+      font-size: 8.7pt;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .pipeline-diagram {
+      margin: 4.5mm 0 6mm;
+      padding: 3.4mm;
+      background: #f8faf9;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      page-break-inside: auto;
+      break-inside: auto;
+    }
+
+    .pipeline-input {
+      display: flex;
+      align-items: baseline;
+      gap: 2.6mm;
+      margin-bottom: 2.2mm;
+      padding: 2.1mm 3mm;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--ink);
+      font-size: 9.6pt;
+      font-weight: 700;
+    }
+
+    .pipeline-label {
+      color: var(--teal);
+      font-size: 8.7pt;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+
+    .pipeline-steps {
+      display: grid;
+      gap: 1.35mm;
+      position: relative;
+    }
+
+    .pipeline-step {
+      display: grid;
+      grid-template-columns: 10.5mm 1fr auto;
+      align-items: center;
+      gap: 2.6mm;
+      padding: 2.25mm 3mm;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: 0 1px 0 rgba(31, 37, 43, 0.04);
+      position: relative;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .pipeline-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      left: 6.85mm;
+      bottom: -1.45mm;
+      width: 1px;
+      height: 1.4mm;
+      background: var(--line-strong);
+    }
+
+    .pipeline-step .step-no {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 7.4mm;
+      height: 7.4mm;
+      border-radius: 50%;
+      background: var(--charcoal);
+      color: #ffffff;
+      font-size: 7.5pt;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pipeline-step strong {
+      display: block;
+      margin-bottom: 0.4mm;
+      color: var(--ink);
+      font-size: 9.9pt;
+    }
+
+    .pipeline-step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 8.95pt;
+      line-height: 1.36;
+    }
+
+    .pipeline-step .tag {
+      align-self: center;
+      padding: 1.1mm 2.2mm;
+      border-radius: 999px;
+      background: var(--amber-soft);
+      color: #7a4d15;
+      font-size: 7.3pt;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .pipeline-step.calc .step-no {
+      background: var(--amber);
+    }
+
+    .pipeline-step.verify .step-no {
+      background: var(--teal);
+    }
+
+    section.level2 {
+      margin-top: 0;
+    }
+
+    section.level2:nth-of-type(3n + 1) h2 {
+      border-left-color: var(--teal);
+    }
+
+    section.level2:nth-of-type(3n + 2) h2 {
+      border-left-color: var(--amber);
+    }
+
+    section.level2:nth-of-type(3n) h2 {
+      border-left-color: var(--blue);
+    }
+
+    section.level3 {
+      margin-top: 0;
+    }
+
+    #평가-gpt-4o-as-judge-홀드아웃-5개 + table th:nth-child(2),
+    #평가-gpt-4o-as-judge-홀드아웃-5개 + table th:nth-child(3),
+    #평가-gpt-4o-as-judge-홀드아웃-5개 + table td:nth-child(2),
+    #평가-gpt-4o-as-judge-홀드아웃-5개 + table td:nth-child(3) {
+      text-align: center;
+    }
+
+    #기술-스택 + table td:first-child {
+      width: 36mm;
+    }
+
+    p,
+    li,
+    td {
+      orphans: 2;
+      widows: 2;
+    }
+
+    @media print {
+      html,
+      body {
+        background: #ffffff;
+      }
+
+      body {
+        width: auto;
+        min-height: 0;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+
+      h1 {
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+<section id="구매-자동화-시스템-purchasing-automation-suite" class="level1">
+<h1><span class="title-main">구매 자동화 시스템</span><span class="title-sub">(Purchasing Automation Suite)</span></h1>
+<p>재고 스냅샷과 공급업체·아이템 히스토리 컨텍스트를 RAG로 함께 분석해, 구매 담당자들이 수작업으로 하던 재고 검토와 문서 작성을 대신하는 멀티 에이전트 LLM 파이프라인.</p>
+<p>특히 단순 재고 확인에 그치지 않고, 공급업체의 <strong>납기 준수·배송 지연 이력, 거래·협상 내역, 통관·규제·안전 이슈</strong>부터 해당 품목의 <strong>시장 퍼포먼스와 품목별 문제 이력</strong>까지 — 여러 문서에 흩어져 있던 관련 맥락을 RAG을 통해 자동으로 끌어와 분석합니다. 이러한 컨텍스트 분석 결과를 토대로 <strong>공급업체별 분석 보고서·구매 요청서·이메일 초안을 자동 생성</strong>하며, <strong>분석 결과의 품질·신뢰성을 자체적으로 검수해 품질 평가 보고서도 함께 생성</strong>합니다.</p>
+<blockquote>
+<p>데모: https://soominmyung.com/purchasing-automation</p>
+<p>소스: https://github.com/soominmyung/purchasing-automation</p>
+</blockquote>
+<hr />
+<section id="한눈에-보기" class="level2">
+<h2>한눈에 보기</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>기간</strong></td>
+<td style="text-align: left;">2025년 10월 – 2025년 12월</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>역할</strong></td>
+<td style="text-align: left;">단독 프로젝트 — 아키텍처 설계, 개발, 배포</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>분야</strong></td>
+<td style="text-align: left;">구매 / 공급망 자동화</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>핵심 스택</strong></td>
+<td style="text-align: left;">Python, FastAPI, LangGraph, ChromaDB, GPT-4o, Docker, GCP Cloud Run</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>출발점</strong></td>
+<td style="text-align: left;">n8n 로우코드 프로토타입 → Python 서비스로 재설계</td>
+</tr>
+</tbody>
+</table>
+<hr />
+</section>
+<section id="문제" class="level2">
+<h2>문제</h2>
+<p>구매 담당자는 수백 건의 SKU 단위 재고 데이터를 검토하고, 이를 토대로 분석 보고서·구매 요청서·공급업체 이메일 같은 문서를 작성하는 데 상당한 수작업을 들입니다.</p>
+<p>문제는 이 과정이 <strong>사람의 상황에 크게 좌우된다</strong>는 점입니다. 바쁜 일정이나 담당자의 숙련도 등의 이슈로 인해 <strong>공급업체의 납기·품질 이력, 과거 협상 조건, 통관·규제·안전 이슈, 품목의 시장 반응</strong>처럼 여러 문서에 흩어진 근거 자료를 미처 다 확인하지 못하면 — 그 결과는 곧 비효율적인 발주 및 잠재적 이윤 손실로 이어집니다.</p>
+</section>
+<section id="무엇을-하는가" class="level2">
+<h2>무엇을 하는가</h2>
+<p>재고 스냅샷을 입력받으면 시스템이 네 가지 결과물을 자동으로 생성합니다.</p>
+<ol type="1">
+<li><strong>구매 분석 보고서</strong> — 공급업체별로 그룹화된 재고 리스크 평가</li>
+<li><strong>품질 평가 보고서</strong> — 별도 에이전트가 분석 결과의 데이터·논리 일관성을 감사</li>
+<li><strong>구매 요청서(Purchasing Request, PR)</strong> — 승인 절차용으로 공급업체별 서식화</li>
+<li><strong>공급업체 이메일 초안</strong> — 납기·재고 가용성 문의용 외부 커뮤니케이션</li>
+</ol>
+<p>재고 스냅샷은 재고 부족이 우려되는 품목을 추린 CSV로 입력되고, 공급업체·아이템 이력 문서는 업로드해 벡터 DB에 임베딩한 뒤 분석 단계에서 자동으로 검색됩니다.</p>
+<hr />
+</section>
+<section id="아키텍처" class="level2">
+<h2>아키텍처</h2>
+<section id="출발점-n8n-프로토타입에서-프로덕션-코드로" class="level3">
+<h3>출발점 — n8n 프로토타입에서 프로덕션 코드로</h3>
+<p>처음에는 <strong>n8n</strong> 로우코드 워크플로우로 개념을 빠르게 검증했습니다. 노드를 연결해 “CSV → 그룹화 → LLM 분석 → 문서 생성”의 흐름이 실제로 동작하는지 확인하는 단계였습니다.</p>
+<p>검증이 끝난 뒤, 복잡한 분기 로직·상태 관리·컨테이너 배포를 구현하기 위해 전체를 <strong>Python(FastAPI + LangGraph)</strong>으로 재설계했습니다. 이 과정에서 노드 기반 흐름을 비동기 API와 상태 그래프로 옮기고, API 키 인증·스트리밍을 갖춘 배포 가능한 서비스로 다듬었으며, 공개 데모는 CI/CD(GitHub Actions → Cloud Run)까지 구성했습니다 (실제 운영은 회사 로컬 서버 구동).</p>
+</section>
+<section id="멀티-에이전트-파이프라인-langgraph" class="level3">
+<h3>멀티 에이전트 파이프라인 (LangGraph)</h3>
+<p>5개의 특화된 에이전트를 LangGraph 상태 그래프로 연결하고, 검증 노드에서 필요 시 이전 단계로 되돌아가 재작성합니다.</p>
+<div class="pipeline-diagram">
+<div class="pipeline-input"><span class="pipeline-label">입력</span><span>재고 스냅샷(CSV) + 공급업체 컨텍스트</span></div>
+<div class="pipeline-steps">
+<div class="pipeline-step calc"><span class="step-no">01</span><div><strong>공급업체 그룹화</strong><p>리드 타임 기반 우선순위 계산</p></div><span class="tag">결정론적 파이썬 산식, LLM 미사용</span></div>
+<div class="pipeline-step"><span class="step-no">02</span><div><strong>분석 에이전트</strong><p>재고 리스크 분석 + RAG 컨텍스트 검색</p></div></div>
+<div class="pipeline-step"><span class="step-no">03</span><div><strong>평가 에이전트</strong><p>자동 품질 감사 (논리·데이터 일관성)</p></div></div>
+<div class="pipeline-step"><span class="step-no">04</span><div><strong>PR 초안 에이전트</strong><p>구매 요청서 초안</p></div></div>
+<div class="pipeline-step"><span class="step-no">05</span><div><strong>PR 문서 에이전트</strong><p>정식 구매 요청 문서</p></div></div>
+<div class="pipeline-step"><span class="step-no">06</span><div><strong>이메일 에이전트</strong><p>공급업체용 이메일 초안</p></div></div>
+<div class="pipeline-step verify"><span class="step-no">07</span><div><strong>검증 노드</strong><p>민감정보 유출 검사 → 자동 재작성 루프</p></div></div>
+</div>
+</div>
+</section>
+<section id="핵심-구성-요소" class="level3">
+<h3>핵심 구성 요소</h3>
+<p><strong>RAG 지식 베이스 (ChromaDB)</strong> 공급업체 기록과 아이템 이력 PDF를 임베딩해 분석 중 자동으로 검색합니다. 인제스트 시점에 정규식으로 메타데이터(공급업체명, 아이템 코드)를 추출해 검색 범위를 정밀하게 좁힙니다. 개별 PDF는 물론 ZIP 아카이브 대량 업로드도 지원합니다.</p>
+<p><strong>자기 교정 루프</strong> 이메일 결과물은 검증 노드를 거치며 내부 정보 유출 여부를 점검합니다. 유출이 감지되면 그대로 반환하지 않고 그래프가 초안 재생성으로 되돌아갑니다.</p>
+<p><strong>실시간 스트리밍 (SSE)</strong> 단일 요청-응답 대신, 파이프라인 각 단계(CSV 파싱 → 그룹화 → 분석 → 문서 생성)의 진행 상황을 Server-Sent Events로 클라이언트에 실시간 전송함으로써 사용자에게 “지금 어느 단계인지”를 실시간으로 보여주고, 오류 발생 시에도 즉시 알릴 수 있습니다.</p>
+<p><strong>하이브리드 설계 — 결정론적 계산과 LLM 추론의 역할 분리</strong> 공급업체 그룹화 단계에서 <code>WksToOOS</code>(품절까지 남은 주 수)와 <code>CurrentStock</code>을 바탕으로 권장 발주일과 수량을 파이썬 산식으로 계산합니다. 날짜·수량처럼 정확도가 중요한 값은 LLM 추론에 맡기지 않고 결정론적 코드로 처리해 할루시네이션 리스크를 없앴고, LLM은 그 결과를 받아 우선순위가 정리된 구조화 데이터를 대상으로 리스크 해석과 문서 작성에만 집중합니다.</p>
+<p><strong>보안 &amp; 관측성</strong> 보안: 공개 데모는 익명 사용자의 토큰 남용을 막기 위해 헤더 기반 API 키 인증(<code>X-API-Key</code>)과 IP 단위 요청 제한을 두었습니다. 사내 배포는 내부망 ID/PW 개인별 로그인을 구현했습니다. 관측성: LangSmith로 모든 노드의 토큰 사용량·지연·프롬프트 성능을 추적하고, LangChain 밖의 자체 로직도 <code>@traceable</code>로 계측합니다.</p>
+<p><strong>배포</strong> 공개 데모는 Docker 컨테이너로 GCP Cloud Run(서버리스, 스케일 투 제로)에 올려 누구나 접속할 수 있게 했고, CI/CD는 GitHub Actions로 구성해 <code>main</code> 브랜치에 푸시할 때마다 이미지를 빌드·자동 배포합니다. 실제 사내 운영에서는 SAP ERP가 상시 구동되는 24시간 로컬 서버에 앱을 상주시켜 내부망에서 팀이 사용하도록 구성했으며, 이 환경에서는 콜드 스타트나 벡터스토어 휘발성 문제가 없습니다.</p>
+<hr />
+</section>
+</section>
+<section id="파인튜닝-연구-llama-3-8b에-sft-dpo-적용" class="level2">
+<h2>파인튜닝 연구: Llama-3-8B에 SFT + DPO 적용</h2>
+<p>GPT-4o 분석 에이전트를 자체 호스팅 모델로 대체할 수 있는지를 테스트했습니다. 목적은 호출당 비용과 데이터 프라이버시 노출을 줄이는 것이고, 접근 방식은 GPT-4o의 지식을 Llama-3-8B로 증류(distillation)하는 것이었습니다.</p>
+<p><strong>학습 데이터</strong></p>
+<ul>
+<li><strong>데이터 출처</strong> — 실제 회사 데이터 대신 GPT-4o로 생성한 <strong>합성 구매 시나리오</strong>를 사용했습니다.</li>
+<li><strong>시나리오 구성</strong> — 재고 행(품목코드·품목명·공급업체·리스크 등급·현재고·품절까지 주수)과 공급업체·품목 이력(자연어)으로 구성됩니다.</li>
+<li><strong>다양성</strong> — 배송 지연·가격 급등·품질 이슈·수요 변동 같은 이력 패턴을 다양하게 담았습니다.</li>
+<li><strong>적대적(adversarial) 케이스 포함</strong> — 데이터 모순(재고는 많은데 품절 임박)·상충 맥락(신뢰 표기 vs 최근 실패)·모호한 이력·결측값 같은 케이스도 의도적으로 포함해 강건성을 높였습니다.</li>
+<li><strong>교사-학생 학습(distillation) 방식</strong> — 이 시나리오에 대해 GPT-4o(교사)가 만든 분석 결과(JSON: 분석 보고서·핵심 질문·보충 타임라인)를 정답으로 삼아 Llama가 이를 재현하도록 학습했습니다.</li>
+<li><strong>파인튜닝 범위</strong> — 파이프라인 전체가 아니라 대체하려는 <strong>분석 에이전트의 출력</strong>으로 한정했습니다.</li>
+</ul>
+<p><strong>1단계 — 지도 파인튜닝 (SFT)</strong></p>
+<ul>
+<li>Llama-3-8B + QLoRA (4-bit, LoRA rank 16 — 학습 파라미터 약 41M / 8B, 0.51%)</li>
+<li>교사 예제 30개 (GPT-4o가 시나리오별로 생성한 분석 JSON)</li>
+<li><strong>학습 데이터 형태</strong>: JSONL, <code>{instruction, input: {inventory, supplier_history, item_history}, output: {analysis: {...}}}</code> — 정답 라벨은 <code>output.analysis</code>(분석 보고서·핵심 질문·보충 타임라인)만 사용</li>
+<li>Vertex AI, Tesla T4 1장, 5 epoch, 367초</li>
+<li>학습 손실: 1.14 → 0.41</li>
+</ul>
+<p><strong>2단계 — 직접 선호 최적화 (DPO)</strong></p>
+<ul>
+<li>선호 쌍 25개 (홀드아웃 5개 제외; chosen: GPT-4o 출력, rejected: SFT 출력)</li>
+<li><strong>학습 데이터(선호 쌍) 형태</strong>: JSONL, <code>{prompt, chosen, rejected}</code> — <code>prompt</code>는 SFT와 동일한 템플릿(Response 제외), <code>chosen</code>은 GPT-4o 정답 analysis JSON, <code>rejected</code>는 동일 프롬프트에 대해 SFT 모델이 실제 생성한 출력</li>
+<li>Vertex AI, Tesla T4, 3 epoch, 약 14분</li>
+<li>Unsloth <code>PatchDPOTrainer()</code> + TRL <code>DPOTrainer</code></li>
+</ul>
+<section id="평가-gpt-4o-as-judge-홀드아웃-5개" class="level3">
+<h3>평가 (GPT-4o-as-judge, 홀드아웃 5개)</h3>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">모델</th>
+<th style="text-align: center;">평균 점수</th>
+<th style="text-align: center;">JSON 유효율</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Base Llama-3-8B</td>
+<td style="text-align: center;">0.0 / 10</td>
+<td style="text-align: center;">0%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Llama-3-8B SFT</strong></td>
+<td style="text-align: center;"><strong>9.3 / 10</strong></td>
+<td style="text-align: center;"><strong>100%</strong></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Llama-3-8B SFT + DPO</td>
+<td style="text-align: center;">7.4 / 10</td>
+<td style="text-align: center;">100%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GPT-4o (기준)</td>
+<td style="text-align: center;">10.0 / 10</td>
+<td style="text-align: center;">100%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>결과 해석</strong></p>
+<ul>
+<li><p><strong>SFT 성과</strong> — GPT-4o 대비 약 93%의 평가 품질에 도달했고, 모든 예제에서 유효한 구조화 출력을 냈습니다. 자체 호스팅 모델로의 대체 가능성을 뒷받침하는 결과입니다.</p></li>
+<li><p><strong>DPO 성능 하락</strong> — SFT 대비 오히려 하락(9.3 → 7.4)했습니다. 선호 쌍이 25개(홀드아웃 제외 시 20개)로 적었던 영향도 있습니다.</p>
+<ul>
+<li><strong>원인: 선호 쌍 구성 방식</strong> — chosen/rejected를 실제 품질 평가 없이 “GPT-4o 출력 vs SFT 자체 출력”으로 고정 배정했습니다. 개별 사례마다 SFT 출력이 실제로 더 나쁜지 검증되지 않았고, 모델이 내용의 논리적 깊이보다 GPT-4o의 문체를 모방하는 방향으로 편향됐을 가능성이 있습니다.</li>
+<li><strong>관찰과의 정합성</strong> — 데이터 정확도(8~9/10)는 유지된 채 추론 깊이만 얕아진 결과가 이 가설과 일치합니다.</li>
+<li><strong>향후 개선 방향</strong> — SFT 모델이 생성한 여러 후보를 GPT-4o judge로 랭킹해, 실제 품질 차이가 검증된 on-policy 선호 쌍을 구성하는 방식을 시도할 필요가 있습니다.</li>
+</ul></li>
+</ul>
+<hr />
+</section>
+</section>
+<section id="성과" class="level2">
+<h2>성과</h2>
+<ul>
+<li><strong>자동화 및 분석 품질 향상</strong> — 반복적인 SKU 단위 재고 검토와 문서 작성을 자동화 — 담당자·상황에 따라 들쭉날쭉하던 판단을 일관된 품질로 끌어올림.</li>
+<li><strong>RAG 기반 컨텍스트 분석</strong> — 사람이 하면 담당자의 분석 속도·숙련도에 따라 누락되기 쉬웠던 공급업체 이력·리드 타임 등 다중 소스 컨텍스트를, RAG로 몇 초 만에 모두 끌어와 결합함으로써 리스크 우선순위 기반 의사결정을 빠르고 일관되게 지원.</li>
+<li><strong>자체 호스팅 대체 가능성 검증</strong> — 파인튜닝한 로컬 모델(SFT)이 GPT-4o 대비 약 93% 품질에 도달함을 실증. 자체 호스팅 전환 시 API 호출 비용 제로화와 데이터 외부 미전송(프라이버시 확보)이라는 두 가지 실익 확인.</li>
+<li><strong>운영 지향 설계</strong> — SSE 실시간 스트리밍(대기 중에도 진행 상황 실시간 확인, 타임아웃 리스크 회피), 자기 교정 에이전트 그래프(민감정보 유출 자동 검출·재작성), LangSmith 기반 관측성(노드별 토큰·지연·프롬프트 성능 및 비용 모니터링과 문제 원인 추적)을 갖춘 설계.</li>
+<li><strong>정확성과 신뢰성 확보</strong> — 정확도가 중요한 계산(발주일·수량)은 결정론적 산식으로, 맥락 판단이 필요한 부분은 LLM 추론으로 역할을 분리.</li>
+</ul>
+<hr />
+</section>
+<section id="향후-과제" class="level2">
+<h2>향후 과제</h2>
+<p><strong>GPT-4o → 자체 호스팅 모델 전환</strong></p>
+<p>현재 분석 에이전트는 GPT-4o 호출에 의존하므로 호출 비용이 발생하고 데이터가 외부로 전송됩니다. 이를 줄이기 위해 자체 호스팅 모델을 검증했고, SFT만으로 GPT-4o 대비 약 93% 품질에 도달해 대체 타당성을 확인했습니다(Llama-3-8B 기준). 다만 실제 전환까지는 다음 과제들이 남아 있습니다.</p>
+<ul>
+<li><strong>DPO 훈련셋 설계 정교화</strong> — 현재는 chosen/rejected를 품질 평가 없이 “GPT-4o 출력 vs SFT 자체 출력”으로 고정 배정해, 모델이 내용의 논리적 깊이보다 GPT-4o의 문체를 모방하는 방향으로 편향됐을 가능성이 있습니다. chosen을 GPT-4o 출력으로 유지하는 건 증류(distillation)의 목표(모델 자신의 실력을 넘어서는 외부 기준점 제공)상 타당하지만, rejected는 SFT 모델의 여러 후보 중 judge가 “내용·논리 품질이 실제로 더 낮다”고 확인한 것만 선별하거나, judge에게 문체가 아닌 내용만 평가하도록 기준을 명시해 스타일 차이가 선호 신호에 섞이지 않도록 개선할 필요가 있습니다.</li>
+<li><strong>선호 쌍 규모 확대</strong> — 현재 25개(홀드아웃 제외 시 20개)뿐인 선호 쌍을 더 확보해 DPO 학습 신호를 안정화합니다.</li>
+<li><strong>최신 소형 모델 적용</strong> — 이후 공개되는 더 강력한 최신 소형 모델을 적용하면 대체 여지가 한층 커집니다.</li>
+</ul>
+<hr />
+</section>
+<section id="기술-스택" class="level2">
+<h2>기술 스택</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">영역</th>
+<th style="text-align: left;">기술</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">백엔드</td>
+<td style="text-align: left;">Python, FastAPI (async, SSE)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">오케스트레이션</td>
+<td style="text-align: left;">LangGraph (상태 기반 멀티 에이전트), LangChain</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">LLM</td>
+<td style="text-align: left;">GPT-4o / GPT-4o-mini; Llama-3-8B (QLoRA)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">파인튜닝</td>
+<td style="text-align: left;">Unsloth, TRL (SFTTrainer / DPOTrainer), Vertex AI, W&amp;B</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">벡터 DB</td>
+<td style="text-align: left;">ChromaDB (RAG)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">관측성</td>
+<td style="text-align: left;">LangSmith</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">프런트엔드</td>
+<td style="text-align: left;">React, TypeScript, Framer 커스텀 코드 컴포넌트</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">데이터 처리</td>
+<td style="text-align: left;">Pandas, PyPDF, python-docx</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">인프라 / CI-CD</td>
+<td style="text-align: left;">Docker, GCP Cloud Run, Vertex AI, Artifact Registry, GitHub Actions</td>
+</tr>
+</tbody>
+</table>
+<hr />
+</section>
+<section id="링크" class="level2">
+<h2>링크</h2>
+<ul>
+<li><strong>데모</strong> — https://soominmyung.com/purchasing-automation</li>
+<li><strong>저장소</strong> — https://github.com/soominmyung/purchasing-automation</li>
+</ul>
+</section>
+</section>
+</body>
+</html>
