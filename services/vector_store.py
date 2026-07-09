@@ -2,6 +2,7 @@
 Vector stores: supplier_history, item_history, analysis_examples, request_examples, email_examples.
 Corresponds to n8n Vector Store In-Memory + OpenAI Embeddings.
 """
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -59,6 +60,21 @@ def _add_docs(collection_name: str, documents: list[Document]) -> None:
         store.add_documents(splits)
 
 
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _most_recent(collection_name: str, k: int) -> list[Document]:
+    """Return the k most recently ingested chunks, ranked by ingested_at (not similarity)."""
+    store = _get_or_create_store(collection_name)
+    if store is None:
+        return []
+    raw = store._collection.get(include=["metadatas", "documents"])
+    pairs = list(zip(raw.get("documents") or [], raw.get("metadatas") or []))
+    pairs.sort(key=lambda dm: dm[1].get("ingested_at", ""), reverse=True)
+    return [Document(page_content=text, metadata=meta) for text, meta in pairs[:k]]
+
+
 def ingest_supplier_history(text: str, supplier_name: str) -> None:
     """Ingest supplier history text with supplier_name metadata."""
     _add_docs(
@@ -79,7 +95,7 @@ def ingest_analysis_examples(text: str) -> None:
     """Ingest purchasing analysis reference examples."""
     _add_docs(
         "analysis_examples",
-        [Document(page_content=text, metadata={"doc_type": "analysis_examples"})],
+        [Document(page_content=text, metadata={"doc_type": "analysis_examples", "ingested_at": _now_iso()})],
     )
 
 
@@ -87,7 +103,7 @@ def ingest_request_examples(text: str) -> None:
     """Ingest purchase request reference examples."""
     _add_docs(
         "request_examples",
-        [Document(page_content=text, metadata={"doc_type": "request_examples"})],
+        [Document(page_content=text, metadata={"doc_type": "request_examples", "ingested_at": _now_iso()})],
     )
 
 
@@ -95,7 +111,7 @@ def ingest_email_examples(text: str) -> None:
     """Ingest email draft reference examples."""
     _add_docs(
         "email_examples",
-        [Document(page_content=text, metadata={"doc_type": "email_examples"})],
+        [Document(page_content=text, metadata={"doc_type": "email_examples", "ingested_at": _now_iso()})],
     )
 
 
@@ -109,16 +125,16 @@ def search_item_history(query: str, k: int = 5, filter: dict[str, Any] | None = 
     return store.similarity_search(query, k=k, filter=filter)
 
 
-def search_analysis_examples(query: str, k: int = 3) -> list[Document]:
-    store = _get_or_create_store("analysis_examples")
-    return store.similarity_search(query, k=k)
+def search_analysis_examples(k: int = 3) -> list[Document]:
+    """Most recently ingested analysis-report examples (style/tone reference, not fact retrieval)."""
+    return _most_recent("analysis_examples", k)
 
 
-def search_request_examples(query: str, k: int = 3) -> list[Document]:
-    store = _get_or_create_store("request_examples")
-    return store.similarity_search(query, k=k)
+def search_request_examples(k: int = 3) -> list[Document]:
+    """Most recently ingested purchase-request examples (style/tone reference, not fact retrieval)."""
+    return _most_recent("request_examples", k)
 
 
-def search_email_examples(query: str, k: int = 3) -> list[Document]:
-    store = _get_or_create_store("email_examples")
-    return store.similarity_search(query, k=k)
+def search_email_examples(k: int = 3) -> list[Document]:
+    """Most recently ingested supplier-email examples (style/tone reference, not fact retrieval)."""
+    return _most_recent("email_examples", k)

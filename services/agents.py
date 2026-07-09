@@ -166,7 +166,7 @@ def run_analysis_agent(
 
 def run_report_doc_agent(analysis_result: dict[str, Any]) -> str:
     """Report Doc Agent: analysis_result → Markdown report. Optional: retrieve analysis_examples."""
-    examples = search_analysis_examples("analysis report structure and tone", k=2)
+    examples = search_analysis_examples(k=2)
     examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
     llm = _llm()
     user = json.dumps(analysis_result, ensure_ascii=False)
@@ -186,7 +186,7 @@ def run_pr_draft_agent(
     analysis_output: dict[str, Any],
 ) -> dict[str, Any]:
     """PR Draft Agent: analysis_output → structured JSON for PR Doc Agent."""
-    examples = search_request_examples("purchase request structure", k=2)
+    examples = search_request_examples(k=2)
     examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
     llm = _llm()
     payload = {
@@ -211,7 +211,7 @@ def run_pr_draft_agent(
 
 def run_pr_doc_agent(request_output: dict[str, Any]) -> str:
     """PR Doc Agent: request_output (from PR Draft) → Markdown purchase request."""
-    examples = search_request_examples("purchase requisition format", k=2)
+    examples = search_request_examples(k=2)
     examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
     llm = _llm()
     user = json.dumps(request_output, ensure_ascii=False)
@@ -232,7 +232,7 @@ def run_email_draft_agent(
     analysis_output: dict[str, Any],
 ) -> str:
     """Email Draft Agent: items + analysis_output → plain text supplier email."""
-    examples = search_email_examples("supplier email tone and structure", k=2)
+    examples = search_email_examples(k=2)
     examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
     llm = _llm(model="gpt-4o-mini")
     payload = {
