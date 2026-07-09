@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Multi-agent Purchasing AI Suite — Portfolio</title>
+  <style>
+    html {
+      line-height: 1.5;
+      font-family: Georgia, serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      word-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 1em;
+      }
+    }
+    @media print {
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
+      font-size: 85%;
+      margin: 0;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <style>
+    :root {
+      --ink: #1f252b;
+      --muted: #535f6a;
+      --soft: #7a858f;
+      --paper: #ffffff;
+      --canvas: #eef1f0;
+      --line: #dce2e0;
+      --line-strong: #b7c3c0;
+      --charcoal: #24303a;
+      --navy: #21384d;
+      --blue: #2f6f95;
+      --teal: #167e70;
+      --amber: #a66f2d;
+      --red: #a84b49;
+      --blue-soft: #eff5f8;
+      --teal-soft: #eef7f4;
+      --amber-soft: #fbf4e8;
+      --stone: #f7f8f7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 15mm 15mm 16mm 15mm;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      background: var(--canvas);
+    }
+
+    body {
+      width: 210mm;
+      min-height: 297mm;
+      max-width: none;
+      margin: 18px auto;
+      padding: 15mm;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(31, 37, 43, 0.14);
+      color: var(--ink);
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      font-size: 10.2pt;
+      line-height: 1.62;
+      overflow-wrap: break-word;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: var(--ink);
+      line-height: 1.28;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h1 {
+      margin: 0 0 6.5mm 0;
+      padding: 8.5mm 10mm 8mm;
+      color: #ffffff;
+      background: var(--charcoal);
+      border-left: 5mm solid var(--teal);
+      border-radius: 6px;
+      box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.16);
+      font-size: 20.4pt;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    h1 .title-main,
+    h1 .title-sub {
+      display: block;
+    }
+
+    h1 .title-sub {
+      margin-top: 2.2mm;
+      color: #d7e5e2;
+      font-size: 11.8pt;
+      font-weight: 650;
+      letter-spacing: 0.01em;
+    }
+
+    h1 + p,
+    h1 + p + p {
+      color: #344150;
+      font-size: 10.7pt;
+      line-height: 1.72;
+      margin-right: 2mm;
+    }
+
+    h2 {
+      margin: 10mm 0 4mm;
+      padding: 0 0 0 3.6mm;
+      border-left: 4px solid var(--blue);
+      font-size: 14.2pt;
+      font-weight: 800;
+    }
+
+    h3 {
+      margin: 6.5mm 0 2.5mm;
+      color: var(--blue);
+      font-size: 11.2pt;
+      font-weight: 800;
+    }
+
+    strong.subhead {
+      display: block;
+      margin: 5mm 0 1.4mm;
+      color: var(--blue);
+      font-size: 10.4pt;
+      font-weight: 800;
+    }
+
+    p:has(> strong.subhead) {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    p:has(> strong.subhead):has(+ ul),
+    p:has(> strong.subhead):has(+ ol),
+    p:has(> strong.subhead):has(+ table) {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 3.2mm;
+      color: var(--muted);
+    }
+
+    strong {
+      color: var(--ink);
+      font-weight: 800;
+    }
+
+    a {
+      color: var(--blue);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(37, 99, 169, 0.35);
+    }
+
+    blockquote {
+      margin: 5mm 0 7mm;
+      padding: 3.3mm 4.6mm;
+      background: var(--stone);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+
+    p.hero-diagram {
+      margin: 5mm 0 6mm;
+    }
+
+    p.hero-diagram img {
+      display: block;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    blockquote p {
+      margin: 0;
+      color: #34414c;
+      font-size: 9.5pt;
+    }
+
+    blockquote p + p {
+      margin-top: 1.6mm;
+      padding-top: 1.6mm;
+      border-top: 1px solid var(--line);
+    }
+
+    hr {
+      margin: 8mm 0 2mm;
+      border: 0;
+      border-top: 1px solid var(--line);
+    }
+
+    ul,
+    ol {
+      margin: 2.5mm 0 4.5mm;
+      padding-left: 6mm;
+      color: var(--muted);
+    }
+
+    li {
+      margin: 0 0 2.1mm;
+      padding-left: 0.7mm;
+    }
+
+    li::marker {
+      color: var(--blue);
+      font-weight: 700;
+    }
+
+    li > ul,
+    li > ol {
+      margin-top: 2mm;
+      margin-bottom: 1mm;
+    }
+
+    table {
+      width: 100%;
+      margin: 4mm 0 6mm;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      overflow: hidden;
+      font-size: 9.4pt;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    th,
+    td {
+      padding: 2.6mm 3.2mm;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--charcoal);
+      color: #ffffff;
+      font-weight: 800;
+      text-align: left;
+    }
+
+    tr:nth-child(even) td {
+      background: #fafbfa;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    td:first-child {
+      color: var(--blue);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    h2 + table {
+      background: #fbfcfb;
+    }
+
+    h2 + table td:first-child {
+      width: 32mm;
+      background: #eef3f1;
+    }
+
+    code {
+      padding: 0.15em 0.42em;
+      border-radius: 4px;
+      background: #eef2f1;
+      color: #2e4552;
+      font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+      font-size: 0.9em;
+    }
+
+    pre {
+      margin: 4mm 0 6mm;
+      padding: 5mm 6mm;
+      background:
+        linear-gradient(90deg, rgba(37, 99, 169, 0.08), transparent 34%),
+        #f7fafc;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--teal);
+      border-radius: 8px;
+      color: #243342;
+      font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+      font-size: 8.7pt;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .pipeline-diagram {
+      margin: 4.5mm 0 6mm;
+      padding: 3.4mm;
+      background: #f8faf9;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      page-break-inside: auto;
+      break-inside: auto;
+    }
+
+    .pipeline-input {
+      display: flex;
+      align-items: baseline;
+      gap: 2.6mm;
+      margin-bottom: 2.2mm;
+      padding: 2.1mm 3mm;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--ink);
+      font-size: 9.6pt;
+      font-weight: 700;
+    }
+
+    .pipeline-label {
+      color: var(--teal);
+      font-size: 8.7pt;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+
+    .pipeline-steps {
+      display: grid;
+      gap: 1.35mm;
+      position: relative;
+    }
+
+    .pipeline-step {
+      display: grid;
+      grid-template-columns: 10.5mm 1fr auto;
+      align-items: center;
+      gap: 2.6mm;
+      padding: 2.25mm 3mm;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: 0 1px 0 rgba(31, 37, 43, 0.04);
+      position: relative;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .pipeline-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      left: 6.85mm;
+      bottom: -1.45mm;
+      width: 1px;
+      height: 1.4mm;
+      background: var(--line-strong);
+    }
+
+    .pipeline-step .step-no {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 7.4mm;
+      height: 7.4mm;
+      border-radius: 50%;
+      background: var(--charcoal);
+      color: #ffffff;
+      font-size: 7.5pt;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pipeline-step strong {
+      display: block;
+      margin-bottom: 0.4mm;
+      color: var(--ink);
+      font-size: 9.9pt;
+    }
+
+    .pipeline-step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 8.95pt;
+      line-height: 1.36;
+    }
+
+    .pipeline-step .tag {
+      align-self: center;
+      padding: 1.1mm 2.2mm;
+      border-radius: 999px;
+      background: var(--amber-soft);
+      color: #7a4d15;
+      font-size: 7.3pt;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .pipeline-step.calc .step-no {
+      background: var(--amber);
+    }
+
+    .pipeline-step.verify .step-no {
+      background: var(--teal);
+    }
+
+    .eval-table th:nth-child(4) {
+      width: 42%;
+    }
+
+    .eval-table td.eval-note {
+      background: #f8faf9;
+      color: var(--muted);
+      font-size: 8.5pt;
+      line-height: 1.52;
+      vertical-align: middle;
+    }
+
+    table,
+    tbody,
+    th {
+      border-top: 0;
+    }
+
+    tbody {
+      border-bottom: 0;
+    }
+
+    section.level2 {
+      margin-top: 0;
+    }
+
+    section.level2:nth-of-type(3n + 1) h2 {
+      border-left-color: var(--teal);
+    }
+
+    section.level2:nth-of-type(3n + 2) h2 {
+      border-left-color: var(--amber);
+    }
+
+    section.level2:nth-of-type(3n) h2 {
+      border-left-color: var(--blue);
+    }
+
+    section.level3 {
+      margin-top: 0;
+    }
+
+    #evaluation + table th:nth-child(2),
+    #evaluation + table th:nth-child(3),
+    #evaluation + table td:nth-child(2),
+    #evaluation + table td:nth-child(3) {
+      text-align: center;
+    }
+
+    #tech-stack + table td:first-child {
+      width: 40mm;
+    }
+
+    p,
+    li,
+    td {
+      orphans: 2;
+      widows: 2;
+    }
+
+    @media print {
+      html,
+      body {
+        background: #ffffff;
+      }
+
+      body {
+        width: auto;
+        min-height: 0;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+
+      h1 {
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<section id="multi-agent-purchasing-ai-suite" class="level1">
+<h1><span class="title-main">Multi-agent Purchasing AI Suite</span></h1>
+<p>A multi-agent LLM pipeline that jointly analyzes an inventory snapshot together with supplier and item history context via RAG, automating the manual work previously handled by purchasing staff — <strong>from inventory-risk analysis and replenishment planning to drafting analysis reports, purchase request forms, and supplier emails</strong>.</p>
+<p><em>Rather than stopping at a simple stock check, it uses RAG to automatically retrieve and analyze relevant context scattered across many documents, including supplier on-time delivery and shipping-delay history, transaction and negotiation records, customs/regulatory/safety issues, item market performance, and item-specific issue history.</em> Each output is then <strong>independently audited by a separate agent for data and logical consistency, producing a quality-evaluation report alongside it</strong>. The email draft also goes through a <strong>self-correction loop that checks for internal information leakage and rewrites the draft if any risk is found</strong>.</p>
+<p class="hero-diagram"><img src="workflow_diagram.png" alt="Multi-Agent Purchasing AI Workflow" /></p>
+<blockquote>
+<p>Demo: https://soominmyung.com/purchasing-automation</p>
+<p>Source: https://github.com/soominmyung/purchasing-automation</p>
+</blockquote>
+<hr />
+<section id="at-a-glance" class="level2">
+<h2>At a Glance</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Period</strong></td>
+<td style="text-align: left;">Oct 2025 – Dec 2025</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Role</strong></td>
+<td style="text-align: left;">Solo project — architecture, development, deployment</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Domain</strong></td>
+<td style="text-align: left;">Generative-AI inventory-risk analysis &amp; automated document generation</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Core stack</strong></td>
+<td style="text-align: left;">Python, FastAPI, LangGraph, ChromaDB, GPT-4o, Docker, GCP Cloud Run</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Starting point</strong></td>
+<td style="text-align: left;">n8n low-code prototype → re-architected as a Python service</td>
+</tr>
+</tbody>
+</table>
+<hr />
+</section>
+<section id="the-problem" class="level2">
+<h2>The Problem</h2>
+<p>Purchasing staff review hundreds of SKU-level inventory records and, on that basis, spend considerable manual effort writing documents such as analysis reports, purchase request forms, and supplier emails.</p>
+<p>The challenge is that this process is <strong>highly dependent on staff availability and experience</strong>. <strong>When time pressure or limited familiarity with a supplier or item prevents a full review</strong> of evidence scattered across many documents — a supplier's delivery and quality history, past negotiation terms, customs/regulatory/safety issues, and an item's market performance — <strong>the result can be inefficient ordering and potential margin loss</strong>.</p>
+</section>
+<section id="what-it-does" class="level2">
+<h2>What It Does</h2>
+<p>Given an inventory snapshot, the system automatically produces four outputs.</p>
+<ol type="1">
+<li><strong>Purchasing analysis report</strong> — supplier-grouped inventory-risk assessment and replenishment planning</li>
+<li><strong>Quality-evaluation report</strong> — a separate agent audits the analysis for data and logical consistency</li>
+<li><strong>Purchase request form (PR)</strong> — formatted per supplier for the approval process</li>
+<li><strong>Supplier email draft</strong> — outbound communication for delivery and stock-availability inquiries</li>
+</ol>
+<p>The inventory snapshot is provided as a CSV of items flagged for potential shortage, while supplier and item history documents are uploaded, embedded into a vector DB, and then automatically retrieved during the analysis stage.</p>
+<hr />
+</section>
+<section id="architecture" class="level2">
+<h2>Architecture</h2>
+<section id="poc-to-production" class="level3">
+<h3>PoC-to-Production — from n8n prototype to production code</h3>
+<p>I first validated the concept quickly with an <strong>n8n</strong> low-code workflow. By wiring nodes together, this stage confirmed the feasibility of the “CSV → grouping → LLM analysis → document generation” flow.</p>
+<p>Once validated, I re-architected the entire workflow in <strong>Python (FastAPI + LangGraph)</strong> to implement complex branching logic, state management, and container deployment. In the process I moved the node-based flow onto an async API and a state graph, refined it into a deployable service with API-key authentication and streaming, and set up CI/CD (GitHub Actions → Cloud Run) for the public demo (actual operations run on the company's local server).</p>
+</section>
+<section id="multi-agent-pipeline" class="level3">
+<h3>Multi-agent pipeline (LangGraph)</h3>
+<p>Five specialized agents are connected as a LangGraph state graph, and the validator node loops back to an earlier step to rewrite when needed.</p>
+<div class="pipeline-diagram">
+<div class="pipeline-input"><span class="pipeline-label">INPUT</span><span>Inventory snapshot (CSV) + supplier/item context</span></div>
+<div class="pipeline-steps">
+<div class="pipeline-step calc"><span class="step-no">01</span><div><strong>Supplier grouping · priority calculation</strong><p>Lead-time-based order date &amp; quantity</p></div><span class="tag">Deterministic Python formula, no LLM</span></div>
+<div class="pipeline-step"><span class="step-no">02</span><div><strong>Analysis agent</strong><p>Inventory-risk analysis</p></div><span class="tag">RAG: supplier/item history lookup</span></div>
+<div class="pipeline-step"><span class="step-no">03</span><div><strong>Evaluation agent</strong><p>Automated quality audit (logical &amp; data consistency)</p></div><span class="tag">Scores accuracy · faithfulness (hallucination) · reasoning · suitability</span></div>
+<div class="pipeline-step"><span class="step-no">04</span><div><strong>PR draft agent</strong><p>Purchase request form draft</p></div><span class="tag">RAG: latest N approved templates</span></div>
+<div class="pipeline-step"><span class="step-no">05</span><div><strong>PR document agent</strong><p>Formal purchase request document</p></div><span class="tag">RAG: latest N approved templates</span></div>
+<div class="pipeline-step"><span class="step-no">06</span><div><strong>Email agent</strong><p>Supplier email draft</p></div><span class="tag">RAG: latest N approved templates</span></div>
+<div class="pipeline-step verify"><span class="step-no">07</span><div><strong>Validator node</strong><p>Sensitive-info leak check → auto-rewrite loop</p></div><span class="tag">Guardrail, precise rewrite from failure-reason feedback</span></div>
+</div>
+</div>
+<p><strong class="subhead">Why multi-agent</strong> Compared to handling everything with a single monolithic prompt, this design offers:</p>
+<ul>
+<li><strong>Modularity</strong> — each step can be swapped or improved independently without touching the others; in practice, I isolated just the analysis agent to test replacing GPT-4o with a self-hosted Llama-3-8B model.</li>
+<li><strong>Early error containment</strong> — because the evaluation agent independently audits the analysis, a flawed analysis is caught before it propagates into the downstream steps (PR, email).</li>
+<li><strong>Precise self-correction and validation</strong> — when the validator node detects a problem, it can pinpoint exactly which step needs a rewrite instead of re-running the entire pipeline from scratch.</li>
+</ul>
+</section>
+<section id="core-components" class="level3">
+<h3>Core Components</h3>
+<p><strong class="subhead">RAG knowledge base (ChromaDB)</strong></p>
+<ul>
+<li><strong>Pipeline</strong> — supplier-record and item-history PDFs (uploaded individually or in bulk as ZIP) are chunked (1,000 chars, 200-char overlap), converted to OpenAI embeddings, and stored in five independent collections split by document type (supplier history, item history, and report/PR/email examples).</li>
+<li><strong>Empirical hyperparameter tuning — deciding the chunk size</strong> — reviewing the actual supplier/item history documents, I found they typically run about 1–2 A4 pages, and used that as the basis to benchmark chunk sizes of 500, 1,000, and 1,500 characters for storage/retrieval efficiency. Too small (500) and a single event's narrative (cause → effect) gets cut at a chunk boundary, breaking context; too large (1,500) and several distinct events get mixed into one chunk, blurring the embedding so it can't focus on any one event. I settled on 1,000 characters as the best fit for the document's “per-event” narrative length, and set the overlap to 200 characters (20% of chunk size) so that an event straddling a boundary is still captured in both adjacent chunks.</li>
+<li><strong>Workflow-tailored design</strong> — the actual supplier/item history documents followed a convention of stating the supplier name and item code at the top. Recognizing this, I could extract <strong>reliable metadata with regex alone</strong>, without any complex ontology implementation.
+<ul>
+<li><strong>Metadata tagging</strong> — at ingest time, regex extracts the supplier name and item code and attaches them as document metadata. Since every child chunk inherits the parent document's metadata after chunking, the filter always applies correctly even when a given chunk's text doesn't literally contain that name.</li>
+<li><strong>Explicit metadata filtering + similarity search (two-stage retrieval)</strong> — when the analysis agent looks up history, it doesn't rely solely on the LLM-generated query text; it also passes the actual supplier name and item code the pipeline already knows as a metadata filter. It first narrows the candidate set to documents satisfying that filter, then ranks by similarity within that set to fetch the top K — so the result is not “semantically similar documents” but precisely “the most semantically relevant among the documents that actually belong to that supplier/item.”</li>
+<li><strong>Strength</strong> — pure semantic similarity search risks pulling in similar narratives from other suppliers (e.g. comparable shipping-delay cases), but the metadata filter blocks this cross-contamination at the source — and it does so without any heavy structure like an ontology or knowledge graph, achieved through a single existing document-authoring convention.</li>
+</ul>
+</li>
+<li><strong>Purpose-differentiated retrieval strategy</strong> — supplier/item history is “fact retrieval,” so it uses a metadata filter + similarity ranking, whereas the best-practice templates for analysis reports/PRs/emails are “style retrieval,” which is different in nature. If the company's format changes, an old example may diverge in style from the latest documents, and similarity alone cannot tell them apart. So the example collections record a timestamp at ingest time and, at retrieval time, fetch the top N by <strong>most recently uploaded</strong> rather than by similarity.</li>
+</ul>
+<p><strong class="subhead">AI quality-evaluation (Evaluator) agent</strong> A separate evaluation agent cross-references the analysis agent's output (JSON) against the source supplier/item history it was based on, scoring it out of 10 on four criteria — <strong>data accuracy, history faithfulness (hallucination check), logical reasoning, and operational suitability</strong>. Because it compares against the exact history retrieved by the analysis agent — passed directly rather than re-fetched — it avoids the failure mode of misjudging a genuinely grounded statement as “unsourced” and wrongly scoring it as a hallucination.</p>
+<p><strong class="subhead">Guardrail — self-correction loop</strong> The email output passes through the validator node, which checks for internal information leakage. If a leak is detected, it is not returned as-is; the graph loops back to regenerate the draft.</p>
+<p><strong class="subhead">Real-time streaming (SSE)</strong> Instead of a single request-response, the progress of each pipeline stage (CSV parsing → grouping → analysis → document generation) is streamed to the client in real time via Server-Sent Events, showing the current pipeline stage live and surfacing errors immediately when they occur.</p>
+<p><strong class="subhead">Hybrid design — separating deterministic computation from LLM reasoning</strong> In the supplier-grouping stage, the recommended order date and quantity are <strong>computed with a Python formula</strong> based on <code>WksToOOS</code> (weeks to out-of-stock) and <code>CurrentStock</code>. Accuracy-critical values like dates and quantities are handled by deterministic code rather than left to LLM reasoning, eliminating hallucination risk; the LLM then takes that result and focuses solely on risk interpretation and document authoring over the prioritized, structured data.</p>
+<p><strong class="subhead">Security &amp; Observability</strong> Security: the public demo has header-based API-key authentication (<code>X-API-Key</code>) and per-IP rate limiting to prevent token abuse by anonymous users. The in-house deployment implements per-user intranet ID/PW login. Observability: LangSmith tracks token usage, latency, and prompt performance for every node, and custom logic outside LangChain is also instrumented with <code>@traceable</code>.</p>
+<p><strong class="subhead">Deployment</strong> The public demo runs as a Docker container on GCP Cloud Run (serverless, scale-to-zero) so anyone can access it, with CI/CD via GitHub Actions building and auto-deploying the image on every push to <code>main</code>. For actual in-house operations, the app runs continuously on the same 24/7 local server as SAP ERP, so the team uses it over the intranet — an environment with no cold-start or vector-store volatility issues.</p>
+<hr />
+</section>
+</section>
+<section id="fine-tuning-study" class="level2">
+<h2>Fine-tuning Study: SFT + DPO on Llama-3-8B</h2>
+<p>I tested whether the GPT-4o analysis agent could be replaced with a self-hosted model. <strong>The goal was to reduce per-call cost and data-privacy exposure</strong>, and the approach was to distill GPT-4o's knowledge into Llama-3-8B.</p>
+<p><strong class="subhead">Training data</strong></p>
+<ul>
+<li><strong>Data source</strong> — instead of real company data, I used <strong>synthetic purchasing scenarios</strong> generated by GPT-4o.</li>
+<li><strong>Scenario composition</strong> — each consists of inventory rows (item code, item name, supplier, risk grade, current stock, weeks-to-out-of-stock) and supplier/item history (natural language).</li>
+<li><strong>Diversity</strong> — a wide variety of history patterns such as shipping delays, price spikes, quality issues, and demand fluctuations.</li>
+<li><strong>Adversarial cases included</strong> — I deliberately included cases like data contradictions (high stock yet imminent stockout), conflicting context (a “trusted” label vs. a recent failure), ambiguous history, and missing values, to improve robustness. A model trained on such cases, when faced with similar production cases, responds by <strong>explicitly stating contradictions or gaps as such</strong> rather than masking them or fabricating information.</li>
+<li><strong>Knowledge distillation</strong> — the analysis GPT-4o produced for these scenarios (JSON: analysis report, critical questions, supplementary timeline) was treated as ground truth for Llama to reproduce.</li>
+<li><strong>Fine-tuning scope</strong> — limited to the <strong>output of the analysis agent</strong> being replaced, not the whole pipeline.</li>
+</ul>
+<p><strong class="subhead">Stage 1 — Supervised Fine-Tuning (SFT)</strong></p>
+<ul>
+<li>Llama-3-8B + QLoRA (4-bit, LoRA rank 16 — ~41M trainable params / 8B, 0.51%)</li>
+<li>30 teacher examples (analysis JSON GPT-4o generated per scenario)</li>
+<li><strong>Training-data shape</strong>: JSONL, <code>{instruction, input: {inventory, supplier_history, item_history}, output: {analysis: {...}}}</code> — only <code>output.analysis</code> (analysis report, critical questions, supplementary timeline) is used as the label</li>
+<li>Vertex AI, 1× Tesla T4, 5 epochs, 367s</li>
+<li>Training loss: 1.14 → 0.41</li>
+</ul>
+<p><strong class="subhead">Stage 2 — Direct Preference Optimization (DPO)</strong></p>
+<ul>
+<li>25 preference pairs (holdout of 5 excluded)</li>
+<li><strong>Preference-pair construction</strong> — <code>chosen</code> is fixed to the GPT-4o ground-truth analysis JSON (distillation requires an external reference point beyond the model's own ability), and <code>rejected</code> is selected by having the SFT model generate 4 candidates per prompt at temperature 0.8, scoring them with a GPT-4o judge, and <strong>taking only the lowest-scoring one</strong>. <strong>The judge was explicitly instructed to evaluate only data accuracy and reasoning quality — not style or length — so that stylistic differences would not leak into the preference signal</strong>.</li>
+<li><strong>Training-data (preference-pair) shape</strong>: JSONL, <code>{prompt, chosen, rejected}</code> — <code>prompt</code> uses the same template as SFT (Response excluded), and <strong>the rationale (judge score and comment) is stored alongside each <code>rejected</code> to enable post-hoc analysis</strong>.</li>
+<li>Vertex AI, Tesla T4, 3 epochs, ~14 min</li>
+<li>Unsloth <code>PatchDPOTrainer()</code> + TRL <code>DPOTrainer</code></li>
+</ul>
+<section id="evaluation" class="level3">
+<h3>Evaluation (GPT-4o-as-judge, 5-example holdout)</h3>
+<table class="eval-table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Model</th>
+<th style="text-align: center;">Avg. score</th>
+<th style="text-align: center;">Valid JSON</th>
+<th style="text-align: left;">Scoring criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Base Llama-3-8B</td>
+<td style="text-align: center;">0.0 / 10</td>
+<td style="text-align: center;">0%</td>
+<td class="eval-note" rowspan="4">GPT-4o scores two criteria out of 10 each and averages them: (1) <strong>data accuracy</strong> — did it accurately reflect input values such as supplier name, item code, stock, and risk grade; (2) <strong>reasoning quality</strong> — is the replenishment analysis and are the critical questions logically sound. (This is a simplified benchmark-only scheme, separate from the production quality-evaluation agent's four criteria.)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Llama-3-8B SFT</strong></td>
+<td style="text-align: center;"><strong>9.5 / 10</strong></td>
+<td style="text-align: center;"><strong>100%</strong></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Llama-3-8B SFT + DPO</td>
+<td style="text-align: center;">8.5 / 10</td>
+<td style="text-align: center;">100%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GPT-4o (reference)</td>
+<td style="text-align: center;">10.0 / 10</td>
+<td style="text-align: center;">100%</td>
+</tr>
+</tbody>
+</table>
+<p><strong class="subhead">Interpreting the results</strong></p>
+<ul>
+<li><p><strong>SFT result</strong> — reached about 95% of GPT-4o's evaluation quality and produced valid structured output on every example. This supports the feasibility of replacing it with a self-hosted model.</p></li>
+<li><p><strong>DPO regression</strong> — despite training on preference pairs whose quality was actually verified by a judge, it <em>dropped</em> relative to SFT (9.5 → 8.5).</p>
+<ul>
+<li><strong>Root-cause analysis</strong> — the judge comments show that most of the regressed examples were flagged for “the critical-questions field being missing.” Looking into the training data, <code>chosen</code> (GPT-4o) includes this field in all 25 cases, while <code>rejected</code> includes it in only 7 of 25 (28%) — so most of the training signal should have pushed toward <em>including</em> the field. This opposite result suggests that <strong>DPO's contrastive learning only adjusts the relative probability of the whole sequence and cannot pinpoint “which part is responsible” (a lack of credit assignment)</strong>. The seven exception cases likely acted as noise, driving generalization in the wrong direction at this small sample size (25).</li>
+<li><strong>Conclusion</strong> — even with judge-verified preference pairs, DPO could not guarantee a stable improvement over SFT at this scale (25 pairs). <strong>Given that SFT already reached 95% of GPT-4o's quality, adopting SFT alone is the more reasonable conclusion at this project's scale than investing further to close the remaining gap with DPO.</strong></li>
+</ul></li>
+</ul>
+<hr />
+</section>
+</section>
+<section id="outcomes" class="level2">
+<h2>Outcomes</h2>
+<ul>
+<li><strong>Higher automation and analysis quality</strong> — automated repetitive SKU-level inventory review and document authoring, standardizing analysis quality that previously varied by person and situation.</li>
+<li><strong>RAG-based context analysis</strong> — multi-source context such as supplier history and lead times, which a human could easily miss depending on analysis speed and experience, is pulled in and combined within seconds by RAG, supporting risk-priority-based decisions quickly and consistently.</li>
+<li><strong>Validated self-hosting feasibility</strong> — demonstrated that the fine-tuned local model (SFT) reaches about 95% of GPT-4o's quality. Confirmed two concrete benefits of a self-hosting switch: eliminating per-call API costs and keeping data internal for privacy.</li>
+<li><strong>Operations-oriented design</strong> — SSE real-time streaming (live progress even while waiting, avoiding timeout risk), a self-correcting agent graph (automatic sensitive-info leak detection and rewrite), and LangSmith-based observability (per-node token/latency/prompt-performance and cost monitoring plus root-cause tracing).</li>
+<li><strong>Accuracy and reliability</strong> — separated roles so that accuracy-critical computation (order date, quantity) is handled by deterministic formulas while context-dependent judgment is handled by LLM reasoning.</li>
+<li><strong>Workflow-tailored efficiency design</strong> — after recognizing the actual document-authoring convention (supplier name and item code stated at the top), I solved RAG-retrieval cross-contamination (other suppliers'/items' documents leaking in) with regex metadata extraction + forced filtering alone, without heavy structuring like an ontology. Rather than applying a generic engineering pattern as-is, I observed how the work is actually done and designed a lightweight, efficient solution around it.</li>
+</ul>
+<hr />
+</section>
+<section id="future-work" class="level2">
+<h2>Future Work</h2>
+<p><strong class="subhead">GPT-4o → self-hosted model migration</strong></p>
+<p>The analysis agent currently relies on GPT-4o calls, incurring per-call cost and sending data externally. To reduce this, I validated a self-hosted model and confirmed migration feasibility with SFT alone reaching about 95% of GPT-4o's quality (on Llama-3-8B). DPO was additionally tested with judge-verified preference pairs but yielded no improvement over SFT at this scale, so I am proceeding with <strong>SFT alone</strong> for now. That said, the following remain before an actual migration:</p>
+<ul>
+<li><strong>Conditions for revisiting DPO</strong> — the regression here appears to stem from DPO's contrastive learning being unable to pinpoint “which part is responsible” (a credit-assignment limitation) compounded by the small sample size of 25 pairs. It could be revisited by <strong>scaling up</strong>, by reusing the existing four-criterion evaluation-agent structure to break the preference signal down per field/criterion as a <strong>multi-attribute reward</strong>, or by switching to <strong>Best-of-N filtering + SFT</strong>, which eliminates contrastive (push-down) learning altogether and thereby removes the side-effect risk at the source. For now, though, at this scale (25 pairs, 5-example holdout) the remaining gap (5%) is too small to justify that engineering investment, making SFT-alone the more reasonable choice.</li>
+<li><strong>Evaluating newer models</strong> — in this project GPT-4o plays two roles: the production analysis agent (repeated calls, cost-sensitive) and the teacher that produces the training data (one-off calls, cost-insensitive). The teacher side could be swapped for a higher-tier model like GPT-5 — a one-off cost with little burden — to raise training-data quality, while the student (replacement) side could benchmark, beyond Llama-3-8B, newer open-source small models released since (Qwen, newer Llama versions) to improve production cost and performance together.</li>
+</ul>
+<p><strong class="subhead">RAG retrieval extension idea — evaluating ontology / knowledge graph</strong></p>
+<p>The current approach (metadata filter + semantic similarity) is sufficient for its core purpose: finding relevant documents quickly and precisely at the supplier/item level. To go one step further and <strong>support relational/aggregate queries that span multiple documents</strong> — e.g. “Among the other items this supplier delivers, which have had similar quality issues in the past?” — an ontology / knowledge graph could be added.</p>
+<ul>
+<li><strong>Technical approach — ontology design → knowledge graph implementation</strong> — first, entity types like “supplier” and “item” and relation types like “delivers” and “had a quality issue” are <strong>defined as an ontology</strong>. Then a <strong>lightweight knowledge graph (e.g. Neo4j)</strong> populated with real data following that schema is used alongside vector search. <strong>The existing metadata-filter + similarity two-stage retrieval keeps handling “find semantically similar documents,” while “traversing the items/issues connected to this supplier along the relations the ontology defines” is handled by the newly added knowledge graph</strong> — dividing the roles this way.</li>
+<li><strong>Expected benefit — multi-hop reasoning &amp; aggregation</strong> — the system is currently strong at questions answerable within a single document (what is this supplier's history), but it would then also answer accurately for questions requiring several documents/entities to be chained (“Among the other items this supplier delivers, have any had problems?”) and for countable questions (“How many suppliers had two or more delays this quarter?”).</li>
+<li><strong>Adoption condition — incremental rollout</strong> — ontology design (defining entity/relation types) and extracting relations from data to match that schema require additional work. So the realistic path is to confirm that such “cross-document questions” actually come up often in real use, and then add only as much as needed, incrementally.</li>
+</ul>
+<hr />
+</section>
+<section id="tech-stack" class="level2">
+<h2>Tech Stack</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Area</th>
+<th style="text-align: left;">Technology</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Backend</td>
+<td style="text-align: left;">Python, FastAPI (async, SSE)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Orchestration</td>
+<td style="text-align: left;">LangGraph (state-based multi-agent), LangChain</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">LLM</td>
+<td style="text-align: left;">GPT-4o / GPT-4o-mini; Llama-3-8B (QLoRA)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Fine-tuning</td>
+<td style="text-align: left;">Unsloth, TRL (SFTTrainer / DPOTrainer), Vertex AI, W&amp;B</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Vector DB</td>
+<td style="text-align: left;">ChromaDB (RAG)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Observability</td>
+<td style="text-align: left;">LangSmith</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Frontend</td>
+<td style="text-align: left;">React, TypeScript, Framer custom code components</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Data processing</td>
+<td style="text-align: left;">Pandas, PyPDF, python-docx</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Infra / CI-CD</td>
+<td style="text-align: left;">Docker, GCP Cloud Run, Vertex AI, Artifact Registry, GitHub Actions</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p style="text-align:left;color:var(--muted);font-size:8.3pt;margin-top:6mm;"><em>Soomin Myung · msm1640@gmail.com · +82 10-5600-4620</em></p>
+</section>
+</section>
+</body>
+</html>
