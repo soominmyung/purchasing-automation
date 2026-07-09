@@ -16,13 +16,15 @@ A multi-agent LLM pipeline that jointly analyzes an inventory snapshot together 
 
 ## At a Glance
 
-| | |
-|:---|:---|
-| **Period** | Oct 2025 – Dec 2025 |
-| **Role** | Solo project — architecture, development, deployment |
-| **Domain** | Generative-AI inventory-risk analysis & automated document generation |
-| **Core stack** | Python, FastAPI, LangGraph, ChromaDB, GPT-4o, Docker, GCP Cloud Run |
-| **Starting point** | n8n low-code prototype → re-architected as a Python service |
+<table>
+<tbody>
+<tr><td><b>Period</b></td><td>Oct 2025 – Dec 2025</td></tr>
+<tr><td><b>Role</b></td><td>Solo project — architecture, development, deployment</td></tr>
+<tr><td><b>Domain</b></td><td>Generative-AI inventory-risk analysis &amp; automated document generation</td></tr>
+<tr><td><b>Core stack</b></td><td>Python, FastAPI, LangGraph, ChromaDB, GPT-4o, Docker, GCP Cloud Run</td></tr>
+<tr><td><b>Starting point</b></td><td>n8n low-code prototype → re-architected as a Python service</td></tr>
+</tbody>
+</table>
 
 ---
 
@@ -57,23 +59,7 @@ Once validated, I re-architected the entire workflow in **Python (FastAPI + Lang
 
 Five specialized agents are connected as a LangGraph state graph, and the validator node loops back to an earlier step to rewrite when needed.
 
-```
-Input: inventory snapshot (CSV) + supplier/item context
-        ▼
-  Supplier grouping · priority calc      Lead-time-based order date & quantity (deterministic Python formula, no LLM)
-        ▼
-  Analysis agent       Inventory-risk analysis (RAG: supplier/item history lookup)
-        ▼
-  Evaluation agent     Automated quality audit (logical & data consistency) (scores accuracy, faithfulness (hallucination), reasoning, suitability)
-        ▼
-  PR draft agent       Purchase request form draft (RAG: reference the latest N approved templates)
-        ▼
-  PR document agent    Formal purchase request document (RAG: reference the latest N approved templates)
-        ▼
-  Email agent          Supplier email draft (RAG: reference the latest N approved templates)
-        ▼
-  Validator node       Sensitive-info leak check → auto-rewrite loop (guardrail, precise rewrite driven by failure-reason feedback)
-```
+![Multi-agent pipeline](docs/pipeline_diagram_en.png)
 
 **Why multi-agent** Compared to handling everything with a single monolithic prompt, this design offers:
 
