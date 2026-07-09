@@ -2,7 +2,7 @@
 
 A multi-agent LLM pipeline that jointly analyzes an inventory snapshot together with supplier and item history context via RAG, automating the manual work previously handled by purchasing staff — **from inventory-risk analysis and replenishment planning to drafting analysis reports, purchase request forms, and supplier emails**.
 
-*Rather than stopping at a simple stock check, it uses RAG to automatically retrieve and analyze relevant context scattered across many documents, including supplier on-time delivery and shipping-delay history, transaction and negotiation records, customs/regulatory/safety issues, item market performance, and item-specific issue history.* Each output is then **independently audited by a separate agent for data and logical consistency, producing a quality-evaluation report alongside it**. The email draft also goes through a **self-correction loop that checks for internal information leakage and rewrites the draft if any risk is found**.
+*Rather than stopping at a simple stock check, it uses RAG to automatically retrieve and analyze relevant context scattered across many documents, including supplier delivery performance and delay history, transaction and negotiation records, customs/regulatory/safety issues, item market performance, and item-specific issue history.* Each output is then **independently audited by a separate agent for data and logical consistency, producing a quality-evaluation report alongside it**. The email draft also goes through a **self-correction loop that checks for internal information leakage and rewrites the draft if any risk is found**.
 
 ![Multi-Agent Purchasing AI Workflow](docs/workflow_diagram.png)
 
@@ -20,7 +20,7 @@ A multi-agent LLM pipeline that jointly analyzes an inventory snapshot together 
 <tbody>
 <tr><td><b>Period</b></td><td>Oct 2025 – Dec 2025</td></tr>
 <tr><td><b>Role</b></td><td>Solo project — architecture, development, deployment</td></tr>
-<tr><td><b>Domain</b></td><td>Generative-AI inventory-risk analysis &amp; automated document generation</td></tr>
+<tr><td><b>Domain</b></td><td>Generative AI-based inventory-risk analysis &amp; automated document generation</td></tr>
 <tr><td><b>Core stack</b></td><td>Python, FastAPI, LangGraph, ChromaDB, GPT-4o, Docker, GCP Cloud Run</td></tr>
 <tr><td><b>Starting point</b></td><td>n8n low-code prototype → re-architected as a Python service</td></tr>
 </tbody>
@@ -72,7 +72,7 @@ Five specialized agents are connected as a LangGraph state graph, and the valida
 **RAG knowledge base (ChromaDB)**
 
 - **Pipeline** — supplier-record and item-history PDFs (uploaded individually or in bulk as ZIP) are chunked (1,000 chars, 200-char overlap), converted to OpenAI embeddings, and stored in five independent collections split by document type (supplier history, item history, and report/PR/email examples).
-- **Empirical hyperparameter tuning — deciding the chunk size** — reviewing the actual supplier/item history documents, I found they typically run about 1–2 A4 pages, and used that as the basis to benchmark chunk sizes of 500, 1,000, and 1,500 characters for storage/retrieval efficiency. Too small (500) and a single event's narrative (cause → effect) gets cut at a chunk boundary, breaking context; too large (1,500) and several distinct events get mixed into one chunk, blurring the embedding so it can't focus on any one event. I settled on 1,000 characters as the best fit for the document's "per-event" narrative length, and set the overlap to 200 characters (20% of chunk size) so that an event straddling a boundary is still captured in both adjacent chunks.
+- **Empirical hyperparameter tuning — deciding the chunk size** — reviewing the actual supplier/item history documents, I found they typically run about 1–2 A4 pages, and used that as the basis to benchmark chunk sizes of 500, 1,000, and 1,500 characters for storage/retrieval efficiency. Too small (500) and a single event's narrative (cause → effect) gets cut at a chunk boundary, breaking context; too large (1,500) and several distinct events get mixed into one chunk, blurring the embedding so it can't focus on any one event. I settled on 1,000 characters as the best fit for the event-level narrative length of the source documents, and set the overlap to 200 characters (20% of chunk size) so that an event straddling a boundary is still captured in both adjacent chunks.
 - **Workflow-tailored design** — the actual supplier/item history documents followed a convention of stating the supplier name and item code at the top. Recognizing this, I could extract **reliable metadata with regex alone**, without any complex ontology implementation.
     - **Metadata tagging** — at ingest time, regex extracts the supplier name and item code and attaches them as document metadata. Since every child chunk inherits the parent document's metadata after chunking, the filter always applies correctly even when a given chunk's text doesn't literally contain that name.
     - **Explicit metadata filtering + similarity search (two-stage retrieval)** — when the analysis agent looks up history, it doesn't rely solely on the LLM-generated query text; it also passes the actual supplier name and item code the pipeline already knows as a metadata filter. It first narrows the candidate set to documents satisfying that filter, then ranks by similarity within that set to fetch the top K — so the result is not "semantically similar documents" but precisely "the most semantically relevant among the documents that actually belong to that supplier/item."
@@ -95,7 +95,7 @@ Five specialized agents are connected as a LangGraph state graph, and the valida
 
 ## Fine-tuning Study: SFT + DPO on Llama-3-8B
 
-I tested whether the GPT-4o analysis agent could be replaced with a self-hosted model. **The goal was to reduce per-call cost and data-privacy exposure**, and the approach was to distill GPT-4o's knowledge into Llama-3-8B.
+I tested whether the GPT-4o analysis agent could be replaced with a self-hosted model. **The goal was to reduce per-call cost and data-exposure risk**, and the approach was to distill GPT-4o's knowledge into Llama-3-8B.
 
 **Training data**
 

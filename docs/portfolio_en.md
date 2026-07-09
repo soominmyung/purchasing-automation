@@ -2,7 +2,7 @@
 
 A multi-agent LLM pipeline that jointly analyzes an inventory snapshot together with supplier and item history context via RAG, automating the manual work previously handled by purchasing staff — **from inventory-risk analysis and replenishment planning to drafting analysis reports, purchase request forms, and supplier emails**.
 
-*Rather than stopping at a simple stock check, it uses RAG to automatically retrieve and analyze relevant context scattered across many documents, including supplier on-time delivery and shipping-delay history, transaction and negotiation records, customs/regulatory/safety issues, item market performance, and item-specific issue history.* Each output is then **independently audited by a separate agent for data and logical consistency, producing a quality-evaluation report alongside it**. The email draft also goes through a **self-correction loop that checks for internal information leakage and rewrites the draft if any risk is found**.
+*Rather than stopping at a simple stock check, it uses RAG to automatically retrieve and analyze relevant context scattered across many documents, including supplier delivery performance and delay history, transaction and negotiation records, customs/regulatory/safety issues, item market performance, and item-specific issue history.* Each output is then **independently audited by a separate agent for data and logical consistency, producing a quality-evaluation report alongside it**. The email draft also goes through a **self-correction loop that checks for internal information leakage and rewrites the draft if any risk is found**.
 
 ![Multi-Agent Purchasing AI Workflow](workflow_diagram.png)
 
@@ -17,7 +17,7 @@ A multi-agent LLM pipeline that jointly analyzes an inventory snapshot together 
 |:---|:---|
 | **Period** | Oct 2025 – Dec 2025 |
 | **Role** | Solo project — architecture, development, deployment |
-| **Domain** | Generative-AI inventory-risk analysis & automated document generation |
+| **Domain** | Generative AI-based inventory-risk analysis & automated document generation |
 | **Core stack** | Python, FastAPI, LangGraph, ChromaDB, GPT-4o, Docker, GCP Cloud Run |
 | **Starting point** | n8n low-code prototype → re-architected as a Python service |
 
@@ -83,7 +83,7 @@ Input: inventory snapshot (CSV) + supplier/item context
 **RAG knowledge base (ChromaDB)**
 
 - **Pipeline** — supplier-record and item-history PDFs (uploaded individually or in bulk as ZIP) are chunked (1,000 chars, 200-char overlap), converted to OpenAI embeddings, and stored in five independent collections split by document type (supplier history, item history, and report/PR/email examples).
-- **Empirical hyperparameter tuning — deciding the chunk size** — reviewing the actual supplier/item history documents, I found they typically run about 1–2 A4 pages, and used that as the basis to benchmark chunk sizes of 500, 1,000, and 1,500 characters for storage/retrieval efficiency. Too small (500) and a single event's narrative (cause → effect) gets cut at a chunk boundary, breaking context; too large (1,500) and several distinct events get mixed into one chunk, blurring the embedding so it can't focus on any one event. I settled on 1,000 characters as the best fit for the document's "per-event" narrative length, and set the overlap to 200 characters (20% of chunk size) so that an event straddling a boundary is still captured in both adjacent chunks.
+- **Empirical hyperparameter tuning — deciding the chunk size** — reviewing the actual supplier/item history documents, I found they typically run about 1–2 A4 pages, and used that as the basis to benchmark chunk sizes of 500, 1,000, and 1,500 characters for storage/retrieval efficiency. Too small (500) and a single event's narrative (cause → effect) gets cut at a chunk boundary, breaking context; too large (1,500) and several distinct events get mixed into one chunk, blurring the embedding so it can't focus on any one event. I settled on 1,000 characters as the best fit for the event-level narrative length of the source documents, and set the overlap to 200 characters (20% of chunk size) so that an event straddling a boundary is still captured in both adjacent chunks.
 - **Workflow-tailored design** — the actual supplier/item history documents followed a convention of stating the supplier name and item code at the top. Recognizing this, I could extract **reliable metadata with regex alone**, without any complex ontology implementation.
     - **Metadata tagging** — at ingest time, regex extracts the supplier name and item code and attaches them as document metadata. Since every child chunk inherits the parent document's metadata after chunking, the filter always applies correctly even when a given chunk's text doesn't literally contain that name.
     - **Explicit metadata filtering + similarity search (two-stage retrieval)** — when the analysis agent looks up history, it doesn't rely solely on the LLM-generated query text; it also passes the actual supplier name and item code the pipeline already knows as a metadata filter. It first narrows the candidate set to documents satisfying that filter, then ranks by similarity within that set to fetch the top K — so the result is not "semantically similar documents" but precisely "the most semantically relevant among the documents that actually belong to that supplier/item."
@@ -108,7 +108,7 @@ Observability: LangSmith tracks token usage, latency, and prompt performance for
 
 ## Fine-tuning Study: SFT + DPO on Llama-3-8B
 
-I tested whether the GPT-4o analysis agent could be replaced with a self-hosted model. **The goal was to reduce per-call cost and data-privacy exposure**, and the approach was to distill GPT-4o's knowledge into Llama-3-8B.
+I tested whether the GPT-4o analysis agent could be replaced with a self-hosted model. **The goal was to reduce per-call cost and data-exposure risk**, and the approach was to distill GPT-4o's knowledge into Llama-3-8B.
 
 **Training data**
 
@@ -148,7 +148,7 @@ I tested whether the GPT-4o analysis agent could be replaced with a self-hosted 
 
 **Interpreting the results**
 
-- **SFT result** — reached about 95% of GPT-4o's evaluation quality and produced valid structured output on every example. This supports the feasibility of replacing it with a self-hosted model.
+- **SFT result** — reached about 95% of GPT-4o's evaluation quality and produced valid structured output on every example. This supports the feasibility of replacing the GPT-4o analysis agent with a self-hosted model.
 
 - **DPO regression** — despite training on preference pairs whose quality was actually verified by a judge, it *dropped* relative to SFT (9.5 → 8.5).
     - **Root-cause analysis** — the judge comments show that most of the regressed examples were flagged for "the critical-questions field being missing." Looking into the training data, `chosen` (GPT-4o) includes this field in all 25 cases, while `rejected` includes it in only 7 of 25 (28%) — so most of the training signal should have pushed toward *including* the field. This opposite result suggests that **DPO's contrastive learning only adjusts the relative probability of the whole sequence and cannot pinpoint "which part is responsible" (a lack of credit assignment)**. The seven exception cases likely acted as noise, driving generalization in the wrong direction at this small sample size (25).
@@ -159,11 +159,11 @@ I tested whether the GPT-4o analysis agent could be replaced with a self-hosted 
 ## Outcomes
 
 - **Higher automation and analysis quality** — automated repetitive SKU-level inventory review and document authoring, standardizing analysis quality that previously varied by person and situation.
-- **RAG-based context analysis** — multi-source context such as supplier history and lead times, which a human could easily miss depending on analysis speed and experience, is pulled in and combined within seconds by RAG, supporting risk-priority-based decisions quickly and consistently.
+- **RAG-based context analysis** — multi-source context such as supplier history and lead times, which can be missed in manual review under time and experience constraints, is pulled in and combined within seconds by RAG, supporting risk-priority-based decisions quickly and consistently.
 - **Validated self-hosting feasibility** — demonstrated that the fine-tuned local model (SFT) reaches about 95% of GPT-4o's quality. Confirmed two concrete benefits of a self-hosting switch: eliminating per-call API costs and keeping data internal for privacy.
 - **Operations-oriented design** — SSE real-time streaming (live progress even while waiting, avoiding timeout risk), a self-correcting agent graph (automatic sensitive-info leak detection and rewrite), and LangSmith-based observability (per-node token/latency/prompt-performance and cost monitoring plus root-cause tracing).
 - **Accuracy and reliability** — separated roles so that accuracy-critical computation (order date, quantity) is handled by deterministic formulas while context-dependent judgment is handled by LLM reasoning.
-- **Workflow-tailored efficiency design** — after recognizing the actual document-authoring convention (supplier name and item code stated at the top), I solved RAG-retrieval cross-contamination (other suppliers'/items' documents leaking in) with regex metadata extraction + forced filtering alone, without heavy structuring like an ontology. Rather than applying a generic engineering pattern as-is, I observed how the work is actually done and designed a lightweight, efficient solution around it.
+- **Workflow-tailored efficiency design** — after recognizing the actual document-authoring convention (supplier name and item code stated at the top), I solved RAG-retrieval cross-contamination (documents from other suppliers or items being mixed in) with regex metadata extraction + forced filtering alone, without heavy structuring like an ontology. Rather than applying a generic engineering pattern as-is, I observed how the work is actually done and designed a lightweight, efficient solution around it.
 
 ---
 
@@ -178,10 +178,10 @@ The analysis agent currently relies on GPT-4o calls, incurring per-call cost and
 
 **RAG retrieval extension idea — evaluating ontology / knowledge graph**
 
-The current approach (metadata filter + semantic similarity) is sufficient for its core purpose: finding relevant documents quickly and precisely at the supplier/item level. To go one step further and **support relational/aggregate queries that span multiple documents** — e.g. "Among the other items this supplier delivers, which have had similar quality issues in the past?" — an ontology / knowledge graph could be added.
+The current approach (metadata filter + semantic similarity) is sufficient for its core purpose: finding relevant documents quickly and precisely at the supplier/item level. To go one step further and **support relational/aggregate queries that span multiple documents** — e.g. "Among the other items this supplier supplies, which have had similar quality issues in the past?" — an ontology / knowledge graph could be added.
 
-- **Technical approach — ontology design → knowledge graph implementation** — first, entity types like "supplier" and "item" and relation types like "delivers" and "had a quality issue" are **defined as an ontology**. Then a **lightweight knowledge graph (e.g. Neo4j)** populated with real data following that schema is used alongside vector search. **The existing metadata-filter + similarity two-stage retrieval keeps handling "find semantically similar documents," while "traversing the items/issues connected to this supplier along the relations the ontology defines" is handled by the newly added knowledge graph** — dividing the roles this way.
-- **Expected benefit — multi-hop reasoning & aggregation** — the system is currently strong at questions answerable within a single document (what is this supplier's history), but it would then also answer accurately for questions requiring several documents/entities to be chained ("Among the other items this supplier delivers, have any had problems?") and for countable questions ("How many suppliers had two or more delays this quarter?").
+- **Technical approach — ontology design → knowledge graph implementation** — first, entity types like "supplier" and "item" and relation types like "supplies" and "had a quality issue" are **defined as an ontology**. Then a **lightweight knowledge graph (e.g. Neo4j)** populated with real data following that schema is used alongside vector search. **The existing metadata-filter + similarity two-stage retrieval keeps handling "find semantically similar documents," while "traversing the items/issues connected to this supplier along the relations the ontology defines" is handled by the newly added knowledge graph** — dividing the roles this way.
+- **Expected benefit — multi-hop reasoning & aggregation** — the system is currently strong at questions answerable within a single document (what is this supplier's history), but it would then also answer accurately for questions requiring several documents/entities to be chained ("Among the other items this supplier supplies, have any had problems?") and for count-based questions ("How many suppliers had two or more delays this quarter?").
 - **Adoption condition — incremental rollout** — ontology design (defining entity/relation types) and extracting relations from data to match that schema require additional work. So the realistic path is to confirm that such "cross-document questions" actually come up often in real use, and then add only as much as needed, incrementally.
 
 ---
