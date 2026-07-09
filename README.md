@@ -7,9 +7,10 @@ A multi-agent LLM pipeline that jointly analyzes an inventory snapshot together 
 ![Multi-Agent Purchasing AI Workflow](docs/workflow_diagram.png)
 
 > **Demo:** https://soominmyung.com/purchasing-automation
+>
 > **Source:** https://github.com/soominmyung/purchasing-automation
 
-> A polished A4 version of this write-up is available as [PDF](docs/portfolio_a4_en.pdf) / [HTML](docs/portfolio_a4_en.html).
+> A polished A4 version of this write-up is available as a [PDF](docs/portfolio_a4_en.pdf).
 
 ---
 
