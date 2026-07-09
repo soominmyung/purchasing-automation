@@ -719,7 +719,7 @@
 <p><strong class="subhead">AI 품질 평가(Evaluator) 에이전트</strong> 별도 평가 에이전트가 분석 에이전트의 출력(JSON)과 그 근거가 된 공급업체·품목 이력 원문을 대조해, <strong>데이터 정확성·이력 충실도(할루시네이션 여부)·논리적 추론·운영 적합성</strong> 4개 기준으로 10점 만점 채점합니다. 재조회가 아니라 분석 에이전트가 실제로 조회했던 이력 원문을 그대로 전달받아 대조하기 때문에, 실제로는 근거가 있는 서술을 “출처 불명”으로 오판해 허위 할루시네이션으로 잘못 채점하는 문제를 방지합니다.</p>
 <p><strong class="subhead">가드레일(Guardrail) — 자기 교정 루프</strong> 이메일 결과물은 검증 노드를 거치며 내부 정보 유출 여부를 점검합니다. 유출이 감지되면 그대로 반환하지 않고 그래프가 초안 재생성으로 되돌아갑니다.</p>
 <p><strong class="subhead">실시간 스트리밍 (SSE)</strong> 단일 요청-응답 대신, 파이프라인 각 단계(CSV 파싱 → 그룹화 → 분석 → 문서 생성)의 진행 상황을 Server-Sent Events로 클라이언트에 실시간 전송함으로써 사용자에게 “지금 어느 단계인지”를 실시간으로 보여주고, 오류 발생 시에도 즉시 알릴 수 있습니다.</p>
-<p><strong class="subhead">하이브리드(Hybrid) 설계 — 결정론적 계산과 LLM 추론의 역할 분리</strong> 공급업체 그룹화 단계에서 <code>WksToOOS</code>(품절까지 남은 주 수)와 <code>CurrentStock</code>을 바탕으로 권장 발주일과 수량을 파이썬 산식으로 계산합니다. 날짜·수량처럼 정확도가 중요한 값은 LLM 추론에 맡기지 않고 결정론적 코드로 처리해 할루시네이션 리스크를 없앴고, LLM은 그 결과를 받아 우선순위가 정리된 구조화 데이터를 대상으로 리스크 해석과 문서 작성에만 집중합니다.</p>
+<p><strong class="subhead">하이브리드(Hybrid) 설계 — 결정론적 계산과 LLM 추론의 역할 분리</strong> 공급업체 그룹화 단계에서 <code>WksToOOS</code>(품절까지 남은 주 수)와 <code>CurrentStock</code>을 바탕으로 <strong>권장 발주일과 수량을 파이썬 산식으로 계산</strong>합니다. 날짜·수량처럼 정확도가 중요한 값은 LLM 추론에 맡기지 않고 결정론적 코드로 처리해 할루시네이션 리스크를 없앴고, LLM은 그 결과를 받아 우선순위가 정리된 구조화 데이터를 대상으로 리스크 해석과 문서 작성에만 집중합니다.</p>
 <p><strong class="subhead">보안(Security) &amp; 관측성(Observability)</strong> 보안: 공개 데모는 익명 사용자의 토큰 남용을 막기 위해 헤더 기반 API 키 인증(<code>X-API-Key</code>)과 IP 단위 요청 제한을 두었습니다. 사내 배포는 내부망 ID/PW 개인별 로그인을 구현했습니다. 관측성: LangSmith로 모든 노드의 토큰 사용량·지연·프롬프트 성능을 추적하고, LangChain 밖의 자체 로직도 <code>@traceable</code>로 계측합니다.</p>
 <p><strong class="subhead">배포</strong> 공개 데모는 Docker 컨테이너로 GCP Cloud Run(서버리스, 스케일 투 제로)에 올려 누구나 접속할 수 있게 했고, CI/CD는 GitHub Actions로 구성해 <code>main</code> 브랜치에 푸시할 때마다 이미지를 빌드·자동 배포합니다. 실제 사내 운영에서는 SAP ERP가 상시 구동되는 24시간 로컬 서버에 앱을 상주시켜 내부망에서 팀이 사용하도록 구성했으며, 이 환경에서는 콜드 스타트나 벡터스토어 휘발성 문제가 없습니다.</p>
 <hr />
@@ -727,7 +727,7 @@
 </section>
 <section id="파인튜닝-연구-llama-3-8b에-sft-dpo-적용" class="level2">
 <h2>파인튜닝 연구: Llama-3-8B에 SFT + DPO 적용</h2>
-<p>GPT-4o 분석 에이전트를 자체 호스팅 모델로 대체할 수 있는지를 테스트했습니다. 목적은 호출당 비용과 데이터 프라이버시 노출을 줄이는 것이고, 접근 방식은 GPT-4o의 지식을 Llama-3-8B로 증류(distillation)하는 것이었습니다.</p>
+<p>GPT-4o 분석 에이전트를 자체 호스팅 모델로 대체할 수 있는지를 테스트했습니다. <strong>목적은 호출당 비용과 데이터 프라이버시 노출을 줄이는 것</strong>이고, 접근 방식은 GPT-4o의 지식을 Llama-3-8B로 증류(distillation)하는 것이었습니다.</p>
 <p><strong class="subhead">학습 데이터</strong></p>
 <ul>
 <li><strong>데이터 출처</strong> — 실제 회사 데이터 대신 GPT-4o로 생성한 <strong>합성 구매 시나리오</strong>를 사용했습니다.</li>
@@ -747,8 +747,9 @@
 </ul>
 <p><strong class="subhead">2단계 — 직접 선호 최적화 (DPO)</strong></p>
 <ul>
-<li>선호 쌍 25개 (홀드아웃 5개 제외; chosen: GPT-4o 출력, rejected: SFT 출력)</li>
-<li><strong>학습 데이터(선호 쌍) 형태</strong>: JSONL, <code>{prompt, chosen, rejected}</code> — <code>prompt</code>는 SFT와 동일한 템플릿(Response 제외), <code>chosen</code>은 GPT-4o 정답 analysis JSON, <code>rejected</code>는 동일 프롬프트에 대해 SFT 모델이 실제 생성한 출력</li>
+<li>선호 쌍 25개 (홀드아웃 5개 제외)</li>
+<li><strong>선호 쌍 구성</strong> — <code>chosen</code>은 GPT-4o 정답 analysis JSON으로 고정하고(지식 증류 목표상 모델 자신의 실력을 넘어서는 외부 기준점 필요), <code>rejected</code>는 SFT 모델이 동일 프롬프트에 대해 온도 0.8로 생성한 후보 4개를 GPT-4o judge로 채점해 그중 가장 낮은 점수를 받은 것만 선별했습니다. <strong>judge에게는 문체·분량이 아닌 데이터 정확성·추론 품질만 평가하도록 명시해, 스타일 차이가 선호 신호에 섞이지 않도록</strong> 했습니다.</li>
+<li><strong>학습 데이터(선호 쌍) 형태</strong>: JSONL, <code>{prompt, chosen, rejected}</code> — <code>prompt</code>는 SFT와 동일한 템플릿(Response 제외), <strong><code>rejected</code>에는 판단 근거(채점 점수·코멘트)도 함께 기록해 사후 분석이 가능하도록 함</strong></li>
 <li>Vertex AI, Tesla T4, 3 epoch, 약 14분</li>
 <li>Unsloth <code>PatchDPOTrainer()</code> + TRL <code>DPOTrainer</code></li>
 </ul>
@@ -772,12 +773,12 @@
 </tr>
 <tr class="even">
 <td style="text-align: left;"><strong>Llama-3-8B SFT</strong></td>
-<td style="text-align: center;"><strong>9.3 / 10</strong></td>
+<td style="text-align: center;"><strong>9.5 / 10</strong></td>
 <td style="text-align: center;"><strong>100%</strong></td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Llama-3-8B SFT + DPO</td>
-<td style="text-align: center;">7.4 / 10</td>
+<td style="text-align: center;">8.5 / 10</td>
 <td style="text-align: center;">100%</td>
 </tr>
 <tr class="even">
@@ -789,12 +790,11 @@
 </table>
 <p><strong class="subhead">결과 해석</strong></p>
 <ul>
-<li><p><strong>SFT 성과</strong> — GPT-4o 대비 약 93%의 평가 품질에 도달했고, 모든 예제에서 유효한 구조화 출력을 냈습니다. 자체 호스팅 모델로의 대체 가능성을 뒷받침하는 결과입니다.</p></li>
-<li><p><strong>DPO 성능 하락</strong> — SFT 대비 오히려 하락(9.3 → 7.4)했습니다. 선호 쌍이 25개(홀드아웃 제외 시 20개)로 적었던 영향도 있습니다.</p>
+<li><p><strong>SFT 성과</strong> — GPT-4o 대비 약 95%의 평가 품질에 도달했고, 모든 예제에서 유효한 구조화 출력을 냈습니다. 자체 호스팅 모델로의 대체 가능성을 뒷받침하는 결과입니다.</p></li>
+<li><p><strong>DPO 성능 하락</strong> — judge가 실제로 품질을 검증한 선호 쌍으로 학습했음에도 SFT 대비 오히려 하락(9.5 → 8.5)했습니다.</p>
 <ul>
-<li><strong>원인: 선호 쌍 구성 방식</strong> — chosen/rejected를 실제 품질 평가 없이 “GPT-4o 출력 vs SFT 자체 출력”으로 고정 배정했습니다. 개별 사례마다 SFT 출력이 실제로 더 나쁜지 검증되지 않았고, 모델이 내용의 논리적 깊이보다 GPT-4o의 문체를 모방하는 방향으로 편향됐을 가능성이 있습니다.</li>
-<li><strong>관찰과의 정합성</strong> — 데이터 정확도(8~9/10)는 유지된 채 추론 깊이만 얕아진 결과가 이 가설과 일치합니다.</li>
-<li><strong>향후 개선 방향</strong> — SFT 모델이 생성한 여러 후보를 GPT-4o judge로 랭킹해, 실제 품질 차이가 검증된 on-policy 선호 쌍을 구성하는 방식을 시도할 필요가 있습니다.</li>
+<li><strong>원인 분석</strong> — judge 코멘트를 보면 하락한 예제 대부분에서 “핵심 질문(critical questions) 항목이 빠졌다”는 지적이 반복됩니다. 학습 데이터를 뜯어보면 <code>chosen</code>(GPT-4o)은 25개 전부 이 필드를 포함하는 반면 <code>rejected</code>는 25개 중 7개(28%)만 포함하고 있어, 훈련 신호 대부분은 “이 필드를 포함하라”는 방향이어야 했습니다. 그런데도 결과가 반대로 나온 건, <strong>DPO의 대조 학습이 시퀀스 전체의 상대적 확률만 조정할 뿐 “어느 부분이 원인인지”는 짚어주지 못하기 때문입니다(credit assignment 부재)</strong>. 소수(7개)의 예외 사례가 노이즈로 섞여 들어가면서, 25개라는 적은 표본에서 의도와 다른 방향으로 일반화된 것으로 보입니다.</li>
+<li><strong>결론</strong> — 선호 쌍을 judge로 검증해도 이 규모(25쌍)에서는 DPO가 SFT 대비 안정적인 개선을 보장하지 못했습니다. <strong>SFT가 이미 GPT-4o 대비 95% 품질에 도달한 상태를 감안하면, 남은 격차를 DPO로 메우려는 추가 투자보다 SFT 단독 채택이 이 프로젝트 규모에서는 더 합리적인 결론</strong>입니다.</li>
 </ul></li>
 </ul>
 <hr />
@@ -805,7 +805,7 @@
 <ul>
 <li><strong>자동화 및 분석 품질 향상</strong> — 반복적인 SKU 단위 재고 검토와 문서 작성을 자동화 — 담당자·상황에 따라 들쭉날쭉하던 판단을 일관된 품질로 끌어올림.</li>
 <li><strong>RAG 기반 컨텍스트 분석</strong> — 사람이 하면 담당자의 분석 속도·숙련도에 따라 누락되기 쉬웠던 공급업체 이력·리드 타임 등 다중 소스 컨텍스트를, RAG로 몇 초 만에 모두 끌어와 결합함으로써 리스크 우선순위 기반 의사결정을 빠르고 일관되게 지원.</li>
-<li><strong>자체 호스팅 대체 가능성 검증</strong> — 파인튜닝한 로컬 모델(SFT)이 GPT-4o 대비 약 93% 품질에 도달함을 실증. 자체 호스팅 전환 시 API 호출 비용 제로화와 데이터 외부 미전송(프라이버시 확보)이라는 두 가지 실익 확인.</li>
+<li><strong>자체 호스팅 대체 가능성 검증</strong> — 파인튜닝한 로컬 모델(SFT)이 GPT-4o 대비 약 95% 품질에 도달함을 실증. 자체 호스팅 전환 시 API 호출 비용 제로화와 데이터 외부 미전송(프라이버시 확보)이라는 두 가지 실익 확인.</li>
 <li><strong>운영 지향 설계</strong> — SSE 실시간 스트리밍(대기 중에도 진행 상황 실시간 확인, 타임아웃 리스크 회피), 자기 교정 에이전트 그래프(민감정보 유출 자동 검출·재작성), LangSmith 기반 관측성(노드별 토큰·지연·프롬프트 성능 및 비용 모니터링과 문제 원인 추적)을 갖춘 설계.</li>
 <li><strong>정확성과 신뢰성 확보</strong> — 정확도가 중요한 계산(발주일·수량)은 결정론적 산식으로, 맥락 판단이 필요한 부분은 LLM 추론으로 역할을 분리.</li>
 <li><strong>현업 맞춤형 효율화 설계</strong> — 실제 문서 작성 관행(공급업체명·아이템 코드를 서두에 명시)을 파악한 뒤, 온톨로지 같은 무거운 구조화 없이 정규식 메타데이터 추출 + 강제 필터링만으로 RAG 검색의 교차 오염(다른 공급업체·품목 문서가 섞여 들어오는 문제)을 해결. 일반적인 엔지니어링 패턴을 그대로 적용하기보다, 현업의 실제 작업 방식을 관찰해 거기 맞춘 가볍고 효율적인 해법을 설계.</li>
@@ -815,10 +815,9 @@
 <section id="향후-과제" class="level2">
 <h2>향후 과제</h2>
 <p><strong class="subhead">GPT-4o → 자체 호스팅 모델 전환</strong></p>
-<p>현재 분석 에이전트는 GPT-4o 호출에 의존하므로 호출 비용이 발생하고 데이터가 외부로 전송됩니다. 이를 줄이기 위해 자체 호스팅 모델을 검증했고, SFT만으로 GPT-4o 대비 약 93% 품질에 도달해 대체 타당성을 확인했습니다(Llama-3-8B 기준). 다만 실제 전환까지는 다음 과제들이 남아 있습니다.</p>
+<p>현재 분석 에이전트는 GPT-4o 호출에 의존하므로 호출 비용이 발생하고 데이터가 외부로 전송됩니다. 이를 줄이기 위해 자체 호스팅 모델을 검증했고, SFT만으로 GPT-4o 대비 약 95% 품질에 도달해 대체 타당성을 확인했습니다(Llama-3-8B 기준). DPO는 judge 검증까지 거친 선호 쌍으로 추가 실험했지만 이 규모에서는 SFT 대비 개선을 얻지 못해, 현재는 <strong>SFT 단독</strong>으로 전환을 진행합니다. 다만 실제 전환까지는 다음 과제들이 남아 있습니다.</p>
 <ul>
-<li><strong>DPO 훈련셋 설계 정교화</strong> — 현재는 chosen/rejected를 품질 평가 없이 “GPT-4o 출력 vs SFT 자체 출력”으로 고정 배정해, 모델이 내용의 논리적 깊이보다 GPT-4o의 문체를 모방하는 방향으로 편향됐을 가능성이 있습니다. chosen을 GPT-4o 출력으로 유지하는 건 증류(distillation)의 목표(모델 자신의 실력을 넘어서는 외부 기준점 제공)상 타당하지만, rejected는 SFT 모델의 여러 후보 중 judge가 “내용·논리 품질이 실제로 더 낮다”고 확인한 것만 선별하거나, judge에게 문체가 아닌 내용만 평가하도록 기준을 명시해 스타일 차이가 선호 신호에 섞이지 않도록 개선할 필요가 있습니다.</li>
-<li><strong>선호 쌍 규모 확대</strong> — 현재 25개(홀드아웃 제외 시 20개)뿐인 선호 쌍을 더 확보해 DPO 학습 신호를 안정화합니다.</li>
+<li><strong>DPO 재도전 조건</strong> — 이번 실험에서 하락 원인은 DPO의 대조 학습이 “어느 부분이 원인인지” 짚어주지 못하는 credit assignment 한계와 25쌍이라는 적은 표본 규모가 겹친 결과로 보입니다. 규모를 키우거나, 기존 4기준 평가 에이전트 구조를 재사용해 필드·기준별로 선호 신호를 세분화하는 다축 보상(multi-attribute reward), 혹은 대조(밀어내기) 학습 자체를 없애 부작용 리스크를 원천 차단하는 Best-of-N 필터링 + SFT 방식을 적용한다면 재검토할 수 있습니다. 다만 지금 규모(25쌍, 홀드아웃 5개)에서는 그 정도 엔지니어링 투자 대비 남은 격차(5%)가 작아, SFT 단독 채택이 더 합리적인 선택입니다.</li>
 <li><strong>최신 모델 활용 검토</strong> — GPT-4o는 이 프로젝트에서 프로덕션 분석 에이전트(반복 호출, 비용 민감)이자 학습 데이터를 만드는 교사(일회성 호출, 비용 무관)라는 두 가지 역할을 겸합니다. 교사 쪽은 GPT-5 같은 상위 모델로 바꿔도 일회성 비용이라 부담이 적어 학습 데이터 품질을 높이는 데 활용할 수 있고, 학생(대체) 쪽은 Llama-3-8B 외에 이후 공개된 Qwen, Llama 최신 버전 등 오픈소스 소형 모델을 비교 검증해 프로덕션 비용·성능을 함께 개선할 여지가 있습니다.</li>
 </ul>
 <p><strong class="subhead">RAG 검색 확장 아이디어 — 온톨로지/지식 그래프 적용 검토</strong></p>
