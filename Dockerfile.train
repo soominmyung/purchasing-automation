@@ -11,8 +11,11 @@ RUN apt-get update && apt-get install -y \
 
 # Pin torch version explicitly so pip install unsloth does NOT upgrade it
 # xformers omitted — version must match torch exactly; unsloth works without it
+# torchao pinned to 0.13.0 — newer torchao (0.14+) calls torch.utils._pytree.register_constant,
+# an API only added in torch 2.7+, which crashes on this image's pinned torch==2.6.0
 RUN pip install --no-cache-dir \
     "torch==2.6.0" \
+    "torchao==0.13.0" \
     "unsloth" \
     "trl" \
     "peft" \

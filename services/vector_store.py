@@ -2,6 +2,7 @@
 Vector stores: supplier_history, item_history, analysis_examples, request_examples, email_examples.
 Corresponds to n8n Vector Store In-Memory + OpenAI Embeddings.
 """
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -64,14 +65,41 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _most_recent(collection_name: str, k: int) -> list[Document]:
-    """Return the k most recently ingested chunks, ranked by ingested_at (not similarity)."""
+_DATE_LINE_RE = re.compile(r"Date:\s*([^\n\r]+)")
+_DATE_FORMATS = ("%Y-%m-%d", "%d %B %Y", "%B %d, %Y")
+
+
+def _extract_event_date(text: str) -> str:
+    """Parse the document's own 'Date: ...' line (existing report-writing convention) into an ISO date.
+
+    Returns "" if no such line is found or it doesn't match a known format; callers fall back
+    to ingested_at in that case (see _most_recent) rather than mistaking an undated document for old.
+    """
+    match = _DATE_LINE_RE.search(text)
+    if not match:
+        return ""
+    raw = match.group(1).strip()
+    for fmt in _DATE_FORMATS:
+        try:
+            return datetime.strptime(raw, fmt).date().isoformat()
+        except ValueError:
+            continue
+    return ""
+
+
+def _most_recent(collection_name: str, k: int, filter: dict[str, Any] | None = None, sort_key: str = "event_date") -> list[Document]:
+    """Return the k most recent chunks (optionally metadata-filtered), ranked by sort_key (not similarity).
+
+    Falls back to ingested_at when sort_key is missing/empty (e.g. event_date couldn't be
+    parsed from the document), so undated documents still rank by upload recency instead of
+    being buried behind every dated document.
+    """
     store = _get_or_create_store(collection_name)
     if store is None:
         return []
-    raw = store._collection.get(include=["metadatas", "documents"])
+    raw = store._collection.get(where=filter, include=["metadatas", "documents"])
     pairs = list(zip(raw.get("documents") or [], raw.get("metadatas") or []))
-    pairs.sort(key=lambda dm: dm[1].get("ingested_at", ""), reverse=True)
+    pairs.sort(key=lambda dm: dm[1].get(sort_key) or dm[1].get("ingested_at", ""), reverse=True)
     return [Document(page_content=text, metadata=meta) for text, meta in pairs[:k]]
 
 
@@ -79,7 +107,12 @@ def ingest_supplier_history(text: str, supplier_name: str) -> None:
     """Ingest supplier history text with supplier_name metadata."""
     _add_docs(
         "supplier_history",
-        [Document(page_content=text, metadata={"supplier_name": supplier_name, "doc_type": "supplier_history"})],
+        [Document(page_content=text, metadata={
+            "supplier_name": supplier_name,
+            "doc_type": "supplier_history",
+            "ingested_at": _now_iso(),
+            "event_date": _extract_event_date(text),
+        })],
     )
 
 
@@ -87,7 +120,12 @@ def ingest_item_history(text: str, item_code: str | None) -> None:
     """Ingest item history text with item_code metadata."""
     _add_docs(
         "item_history",
-        [Document(page_content=text, metadata={"item_code": item_code or "", "doc_type": "item_history"})],
+        [Document(page_content=text, metadata={
+            "item_code": item_code or "",
+            "doc_type": "item_history",
+            "ingested_at": _now_iso(),
+            "event_date": _extract_event_date(text),
+        })],
     )
 
 
@@ -95,7 +133,11 @@ def ingest_analysis_examples(text: str) -> None:
     """Ingest purchasing analysis reference examples."""
     _add_docs(
         "analysis_examples",
-        [Document(page_content=text, metadata={"doc_type": "analysis_examples", "ingested_at": _now_iso()})],
+        [Document(page_content=text, metadata={
+            "doc_type": "analysis_examples",
+            "ingested_at": _now_iso(),
+            "event_date": _extract_event_date(text),
+        })],
     )
 
 
@@ -103,7 +145,11 @@ def ingest_request_examples(text: str) -> None:
     """Ingest purchase request reference examples."""
     _add_docs(
         "request_examples",
-        [Document(page_content=text, metadata={"doc_type": "request_examples", "ingested_at": _now_iso()})],
+        [Document(page_content=text, metadata={
+            "doc_type": "request_examples",
+            "ingested_at": _now_iso(),
+            "event_date": _extract_event_date(text),
+        })],
     )
 
 
@@ -111,30 +157,34 @@ def ingest_email_examples(text: str) -> None:
     """Ingest email draft reference examples."""
     _add_docs(
         "email_examples",
-        [Document(page_content=text, metadata={"doc_type": "email_examples", "ingested_at": _now_iso()})],
+        [Document(page_content=text, metadata={
+            "doc_type": "email_examples",
+            "ingested_at": _now_iso(),
+            "event_date": _extract_event_date(text),
+        })],
     )
 
 
-def search_supplier_history(query: str, k: int = 5, filter: dict[str, Any] | None = None) -> list[Document]:
-    store = _get_or_create_store("supplier_history")
-    return store.similarity_search(query, k=k, filter=filter)
+def search_supplier_history(k: int = 5, filter: dict[str, Any] | None = None) -> list[Document]:
+    """Most recent supplier-history chunks for the filtered supplier, ranked by the document's own event date (fact retrieval, not similarity)."""
+    return _most_recent("supplier_history", k, filter=filter)
 
 
-def search_item_history(query: str, k: int = 5, filter: dict[str, Any] | None = None) -> list[Document]:
-    store = _get_or_create_store("item_history")
-    return store.similarity_search(query, k=k, filter=filter)
+def search_item_history(k: int = 5, filter: dict[str, Any] | None = None) -> list[Document]:
+    """Most recent item-history chunks for the filtered item(s), ranked by the document's own event date (fact retrieval, not similarity)."""
+    return _most_recent("item_history", k, filter=filter)
 
 
 def search_analysis_examples(k: int = 3) -> list[Document]:
-    """Most recently ingested analysis-report examples (style/tone reference, not fact retrieval)."""
+    """Most recent analysis-report examples, ranked by the document's own date (style/tone reference, not fact retrieval)."""
     return _most_recent("analysis_examples", k)
 
 
 def search_request_examples(k: int = 3) -> list[Document]:
-    """Most recently ingested purchase-request examples (style/tone reference, not fact retrieval)."""
+    """Most recent purchase-request examples, ranked by the document's own date (style/tone reference, not fact retrieval)."""
     return _most_recent("request_examples", k)
 
 
 def search_email_examples(k: int = 3) -> list[Document]:
-    """Most recently ingested supplier-email examples (style/tone reference, not fact retrieval)."""
+    """Most recent supplier-email examples, ranked by the document's own date (style/tone reference, not fact retrieval)."""
     return _most_recent("email_examples", k)

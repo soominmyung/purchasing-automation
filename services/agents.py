@@ -39,17 +39,20 @@ def _llm(model: str = "gpt-4o") -> ChatOpenAI:
 
 
 # ----- Tools for Analysis Agent -----
+# NOTE: these @tool wrappers only supply the name/description/schema for llm.bind_tools() below.
+# The actual retrieval (metadata-filtered, most-recent-first) happens in the manual
+# tool_calls interception further down — these function bodies are never invoked.
 @tool
 def supplier_history(query: str) -> str:
     """Look up past information about ONE supplier. Input: short JSON or text including supplier name (e.g. 'SupplierA'). Output: concise documents about delivery delays, price changes, quality incidents, negotiation patterns. If no relevant document, return empty list."""
-    docs = search_supplier_history(query, k=5)
+    docs = search_supplier_history(k=5)
     return "\n\n".join(d.page_content for d in docs) if docs else "No supplier history found."
 
 
 @tool
 def item_history(query: str) -> str:
     """Look up past information about ONE OR MORE items. Input: text including one or more item codes (e.g. 'Item history for 100000 ItemA and 100004 ItemE'). Output: concise documents about stock-outs, demand spikes, quality incidents, lead times. If no relevant document, return empty list."""
-    docs = search_item_history(query, k=5)
+    docs = search_item_history(k=5)
     return "\n\n".join(d.page_content for d in docs) if docs else "No item history found."
 
 
@@ -121,23 +124,20 @@ def run_analysis_agent(
             t_results = []
             for tc in t_calls:
                 t_name = (tc.get("name") if isinstance(tc, dict) else getattr(tc, "name", None)) or "supplier_history"
-                t_args = (tc.get("args") if isinstance(tc, dict) else getattr(tc, "args", {})) or {}
                 t_id = (tc.get("id") if isinstance(tc, dict) else getattr(tc, "id", "")) or ""
                 
                 if t_name == "supplier_history":
-                    t_query = t_args.get("query", str(input_json.get("supplier", "")))
                     supplier_name = str(input_json.get("supplier", ""))
                     docs = search_supplier_history(
-                        t_query, k=5,
+                        k=5,
                         filter={"supplier_name": supplier_name} if supplier_name else None,
                     )
                     t_out = "\n\n".join(d.page_content for d in docs) if docs else "No supplier history found."
                     used_supplier_history = t_out
                 elif t_name == "item_history":
                     item_codes = [str(i.get("item_code")) for i in input_json.get("items", []) if i.get("item_code")]
-                    t_query = t_args.get("query", " ".join(f"item_code: {c}" for c in item_codes))
                     docs = search_item_history(
-                        t_query, k=5,
+                        k=5,
                         filter={"item_code": {"$in": item_codes}} if item_codes else None,
                     )
                     t_out = "\n\n".join(d.page_content for d in docs) if docs else "No item history found."
