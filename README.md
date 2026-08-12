@@ -211,6 +211,7 @@ The API is then available at `http://localhost:8080`, with interactive docs at `
 * **utils/** — utilities (CSV parsing, PDF extraction, Word generation)
 * **scripts/** — fine-tuning pipeline (`train_sft.py`, `train_dpo.py`, `generate_dpo_pairs.py`, `eval_sft.py`, `eval_dpo.py`) and Vertex AI job submission; serving benchmarks (`bench_vllm.py`, `bench_hf_baseline.py`, `gen_serving_outputs.py`, `eval_quantization_quality.py`)
 * **training_data/** — GPT-4o-distilled teacher dataset (JSONL)
+* **eval_results/** — raw serving-evaluation artifacts (FP16 vs FP8 model outputs and judge scores)
 * **docs/** — documentation, portfolio write-up, and sample dataset (Examples.zip)
 * **.github/workflows/deploy.yml** — CI/CD pipeline configuration
 * **Dockerfile** — containerization config for Cloud Run (port 8080)

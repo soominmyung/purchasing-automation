@@ -1,0 +1,1542 @@
+[
+  {
+    "idx": 0,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierB  \n\n**Summary:**  \nSupplierB has a history of reliability but faced a major quality issue last quarter, leading to a recall. This incident necessitates careful monitoring of supply quality. Both ItemC and ItemD have experienced demand volatility, with ItemC often substituting for ItemD during low inventory periods. Lead times for these items fluctuated significantly in Q2.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 100002   | ItemC    | 200          | 10       | Low       | N/A            | N/A                  |\n| 100003   | ItemD    | 50           | 6        | Medium    | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures have been implemented to prevent future quality issues after the recent recall?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "100002",
+          "question": "How can we better manage the demand volatility for ItemC?",
+          "reason": "item_history"
+        },
+        {
+          "target": "100003",
+          "question": "What strategies are in place to stabilize lead times for ItemD?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "100002",
+          "item_name": "ItemC",
+          "supplier": "SupplierB",
+          "risk_level": "Low",
+          "current_stock": 200,
+          "wks_to_oos": 10,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemC has experienced demand volatility and often substitutes for ItemD during low inventory periods. Lead times fluctuated significantly in Q2."
+        },
+        {
+          "item_code": "100003",
+          "item_name": "ItemD",
+          "supplier": "SupplierB",
+          "risk_level": "Medium",
+          "current_stock": 50,
+          "wks_to_oos": 6,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemD has experienced demand volatility, with significant lead time fluctuations in Q2."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01\\n**Supplier:** SupplierB\\n**Snapshot Summary:**\\nSupplierB is typically reliable, although a major quality issue led to a recall last quarter, setting a precedent for intense supply scrutiny. Both items have encountered demand volatility. ItemC substitutes often when ItemD faces low inventory, while lead times fluctuated alarmingly in Q2.\\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 100002   | ItemC    | 200          | 10       | Low       | N/A            | N/A                  |\\n| 100003   | ItemD    | 50           | 6        | Medium    | N/A            | N/A                  |\",\n  \"critical_questions\": [\n    {\n      \"target\": \"general\",\n      \"question\": \"How is SupplierB addressing the quality issue that led to the recall last quarter?\",\n      \"reason\": \"supplier_history\"\n    },\n    {\n      \"target\": \"100002\",\n      \"question\": \"What measures are in place to mitigate demand volatility for ItemC?\",\n      \"reason\": \"item_history\"\n    },\n    {\n      \"target\": \"100003\",\n      \"question\": \"How can we better manage lead time fluctuations for ItemD?\",\n      \"reason\": \"item_history\"\n    }\n  ],\n  \"replenishment_timeline\": [\n    {\n      \"item_code\": \"100002\",\n      \"item_name\": \"ItemC\",\n      \"supplier\": \"SupplierB\",\n      \"risk_level\": \"Low\",\n      \"current_stock\": 200,\n      \"wks_to_oos\": 10,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"sufficient_stock\",\n      \"notes\": \"ItemC substitutes often when ItemD faces low inventory, while lead times fluctuated alarmingly in Q2.\"\n    },\n    {\n      \"item_code\": \"100003\",\n      \"item_name\": \"ItemD\",\n      \"supplier\": \"SupplierB\",\n      \"risk_level\": \"Medium\",\n      \"current_stock\": 50,\n      \"wks_to_oos\": 6,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"sufficient_stock\",\n      \"notes\": \"ItemD faces demand volatility and lead time fluctuations.\"\n    }\n  ]\n}"
+  },
+  {
+    "idx": 1,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierC  \n\n**Summary:**  \nSupplierC has been described as reliable, but there have been communication lags leading to mismatched delivery notifications. ItemE has shown seasonal demand spikes during holidays, and ItemF has struggled to meet demand even during non-peak times.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 100004   | ItemE    | 10           | 12       | High      | N/A            | N/A                  |\n| 100005   | ItemF    | 300          | 4        | Low       | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "How can SupplierC improve communication to prevent mismatched delivery notifications?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "100004",
+          "question": "What measures can be taken to manage seasonal demand spikes for ItemE?",
+          "reason": "item_history"
+        },
+        {
+          "target": "100005",
+          "question": "How can stock levels for ItemF be adjusted to better meet demand during non-peak times?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "100004",
+          "item_name": "ItemE",
+          "supplier": "SupplierC",
+          "risk_level": "High",
+          "current_stock": 10,
+          "wks_to_oos": 12,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemE shows worrying seasonal spikes during holidays."
+        },
+        {
+          "item_code": "100005",
+          "item_name": "ItemF",
+          "supplier": "SupplierC",
+          "risk_level": "Low",
+          "current_stock": 300,
+          "wks_to_oos": 4,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemF cannot match demand peaks due to insufficient stock even during non-peak times."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierC  \\n**Snapshot Summary:**  \\nSupplierC's communication lags have mismatched delivery notifications, contradicting logistic reliability. ItemE shows worrying seasonal spikes during holidays. ItemF cannot match demand peaks due to insufficient stock even during non-peak times.  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 100004   | ItemE    | 10           | 12       | High      | N/A            | N/A                 |\\n| 100005   | ItemF    | 300          | 4        | Low       | N/A            | N/A                 |\",\n  \"critical_questions\": [\n    {\n      \"target\": \"general\",\n      \"question\": \"How can SupplierC improve communication and delivery reliability to avoid mismatched notifications?\",\n      \"reason\": \"Supplier history indicates communication lags and delivery reliability issues.\"\n    },\n    {\n      \"target\": \"100004\",\n      \"question\": \"What measures can be taken to address ItemE's seasonal spikes during holidays?\",\n      \"reason\": \"Item history shows worrying seasonal spikes during holidays.\"\n    },\n    {\n      \"target\": \"100005\",\n      \"question\": \"How can SupplierC ensure sufficient stock to meet demand peaks for ItemF?\",\n      \"reason\": \"Item history indicates insufficient stock even during non-peak times.\"\n    }\n  ],\n  \"replenishment_timeline\": [\n    {\n      \"item_code\": \"100004\",\n      \"item_name\": \"ItemE\",\n      \"supplier\": \"SupplierC\",\n      \"risk_level\": \"High\",\n      \"current_stock\": 10,\n      \"wks_to_oos\": 12,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"Item history shows worrying seasonal spikes during holidays.\",\n      \"recommended_latest_po_timing\": \"N/A\",\n      \"recommended_latest_delivery_timing\": \"N/A\"\n    },\n    {\n      \"item_code\": \"100005\",\n      \"item_name\": \"ItemF\",\n      \"supplier\": \"SupplierC\",\n      \"risk_level\": \"Low\",\n      \"current_stock\": 300,\n      \"wks_to_oos\": 4,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"Item history indicates insufficient stock even during non-peak times.\",\n      \"recommended_latest_po_timing\": \"N/A\",\n      \"recommended_latest_delivery_timing\": \"N/A\"\n    }\n  ],\n  \"notes\": \"SupplierC's communication lags have mismatched delivery notifications, contradicting logistic reliability. ItemE shows worrying seasonal spikes during holidays. ItemF cannot match demand peaks due to insufficient stock even during non-peak times.\"\n}"
+  },
+  {
+    "idx": 2,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierD  \n\n**Summary:**  \nSupplierD has recently increased minimum order quantities, affecting long-term contracts unpredictably. ItemG has experienced disruptions in lead time due to sudden demand increases in the retail sector. ItemH lacks scalable substitutes, which is critical given its high risk level and low weeks to out-of-stock (WksToOOS) of 2 weeks.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 100006   | ItemG    | 180          | 26       | Medium    | N/A            | N/A                  |\n| 100007   | ItemH    | 40           | 2        | High      | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "How will the increase in minimum order quantities by SupplierD affect our procurement strategy?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "100006",
+          "question": "What measures can be taken to mitigate the impact of sudden demand increases on ItemG's lead time?",
+          "reason": "item_history"
+        },
+        {
+          "target": "100007",
+          "question": "What alternatives are available for ItemH given its lack of scalable substitutes?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "100006",
+          "item_name": "ItemG",
+          "supplier": "SupplierD",
+          "risk_level": "Medium",
+          "current_stock": 180,
+          "wks_to_oos": 26,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemG's stable lead time was disrupted by sudden demand increases in the retail sector."
+        },
+        {
+          "item_code": "100007",
+          "item_name": "ItemH",
+          "supplier": "SupplierD",
+          "risk_level": "High",
+          "current_stock": 40,
+          "wks_to_oos": 2,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemH lacks scalable substitutes altogether."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-14  \\n**Snapshot Frequency:** Weekly  \\n**Snapshot Source:** Internal Systems  \\n\\n**Snapshot Summary:**  \\nSupplierD recently increased minimum order quantities, although known for price stabilities. Long-term contracts are affected unpredictably. ItemG's stable lead time was disrupted by sudden demand increases in the retail sector. ItemH lacks scalable substitutes altogether.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Latest PO Qty | Latest Delivery Qty | Latest PO Value | Latest Delivery Value |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|--------------|---------------------|----------------|----------------------|\\n| 100006   | ItemG    | 180          | 26       | Medium    | N/A            | N/A                 | N/A         | N/A                | N/A           | N/A                 |\\n| 100007   | ItemH    | 40           | 2        | High      | N/A            | N/A                 | N/A         | N/A                | N/A           | N/A                 |\",\n  \"critical_questions\": [\n    {\n      \"target\": \"general\",\n      \"question\": \"How can we mitigate the impact of sudden demand increases on ItemG's lead time?\",\n      \"reason\": \"ItemG's lead time was disrupted by sudden demand increases in the retail sector.\"\n    },\n    {\n      \"target\": \"100007\",\n      \"question\": \"What strategies can we explore to secure alternative sources for ItemH?\",\n      \"reason\": \"ItemH lacks scalable substitutes altogether.\"\n    }\n  ],\n  \"replenishment_timeline\": [\n    {\n      \"item_code\": \"100006\",\n      \"item_name\": \"ItemG\",\n      \"supplier\": \"SupplierD\",\n      \"risk_level\": \"Medium\",\n      \"current_stock\": 180,\n      \"wks_to_oos\": 26,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"ItemG's stable lead time was disrupted by sudden demand increases in the retail sector.\",\n      \"recommended_latest_po_timing\": \"N/A\",\n      \"recommended_latest_delivery_timing\": \"N/A\",\n      \"recommended_latest_po_quantity\": \"N/A\",\n      \"recommended_latest_delivery_quantity\": \"N/A\",\n      \"recommended_latest_po_value\": \"N/A\",\n      \"recommended_latest_delivery_value\": \"N/A\"\n    },\n    {\n      \"item_code\": \"100007\",\n      \"item_name\": \"ItemH\",\n      \"supplier\": \"SupplierD\",\n      \"risk_level\": \"High\",\n      \"current_stock\": 40,\n      \"wks_to_oos\": 2,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"ItemH lacks scalable substitutes altogether.\",\n      \"recommended_latest_po_timing\": \"N/A\",\n      \"recommended_latest_delivery_timing\": \"N/A\",\n      \"recommended_latest_po_quantity\": \"N/A\",\n      \"recommended_latest_delivery_quantity\": \"N/A\",\n      \"recommended_latest_po_value\": \"N/A\",\n      \"recommended_latest_delivery_value\": \"N/A\"\n    }\n  ]\n}"
+  },
+  {
+    "idx": 3,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierE  \n\n**Summary:**  \nSupplierE has been remarkably punctual with deliveries, but a recent strike among staff highlighted labor stability issues, disrupting typically steady outputs. ItemI has no significant historical issues, while ItemJ has experienced extreme volatility with both skyrocketing and plummeting demands quarterly.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 100008   | ItemI    | 500          | 1        | Low       | N/A            | N/A                  |\n| 100009   | ItemJ    | 0            | 8        | Medium    | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures are in place to address labor stability issues following the recent strike?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "100009",
+          "question": "How can we better predict and manage the demand volatility for ItemJ?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "100008",
+          "item_name": "ItemI",
+          "supplier": "SupplierE",
+          "risk_level": "Low",
+          "current_stock": 500,
+          "wks_to_oos": 1,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "Supplier has labor stability issues due to a recent strike. No significant historical issues for ItemI."
+        },
+        {
+          "item_code": "100009",
+          "item_name": "ItemJ",
+          "supplier": "SupplierE",
+          "risk_level": "Medium",
+          "current_stock": 0,
+          "wks_to_oos": 8,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemJ experiences extreme demand volatility, with both skyrocketing and plummeting demands quarterly."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-31  \\n**Supplier:** SupplierE  \\n**Snapshot Risk Level:** Medium  \\n\\nSupplierE has a history of punctuality with deliveries, but recent labor stability issues due to a strike have disrupted their typically steady outputs. ItemI can replace nothing without additional work, while ItemJ experiences extreme volatility with quarterly demand spikes and drops.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 100008   | ItemI    | 500          | 1        | Low       | N/A            | N/A                  |\\n| 100009   | ItemJ    | 0            | 8        | Medium    | N/A            | N/A                  |\",\n  \"risk_analysis_markdown\": \"### Risk Analysis Summary\\n**Snapshot Date:** 2026-03-31  \\n**Supplier:** SupplierE  \\n**Snapshot Risk Level:** Medium  \\n\\nSupplierE has a history of punctuality with deliveries, but recent labor stability issues due to a strike have disrupted their typically steady outputs. ItemI can replace nothing without additional work, while ItemJ experiences extreme volatility with quarterly demand spikes and drops.  \\n\\n**Key Risks:**  \\n- Labor stability concerns following strike  \\n- Volatility in demand for ItemJ  \\n\\n**Mitigation Strategies:**  \\n- Monitor labor stability closely  \\n- Implement demand forecasting for ItemJ  \\n\\n**Action Items:**  \\n- Schedule regular meetings with SupplierE to discuss labor stability  \\n- Conduct demand forecasting for ItemJ to inform production planning  \\n\\n**Recommendations:**  \\n- Consider alternative suppliers for ItemJ to mitigate volatility  \\n- Explore opportunities for diversifying ItemI's applications to reduce reliance on a single use case  \\n\\n**Snapshot Risk Level Justification:** Medium due to labor stability concerns and volatility in demand for ItemJ.\"\n}"
+  },
+  {
+    "idx": 4,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierF  \n\n**Summary:**  \nSupplierF has shown a commitment to sustainability, although there were communication delays last year. ItemK has experienced sudden demand spikes, while ItemL has maintained steady demand.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 100010   | ItemK    | 600          | 12       | Medium    | N/A            | N/A                  |\n| 100011   | ItemL    | 50           | 20       | Medium    | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "How are communication delays from last year being addressed by SupplierF?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "100010",
+          "question": "What measures are in place to handle sudden demand spikes for ItemK?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "100010",
+          "item_name": "ItemK",
+          "supplier": "SupplierF",
+          "risk_level": "Medium",
+          "current_stock": 600,
+          "wks_to_oos": 12,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemK has experienced sudden demand spikes."
+        },
+        {
+          "item_code": "100011",
+          "item_name": "ItemL",
+          "supplier": "SupplierF",
+          "risk_level": "Medium",
+          "current_stock": 50,
+          "wks_to_oos": 20,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemL has maintained steady demand."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierF  \\n**Snapshot Risk Level:** Medium  \\n\\nSupplierF has recently emphasized sustainability efforts, but communication delays occurred last year. ItemK's demand can double overnight, while ItemL has followed contract terms.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 100010   | ItemK    | 600          | 12       | Medium    | N/A            | N/A                  |\\n| 100011   | ItemL    | 50           | 20       | Medium    | N/A            | N/A                  |\",\n  \"critical_questions\": [\n    {\n      \"target\": \"general\",\n      \"question\": \"How can SupplierF improve communication and transparency to avoid delays?\",\n      \"reason\": \"Supplier history indicates communication delays.\"\n    },\n    {\n      \"target\": \"100010\",\n      \"question\": \"What measures does SupplierF have in place to manage sudden demand spikes for ItemK?\",\n      \"reason\": \"Item history highlights unpredictable demand fluctuations.\"\n    }\n  ],\n  \"replenishment_timeline\": [\n    {\n      \"item_code\": \"100010\",\n      \"item_name\": \"ItemK\",\n      \"supplier\": \"SupplierF\",\n      \"risk_level\": \"Medium\",\n      \"current_stock\": 600,\n      \"wks_to_oos\": 12,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"ItemK's demand can double overnight, requiring flexible planning.\"\n    },\n    {\n      \"item_code\": \"100011\",\n      \"item_name\": \"ItemL\",\n      \"supplier\": \"SupplierF\",\n      \"risk_level\": \"Medium\",\n      \"current_stock\": 50,\n      \"wks_to_oos\": 20,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"ItemL has followed contract terms, allowing forecasted procurement.\"\n    }\n  ],\n  \"notes\": \"SupplierF's recent emphasis on sustainability may overshadow communication delays from last year. ItemK's demand can double overnight, while ItemL has followed contract terms.\"\n}"
+  },
+  {
+    "idx": 5,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierX  \n\n**Summary:**  \nSupplierX has been known for timely deliveries; however, a recent merger has caused temporary logistical challenges that may affect lead times. ItemX and ItemY have shown demand volatility due to varying consumer preferences. ItemY recently experienced a sudden demand spike, exhausting existing stock rapidly.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 200050   | ItemX    | 20           | 30       | Low       | N/A            | N/A                  |\n| 200051   | ItemY    | 5            | 5        | High      | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "How is SupplierX addressing the logistical challenges post-merger?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "200051",
+          "question": "What measures can be implemented to manage the demand spikes for ItemY?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "200050",
+          "item_name": "ItemX",
+          "supplier": "SupplierX",
+          "risk_level": "Low",
+          "current_stock": 20,
+          "wks_to_oos": 30,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemX has shown demand volatility due to varying consumer preferences."
+        },
+        {
+          "item_code": "200051",
+          "item_name": "ItemY",
+          "supplier": "SupplierX",
+          "risk_level": "High",
+          "current_stock": 5,
+          "wks_to_oos": 5,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemY recently experienced a sudden demand spike, exhausting existing stock rapidly."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierX  \\n**Snapshot Summary:**  \\nSupplierX has been known for timely deliveries; however, a recent merger has caused temporary logistical challenges that may affect lead times. ItemX and ItemY have shown demand volatility due to varying consumer preferences. ItemY recently experienced a sudden demand spike, exhausting existing stock rapidly.  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 200050   | ItemX    | 20           | 30       | Low       | N/A            | N/A                  |\\n| 200051   | ItemY    | 5            | 5        | High      | N/A            | N/A                  |\",\n  \"critical_questions\": [\n    {\n      \"target\": \"general\",\n      \"question\": \"How are the temporary logistical challenges from the recent merger being addressed? What measures are in place to mitigate potential delays?\",\n      \"reason\": \"SupplierX has been known for timely deliveries; however, a recent merger has caused temporary logistical challenges that may affect lead times.\"\n    },\n    {\n      \"target\": \"200051\",\n      \"question\": \"What strategies are in place to manage demand volatility for ItemY? How can we better anticipate and respond to sudden demand spikes?\",\n      \"reason\": \"ItemY recently experienced a sudden demand spike, exhausting existing stock rapidly.\"\n    }\n  ],\n  \"replenishment_timeline\": [\n    {\n      \"item_code\": \"200050\",\n      \"item_name\": \"ItemX\",\n      \"supplier\": \"SupplierX\",\n      \"risk_level\": \"Low\",\n      \"current_stock\": 20,\n      \"wks_to_oos\": 30,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_latest_po_timing\": \"N/A\",\n      \"recommended_latest_delivery_timing\": \"N/A\",\n      \"notes\": \"ItemX has shown demand stability; however, consider increasing safety stock levels to account for potential delays due to the recent merger.\"\n    },\n    {\n      \"item_code\": \"200051\",\n      \"item_name\": \"ItemY\",\n      \"supplier\": \"SupplierX\",\n      \"risk_level\": \"High\",\n      \"current_stock\": 5,\n      \"wks_to_oos\": 5,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_latest_po_timing\": \"N/A\",\n      \"recommended_latest_delivery_timing\": \"N/A\",\n      \"notes\": \"ItemY experienced a sudden demand spike, depleting existing stock rapidly. Monitor demand patterns closely and adjust replenishment plans accordingly.\"\n    }\n  ],\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierX  \\n**Snapshot Summary:**  \\nSupplierX has been known for timely deliveries; however, a recent merger has caused temporary logistical challenges that may affect lead times. ItemX and ItemY have shown demand volatility due to varying consumer preferences. ItemY recently experienced a sudden demand spike, exhausting existing stock rapidly.  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | RecommendedQuantity | RecommendedTiming | RecommendedLatestPOTiming | RecommendedLatestDeliveryTiming | Notes |\\n|----------|----------|--------------|----------|-----------|---------------------|-------------------|---------------------------|------------------------------|--------|\\n| 200050   | ItemX    | 20           | 30       | Low       | N/A                 | N/A               | N/A                       | N/A                           | ItemX has shown demand stability; however, consider increasing safety stock levels to account for potential delays due to the recent merger. |\\n| 200051   | ItemY    | 5            | 5        | High      | N/A                 | N/A               | N/A                       | N/A                           | ItemY experienced a sudden demand spike, depleting existing stock rapidly. Monitor demand patterns closely and adjust replenishment plans accordingly. |\"\n"
+  },
+  {
+    "idx": 6,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierY  \n\n**Analysis Summary:**  \n- **Risk Levels:** Medium for ItemZ  \n- **Weeks to Out of Stock (WksToOOS):** 2 weeks  \n- **Recommended Latest PO Date:** N/A  \n- **Recommended Latest Delivery Date:** N/A  \n- **Supplier History:** SupplierY experienced a shipment delay last month due to customs issues.  \n- **Item History:** ItemZ has seasonal demand peaks in winter and has required substitute suppliers in the past due to supply unpredictability.\n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 300100   | ItemZ    | 150          | 2        | Medium    | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures are in place to prevent customs-related delays for SupplierY?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "300100",
+          "question": "Are there plans to secure additional suppliers for ItemZ to handle seasonal demand peaks?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "300100",
+          "item_name": "ItemZ",
+          "supplier": "SupplierY",
+          "risk_level": "Medium",
+          "current_stock": 150,
+          "wks_to_oos": 2,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemZ experiences seasonal demand peaks in winter months. Historically, substitute suppliers were used due to unpredictable supply levels from primary sources."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierY  \\n**Items:**  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 300100   | ItemZ    | 150          | 2        | Medium    | N/A            | N/A                  |  \\n**Supplier History:**  \\nSupplierY was marked as a reliable supplier, but their shipment was delayed last month due to unexpected customs issues.  \\n**Item History:**  \\nItemZ experiences seasonal demand peaks in winter months. Historically, substitute suppliers were used due to unpredictable supply levels from primary sources.  \\n**Recommendations:**  \\n* Monitor SupplierY's performance closely to ensure timely deliveries.  \\n* Consider stocking up on ItemZ during winter months to mitigate potential shortages.  \\n* Explore alternative suppliers for ItemZ to diversify risk and improve supply stability.\",\n  \"risk_assessment_markdown\": \"### Risk Assessment  \\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierY  \\n**Items:**  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 300100   | ItemZ    | 150          | 2        | Medium    | N/A            | N/A                  |  \\n**Snapshot Summary:**  \\nSupplierY has a history of delays, while ItemZ experiences seasonal demand peaks and relies on substitute suppliers.  \\n**Key Risks:**  \\n* Delays from SupplierY due to customs issues  \\n* Seasonal demand peaks for ItemZ in winter months  \\n* Unpredictable supply levels from primary sources for ItemZ  \\n**Mitigation Strategies:**  \\n* Monitor SupplierY's performance closely to ensure timely deliveries  \\n* Stock up on ItemZ during winter months to mitigate potential shortages  \\n* Explore alternative suppliers for ItemZ to diversify risk and improve supply stability  \\n**Action Items:**  \\n* Review latest supplier performance metrics and communicate any concerns to relevant stakeholders  \\n* Evaluate inventory levels and adjust purchasing schedules accordingly for ItemZ  \\n* Conduct market research to identify potential alternative suppliers for ItemZ\"\n}"
+  },
+  {
+    "idx": 7,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02\n**Supplier:** SupplierZ\n\nSupplierZ has increased their minimum order quantities dramatically after experiencing price spikes due to currency inflation. Both items have experienced several lead time alterations with no clear trend, posing challenges in a consistent supply strategy.\n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 400200   | ItemM    | 75           | N/A      | Medium    | N/A            | N/A                  |\n| 400201   | N/A      | 50           | 60       | Medium    | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "How is SupplierZ managing the increased minimum order quantities due to currency inflation?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "400200",
+          "question": "What measures can be taken to mitigate the impact of lead time alterations for ItemM?",
+          "reason": "item_history"
+        },
+        {
+          "target": "400201",
+          "question": "What strategies can be implemented to handle the inconsistent lead times for this item?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "400200",
+          "item_name": "ItemM",
+          "supplier": "SupplierZ",
+          "risk_level": "Medium",
+          "current_stock": 75,
+          "wks_to_oos": null,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "SupplierZ has increased their minimum order quantities dramatically after experiencing price spikes due to currency inflation. ItemM has experienced several lead time alterations with no clear trend."
+        },
+        {
+          "item_code": "400201",
+          "item_name": "N/A",
+          "supplier": "SupplierZ",
+          "risk_level": "Medium",
+          "current_stock": 50,
+          "wks_to_oos": 60,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "SupplierZ has increased their minimum order quantities dramatically after experiencing price spikes due to currency inflation. This item has experienced several lead time alterations with no clear trend."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierZ  \\n**Snapshot Summary:**  \\nSupplierZ has increased their minimum order quantities dramatically after experiencing price spikes due to currency inflation. Both items have experienced several lead time alterations with no clear trend, posing challenges in a consistent supply strategy.  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 400200   | ItemM    | 75           | N/A      | Medium    | N/A            | N/A                  |\\n| 400201   | N/A      | 50           | 60       | Medium    | N/A            | N/A                  |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierZ  \\n**Snapshot Summary:**  \\nSupplierZ has increased their minimum order quantities dramatically after experiencing price spikes due to currency inflation. Both items have experienced several lead time alterations with no clear trend, posing challenges in a consistent supply strategy.  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended PO Qty | Recommended PO Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|-------------------|---------------------|\\n| 400200   | ItemM    | 75           | N/A      | Medium    | N/A            | N/A                  | N/A               | N/A                |\\n| 400201   | N/A      | 50           | 60       | Medium    | N/A            | N/A                  | N/A               | N/A                |\",\n  \"replenishment_timeline_csv\": \"ItemCode,ItemName,CurrentStock,WksToOOS,RiskLevel,Recommended PO Qty,Recommended PO Date\\n400200,ItemM,75,N/A,Medium,,\\n400201,N/A,50,60,Medium,,\"\n}"
+  },
+  {
+    "idx": 8,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierA  \n\n**Summary:**  \nSupplierA has a recent history of a product recall due to quality issues. ItemN maintains consistent demand, while ItemO experienced an unexpected demand surge last week, impacting stock levels significantly.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 500300   | ItemN    | 10           | 10       | High      | N/A            | N/A                  |\n| 500301   | ItemO    | 300          | 1        | Low       | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures have been implemented to prevent future quality issues after the recent recall?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "500301",
+          "question": "How can we better anticipate and prepare for seasonal demand spikes for ItemO?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "500300",
+          "item_name": "ItemN",
+          "supplier": "SupplierA",
+          "risk_level": "High",
+          "current_stock": 10,
+          "wks_to_oos": 10,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "SupplierA had a recent recall due to quality issues. ItemN has consistent demand."
+        },
+        {
+          "item_code": "500301",
+          "item_name": "ItemO",
+          "supplier": "SupplierA",
+          "risk_level": "Low",
+          "current_stock": 300,
+          "wks_to_oos": 1,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemO experienced an unexpected demand surge last week, affecting stock levels."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01\\n**Supplier:** SupplierA\\n**Snapshot Summary:**\\nSupplierA is known for its high-quality products, but recently had to recall a batch due to undisclosed quality issues. ItemN has consistent demand, while ItemO has seasonal demand spikes that can cause stock levels to fluctuate.\\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 500300   | ItemN    | 10           | 10       | High      | N/A            | N/A                  |\\n| 500301   | ItemO    | 300          | 1        | Low       | N/A            | N/A                  |\",\n  \"critical_questions\": [\n    {\n      \"target\": \"general\",\n      \"question\": \"How can SupplierA prevent future quality issues?\",\n      \"reason\": \"SupplierA recently had to recall a batch due to undisclosed quality issues.\"\n    },\n    {\n      \"target\": \"500301\",\n      \"question\": \"What measures are in place to manage seasonal demand spikes for ItemO?\",\n      \"reason\": \"ItemO has seasonal demand spikes that can cause stock levels to fluctuate.\"\n    }\n  ],\n  \"replenishment_timeline\": [\n    {\n      \"item_code\": \"500300\",\n      \"item_name\": \"ItemN\",\n      \"supplier\": \"SupplierA\",\n      \"risk_level\": \"High\",\n      \"current_stock\": 10,\n      \"wks_to_oos\": 10,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"ItemN has consistent demand but SupplierA recently had to recall a batch due to undisclosed quality issues.\",\n      \"notes\": \"ItemN has consistent demand but SupplierA recently had to recall a batch due to undisclosed quality issues.\"\n    },\n    {\n      \"item_code\": \"500301\",\n      \"item_name\": \"ItemO\",\n      \"supplier\": \"SupplierA\",\n      \"risk_level\": \"Low\",\n      \"current_stock\": 300,\n      \"wks_to_oos\": 1,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"ItemO has seasonal demand spikes that can cause stock levels to fluctuate.\",\n      \"notes\": \"ItemO has seasonal demand spikes that can cause stock levels to fluctuate.\"\n    }\n  ],\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-01\\n**Supplier:** SupplierA\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | RecommendedQuantity | RecommendedTiming | RecommendedReason |\\n|----------|----------|--------------|----------|-----------|---------------------|-------------------|------------------|\\n| 500300   | ItemN    | 10           | 10       | High      | N/A                 | N/A               | ItemN has consistent demand but SupplierA recently had to recall a batch due to undisclosed quality issues. |\\n| 500301   | ItemO    | 300          | 1        | Low       | N/A                 | N/A               | ItemO has seasonal demand spikes that can cause stock levels to fluctuate. |\",\n  \"suggested_actions\": [\n    {\n      \"target\": \"general\",\n      \"action\": \"Monitor SupplierA's quality control measures to prevent future issues.\",\n      \"reason\": \"SupplierA recently had to recall a batch due to undisclosed quality issues.\"\n    },\n    {\n      \"target\": \"500301\",\n      \"action\": \"Review strategies for managing seasonal demand spikes for ItemO.\",\n      \"reason\": \"ItemO has seasonal demand spikes that can cause stock levels to fluctuate.\"\n    }\n  ]\n}"
+  },
+  {
+    "idx": 9,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02\n**Supplier:** SupplierB\n\nSupplierB is recognized for fast communication, but inconsistent delivery times have been reported in the past year. ItemP's demand has been unpredictable, with some months showing massive spikes. Recently, lead times have become erratic, compounding forecasting difficulties.\n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 600500   | ItemP    | 5            | 30       | High      | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures are in place to address SupplierB's inconsistent delivery times?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "600500",
+          "question": "How can we better forecast demand for ItemP given its unpredictable spikes?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "600500",
+          "item_name": "ItemP",
+          "supplier": "SupplierB",
+          "risk_level": "High",
+          "current_stock": 5,
+          "wks_to_oos": 30,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemP's demand has been unpredictable, with some months showing massive spikes. Recently, lead times have become erratic, compounding forecasting difficulties."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierB  \\n**Snapshot Items:**  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 600500   | ItemP    | 5            | 30       | High      | N/A            | N/A                  |  \\n**Snapshot Summary:**  \\nSupplierB is recognized for fast communication, but inconsistent delivery times have been reported in the past year. ItemP's demand has been unpredictable, with some months showing massive spikes. Recently, lead times have become erratic, compounding forecasting difficulties.  \\n**Key Takeaways:**  \\n- Monitor ItemP's demand and lead times closely to mitigate risk.  \\n- Communicate regularly with SupplierB to ensure timely deliveries.  \\n**Recommendations:**  \\n- Consider implementing a buffer stock strategy for ItemP to manage demand volatility.  \\n- Explore alternative suppliers for ItemP to mitigate risk of supply disruptions.  \\n**Snapshot Notes:**  \\nN/A  \",\n  \"purchasing_timeline_markdown\": \"### Purchasing Timeline Snapshot  \\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierB  \\n**Snapshot Items:**  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 600500   | ItemP    | 5            | 30       | High      | N/A            | N/A                  |  \\n**Snapshot Summary:**  \\nSupplierB is recognized for fast communication, but inconsistent delivery times have been reported in the past year. ItemP's demand has been unpredictable, with some months showing massive spikes. Recently, lead times have become erratic, compounding forecasting difficulties.  \\n**Key Takeaways:**  \\n- Monitor ItemP's demand and lead times closely to mitigate risk.  \\n- Communicate regularly with SupplierB to ensure timely deliveries.  \\n**Recommendations:**  \\n- Consider implementing a buffer stock strategy for ItemP to manage demand volatility.  \\n- Explore alternative suppliers for ItemP to mitigate risk of supply disruptions.  \\n**Snapshot Notes:**  \\nN/A  \\n\\n**Timeline Notes:**  \\nN/A  \",\n  \"purchasing_timeline_image\": \"https://via.placeholder.com/800x600?text=Purchasing-Timeline-Image\"\n}"
+  },
+  {
+    "idx": 10,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierX  \nSupplierX has been experiencing significant delivery delays for the past three months due to logistical challenges. Recent negotiations also revealed unexpected changes in the Minimum Order Quantity (MOQ). ItemX's demand is highly volatile with unpredictable spikes each quarter, while ItemY sees a notable increase during the summer months. Both items have suffered from increased lead times after a recent production line change.\n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 110003   | ItemX    | 250          | 5        | High      | N/A            | N/A                  |\n| 110004   | ItemY    | 340          | 60       | Low       | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures are being taken to address the logistical challenges causing delivery delays with SupplierX?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "general",
+          "question": "How will the unexpected changes in MOQ from SupplierX affect our inventory planning?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "110003",
+          "question": "What strategies can be implemented to better forecast the volatile demand for ItemX?",
+          "reason": "item_history"
+        },
+        {
+          "target": "110004",
+          "question": "How can we optimize inventory levels for ItemY given its increased demand during summer months?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "110003",
+          "item_name": "ItemX",
+          "supplier": "SupplierX",
+          "risk_level": "High",
+          "current_stock": 250,
+          "wks_to_oos": 5,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemX's demand is highly volatile with unpredictable spikes each quarter. Increased lead times after a recent production line change."
+        },
+        {
+          "item_code": "110004",
+          "item_name": "ItemY",
+          "supplier": "SupplierX",
+          "risk_level": "Low",
+          "current_stock": 340,
+          "wks_to_oos": 60,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemY sees a notable increase during the summer months. Increased lead times after a recent production line change."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01\\n**Supplier:** SupplierX\\n**Key Findings:**\\nSupplierX has been experiencing significant delivery delays for the past three months due to logistical challenges. Recent negotiations revealed unexpected changes in the Minimum Order Quantity (MOQ), impacting inventory planning. ItemX's demand is highly volatile with unpredictable spikes each quarter, while ItemY sees a notable increase during the summer months. Both items have suffered from increased lead times after a recent production line change.\\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 110003   | ItemX    | 250          | 5        | High      | N/A            | N/A                  |\\n| 110004   | ItemY    | 340          | 60       | Low       | N/A            | N/A                  |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline Snapshot (2026-03-01)\\n**Supplier:** SupplierX\\n**Key Insights:**\\nSupplierX has been experiencing significant delivery delays for the past three months due to logistical challenges. Recent negotiations revealed unexpected changes in the Minimum Order Quantity (MOQ), impacting inventory planning. ItemX's demand is highly volatile with unpredictable spikes each quarter, while ItemY sees a notable increase during the summer months. Both items have suffered from increased lead times after a recent production line change.\\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended PO Qty | Recommended PO Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|-------------------|---------------------|\\n| 110003   | ItemX    | 250          | 5        | High      | N/A            | N/A                  | N/A               | N/A                |\\n| 110004   | ItemY    | 340          | 60       | Low       | N/A            | N/A                  | N/A               | N/A                |\",\n  \"replenishment_timeline_json\": \"[{\\\"ItemCode\\\":\\\"110003\\\",\\\"ItemName\\\":\\\"ItemX\\\",\\\"CurrentStock\\\":250,\\\"WksToOOS\\\":5,\\\"RiskLevel\\\":\\\"High\\\",\\\"LatestPODate\\\":null,\\\"LatestDeliveryDate\\\":null,\\\"RecommendedPOQty\\\":null,\\\"RecommendedPODate\\\":null},{\\\"ItemCode\\\":\\\"110004\\\",\\\"ItemName\\\":\\\"ItemY\\\",\\\"CurrentStock\\\":340,\\\"WksToOOS\\\":60,\\\"RiskLevel\\\":\\\"Low\\\",\\\"LatestPODate\\\":null,\\\"LatestDeliveryDate\\\":null,\\\"RecommendedPOQty\\\":null,\\\"RecommendedPODate\\\":null}]\",\n  \"notes\": \"Consider incorporating supplier history and item history into purchasing decisions. Monitor lead times and adjust MOQs accordingly. Leverage historical demand patterns to improve forecasting accuracy for ItemX. Anticipate seasonal demand fluctuations for ItemY.\"\n}"
+  },
+  {
+    "idx": 11,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierY  \nSupplierY has recently experienced a major setback due to a labor strike, causing communication delays and price volatility. This has affected their previously reliable service. Both ItemZ and ItemW have high substitution rates and experience demand spikes at the end of each financial quarter.\n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 110005   | ItemZ    | 180          | 3        | Medium    | N/A            | N/A                  |\n| 110006   | ItemW    | 195          | 25       | High      | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures are in place to mitigate the impact of the recent labor strike on SupplierY's delivery schedules?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "110005",
+          "question": "How can we better prepare for the end-of-quarter demand spikes for ItemZ?",
+          "reason": "item_history"
+        },
+        {
+          "target": "110006",
+          "question": "What strategies can be implemented to manage the high substitution rate for ItemW?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "110005",
+          "item_name": "ItemZ",
+          "supplier": "SupplierY",
+          "risk_level": "Medium",
+          "current_stock": 180,
+          "wks_to_oos": 3,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemZ has high substitution rates and experiences demand spikes at the end of each financial quarter."
+        },
+        {
+          "item_code": "110006",
+          "item_name": "ItemW",
+          "supplier": "SupplierY",
+          "risk_level": "High",
+          "current_stock": 195,
+          "wks_to_oos": 25,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemW has high substitution rates and experiences demand spikes at the end of each financial quarter."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-14  \\n**Supplier:** SupplierY  \\n\\nSupplierY is generally known for reliability, but recently suffered a major setback due to a labor strike causing prolonged communication delays and price volatility. These issues have undercut their previously dependable service record.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 110005   | ItemZ    | 180          | 3        | Medium    | N/A            | N/A                  |\\n| 110006   | ItemW    | 195          | 25       | High      | N/A            | N/A                  |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-14  \\n**Supplier:** SupplierY  \\n\\nSupplierY is generally known for reliability, but recently suffered a major setback due to a labor strike causing prolonged communication delays and price volatility. These issues have undercut their previously dependable service record.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended PO Timing |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|----------------------|\\n| 110005   | ItemZ    | 180          | 3        | Medium    | N/A            | N/A                  | N/A                  |\\n| 110006   | ItemW    | 195          | 25       | High      | N/A            | N/A                  | N/A                  |\",\n  \"suggested_questions\": [\n    {\n      \"target\": \"general\",\n      \"question\": \"How has SupplierY's recent labor strike impacted their communication and delivery timelines?\",\n      \"reason\": \"Supplier History\"\n    },\n    {\n      \"target\": \"110005\",\n      \"question\": \"What strategies can we implement to mitigate the risk of stockouts for ItemZ, given its medium risk level and short weeks to OOS?\",\n      \"reason\": \"Item History\"\n    },\n    {\n      \"target\": \"110006\",\n      \"question\": \"How can we better prepare for demand spikes for ItemW, considering its high risk level and long weeks to OOS?\",\n      \"reason\": \"Item History\"\n    }\n  ]\n}"
+  },
+  {
+    "idx": 12,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierZ  \n\nSupplierZ has maintained a stellar record, although recent audits uncovered minor quality issues that were swiftly rectified. Of concern, however, is a series of unanticipated pricing spikes that threatened profit margins.  \n\nItemV faces minimal volatility, typically displaying stable demand with minor adjustments. In contrast, ItemU, recently reintroduced after being discontinued, now exhibits unpredictable demand as it tries to regain market traction.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 110007   | ItemV    | 60           | 45       | Low       | N/A            | N/A                  |\n| 110008   | ItemU    | 0            | 0        | Medium    | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "How will SupplierZ address the recent unanticipated pricing spikes?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "110008",
+          "question": "What strategies are in place to stabilize demand for ItemU?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "110007",
+          "item_name": "ItemV",
+          "supplier": "SupplierZ",
+          "risk_level": "Low",
+          "current_stock": 60,
+          "wks_to_oos": 45,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "SupplierZ has minor quality issues resolved; ItemV shows stable demand."
+        },
+        {
+          "item_code": "110008",
+          "item_name": "ItemU",
+          "supplier": "SupplierZ",
+          "risk_level": "Medium",
+          "current_stock": 0,
+          "wks_to_oos": 0,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemU reintroduced with unpredictable demand; manual stock review needed."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierZ  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 110007   | ItemV    | 60           | 45       | Low       | N/A            | N/A                  |\\n| 110008   | ItemU    | 0            | 0        | Medium    | N/A            | N/A                  |\",\n  \"critical_questions\": [\n    {\n      \"target\": \"general\",\n      \"question\": \"What measures are in place to mitigate the impact of unanticipated pricing spikes at SupplierZ?\",\n      \"reason\": \"SupplierZ has experienced recent pricing spikes, which can threaten profit margins.\"\n    },\n    {\n      \"target\": \"110008\",\n      \"question\": \"How can we stabilize demand for ItemU, which was recently reintroduced after being discontinued?\",\n      \"reason\": \"ItemU exhibits unpredictable demand as it tries to regain market traction.\"\n    }\n  ],\n  \"replenishment_timeline\": [\n    {\n      \"item_code\": \"110007\",\n      \"item_name\": \"ItemV\",\n      \"supplier\": \"SupplierZ\",\n      \"risk_level\": \"Low\",\n      \"current_stock\": 60,\n      \"wks_to_oos\": 45,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_latest_po_timing\": \"N/A\",\n      \"recommended_latest_delivery_timing\": \"N/A\",\n      \"notes\": \"ItemV faces minimal volatility, typically displaying stable demand with minor adjustments.\"\n    },\n    {\n      \"item_code\": \"110008\",\n      \"item_name\": \"ItemU\",\n      \"supplier\": \"SupplierZ\",\n      \"risk_level\": \"Medium\",\n      \"current_stock\": 0,\n      \"wks_to_oos\": 0,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_latest_po_timing\": \"N/A\",\n      \"recommended_latest_delivery_timing\": \"N/A\",\n      \"notes\": \"ItemU, recently reintroduced after being discontinued, now exhibits unpredictable demand as it tries to regain market traction.\"\n    }\n  ]\n}"
+  },
+  {
+    "idx": 13,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierA  \n\n**Summary:**  \nSupplierA has a history of isolated delivery scheduling issues, but these do not significantly impact their overall performance. ItemT shows a sudden demand surge, while ItemS has inconsistent lead times due to varying production cycles.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 110009   | ItemT    | 5000         | 4        | N/A       | N/A            | N/A                  |\n| 110010   | ItemS    | 50           | 50       | Medium    | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "110009",
+          "question": "What is causing the sudden demand surge for ItemT?",
+          "reason": "item_history"
+        },
+        {
+          "target": "110010",
+          "question": "How can we mitigate the inconsistent lead times for ItemS?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "110009",
+          "item_name": "ItemT",
+          "supplier": "SupplierA",
+          "risk_level": "N/A",
+          "current_stock": 5000,
+          "wks_to_oos": 4,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "Sudden demand surge noted; historical data sparse."
+        },
+        {
+          "item_code": "110010",
+          "item_name": "ItemS",
+          "supplier": "SupplierA",
+          "risk_level": "Medium",
+          "current_stock": 50,
+          "wks_to_oos": 50,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "Inconsistent lead times due to varying production cycles."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierA  \\n**Key Takeaways:**  \\n  - ItemT: Sudden demand surge without seasonal trend  \\n  - ItemS: Inconsistent lead times due to varying production cycles  \\n**Snapshot Summary:**  \\nSupplierA has a history of consistent high-quality products, but recent delivery scheduling issues were isolated incidents. ItemT experienced a sudden demand surge, while ItemS faces inconsistent lead times.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 110009   | ItemT    | 5000         | 4        | N/A       | N/A            | N/A                 |\\n| 110010   | ItemS    | 50           | 50       | Medium    | N/A            | N/A                 |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierA  \\n**Key Takeaways:**  \\n  - ItemT: Sudden demand surge without seasonal trend  \\n  - ItemS: Inconsistent lead times due to varying production cycles  \\n**Snapshot Summary:**  \\nSupplierA has a history of consistent high-quality products, but recent delivery scheduling issues were isolated incidents. ItemT experienced a sudden demand surge, while ItemS faces inconsistent lead times.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended PO Qty | Recommended PO Date | Recommended Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|-------------------|----------------------|--------------------------|\\n| 110009   | ItemT    | 5000         | 4        | N/A       | N/A            | N/A                 | N/A               | N/A                 | N/A                     |\\n| 110010   | ItemS    | 50           | 50       | Medium    | N/A            | N/A                 | N/A               | N/A                 | N/A                     |\",\n  \"replenishment_timeline_csv\": \"ItemCode,ItemName,CurrentStock,WksToOOS,RiskLevel,Recommended PO Qty,Recommended PO Date,Recommended Delivery Date\\n110009,ItemT,5000,4,N/A,,,\\n110010,ItemS,50,50,Medium,,,\"\n}"
+  },
+  {
+    "idx": 14,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierB  \n\n**Summary:**  \nSupplierB has a history of reliability issues, including a recent failure to meet a substantial order due to communication breakdowns and increased raw material costs. ItemR is known for demand surges, especially in new markets, which contributes to its high risk status. ItemQ, while low risk, can experience sudden forecast changes due to competitors' pricing strategies.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 110011   | ItemR    | 100          | 1        | High      | N/A            | N/A                  |\n| 110012   | ItemQ    | 90           | 30       | Low       | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures are in place to address SupplierB's communication breakdowns and raw material cost increases?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "110011",
+          "question": "How can we better anticipate demand surges for ItemR in new markets?",
+          "reason": "item_history"
+        },
+        {
+          "target": "110012",
+          "question": "What strategies are in place to manage sudden forecast changes for ItemQ due to competitors' pricing?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "110011",
+          "item_name": "ItemR",
+          "supplier": "SupplierB",
+          "risk_level": "High",
+          "current_stock": 100,
+          "wks_to_oos": 1,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemR is notorious for demand surges, especially in new markets, contributing to its high risk status."
+        },
+        {
+          "item_code": "110012",
+          "item_name": "ItemQ",
+          "supplier": "SupplierB",
+          "risk_level": "Low",
+          "current_stock": 90,
+          "wks_to_oos": 30,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemQ seldom experiences seasonal spikes but its forecast tends to change suddenly, owing to competitors' pricing strategies."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01\\n**Supplier:** SupplierB\\n**Snapshot Summary:**\\nSupplierB's reliability is questionable, as they recently failed to meet a substantial order due to supplier communication breakdowns and a sudden increase in raw material costs. ItemR is notorious for demand surges, especially in new markets, contributing to its high risk status. ItemQ seldom experiences seasonal spikes but its forecast tends to change suddenly, owing to competitors' pricing strategies.\\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 110011   | ItemR    | 100          | 1        | High      | N/A            | N/A                  |\\n| 110012   | ItemQ    | 90           | 30       | Low       | N/A            | N/A                  |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-01\\n**Supplier:** SupplierB\\n**Snapshot Summary:**\\nSupplierB's reliability is questionable, as they recently failed to meet a substantial order due to supplier communication breakdowns and a sudden increase in raw material costs. ItemR is notorious for demand surges, especially in new markets, contributing to its high risk status. ItemQ seldom experiences seasonal spikes but its forecast tends to change suddenly, owing to competitors' pricing strategies.\\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended Quantity | Recommended PO Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|----------------------|----------------------|\\n| 110011   | ItemR    | 100          | 1        | High      | N/A            | N/A                  | N/A                 | N/A                 |\\n| 110012   | ItemQ    | 90           | 30       | Low       | N/A            | N/A                  | N/A                 | N/A                 |\",\n  \"replenishment_timeline_csv\": \"ItemCode,ItemName,CurrentStock,WksToOOS,RiskLevel,Recommended Quantity,Recommended PO Date,Snapshot Date,Snapshot Summary,Supplier,Snapshot Date,Snapshot Summary,Supplier\\n110011,ItemR,100,1,High,,N/A,N/A,2026-03-01,SupplierB's reliability is questionable, as they recently failed to meet a substantial order due to supplier communication breakdowns and a sudden increase in raw material costs. ItemR is notorious for demand surges, especially in new markets, contributing to its high risk status.,SupplierB,2026-03-01,SupplierB's reliability is questionable, as they recently failed to meet a substantial order due to supplier communication breakdowns and a sudden increase in raw material costs. ItemR is notorious for demand surges, especially in new markets, contributing to its high risk status.,SupplierB\\n110012,ItemQ,90,30,Low,,N/A,N/A,2026-03-01,SupplierB's reliability is questionable, as they recently failed to meet a substantial order due to supplier communication breakdowns and a sudden increase in raw material costs. ItemQ seldom experiences seasonal spikes but its forecast tends to change suddenly, owing to competitors' pricing strategies.,SupplierB,2026-03-01,SupplierB's reliability is questionable, as they recently failed to meet a substantial order due to supplier communication breakdowns and a sudden increase in raw material costs. ItemQ seldom experiences seasonal spikes but its forecast tends to change suddenly, owing to competitors' pricing strategies.,SupplierB\",\n  \"replenishment_timeline_json\": \"[{\\\"ItemCode\\\":\\\"110011\\\",\\\"ItemName\\\":\\\"ItemR\\\",\\\"CurrentStock\\\":100,\\\"WksToOOS\\\":1,\\\"RiskLevel\\\":\\\"High\\\",\\\"Recommended Quantity\\\":null,\\\"Recommended PO Date\\\":null,\\\"Snapshot Date\\\":\\\"2026-03-01\\\",\\\"Snapshot Summary\\\":\\\"SupplierB's reliability is questionable, as they recently failed to meet a substantial order due to supplier communication breakdowns and a sudden increase in raw material costs. ItemR is notorious for"
+  },
+  {
+    "idx": 15,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierB  \n\nSupplierB has recently faced significant delivery delays due to global supply chain disruptions. ItemC has a history of high demand volatility, leading to occasional stockouts.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 200001   | ItemC    | 150          | 0        | Medium    | N/A            | N/A                  |\n| 200002   | ItemD    | 35           | 3        | Low       | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures are being taken to mitigate the recent delivery delays from SupplierB?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "200001",
+          "question": "How can we better predict demand for ItemC to avoid stockouts?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "200001",
+          "item_name": "ItemC",
+          "supplier": "SupplierB",
+          "risk_level": "Medium",
+          "current_stock": 150,
+          "wks_to_oos": 0,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemC has a history of high demand volatility, occasionally leading to stockouts."
+        },
+        {
+          "item_code": "200002",
+          "item_name": "ItemD",
+          "supplier": "SupplierB",
+          "risk_level": "Low",
+          "current_stock": 35,
+          "wks_to_oos": 3,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "No historical supplier or item data available; analysis based on current stock/deadlines only."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-15  \\n**Supplier:** SupplierB  \\n\\nSupplierB was previously regarded as highly reliable, however, in the last quarter, they have been facing significant delivery delays due to global supply chain disruptions. ItemC has a history of high demand volatility, occasionally leading to stockouts. There have been several instances recently where demand projections were undershot.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 200001   | ItemC    | 150          | 0        | Medium    | N/A            | N/A                  |\\n| 200002   | ItemD    | 35           | 3        | Low       | N/A            | N/A                  |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-15  \\n**Supplier:** SupplierB  \\n\\nSupplierB was previously regarded as highly reliable, however, in the last quarter, they have been facing significant delivery delays due to global supply chain disruptions. ItemC has a history of high demand volatility, occasionally leading to stockouts. There have been several instances recently where demand projections were undershot.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended Quantity | Recommended PO Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|----------------------|----------------------|\\n| 200001   | ItemC    | 150          | 0        | Medium    | N/A            | N/A                  | N/A                 | N/A                 |\\n| 200002   | ItemD    | 35           | 3        | Low       | N/A            | N/A                  | N/A                 | N/A                 |\",\n  \"replenishment_timeline_csv\": \"ItemCode,ItemName,CurrentStock,WksToOOS,RiskLevel,Recommended Quantity,Recommended PO Date\\n200001,ItemC,150,0,Medium,,\\n200002,ItemD,35,3,Low,,\",\n  \"recommended_po_quantity\": {\n    \"200001\": null,\n    \"200002\": null\n  }\n}"
+  },
+  {
+    "idx": 16,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02\n**Supplier:** SupplierC\n\nSupplierC has recently raised their prices significantly amid raw material shortages and has had issues with minimum order quantities increasing unexpectedly. ItemE experiences a seasonal spike in demand around the holiday season, affecting usual stocking.\n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 300001   | ItemE    | 30           | 15       | High      | N/A            | N/A                  |\n| 300002   | ItemF    | 80           | 18       | Medium    | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "How will the recent price increases and changes in minimum order quantities by SupplierC affect our procurement strategy?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "300001",
+          "question": "What measures can be taken to mitigate the impact of seasonal demand spikes for ItemE?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "300001",
+          "item_name": "ItemE",
+          "supplier": "SupplierC",
+          "risk_level": "High",
+          "current_stock": 30,
+          "wks_to_oos": 15,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemE experiences a seasonal spike in demand around the holiday season, affecting usual stocking."
+        },
+        {
+          "item_code": "300002",
+          "item_name": "ItemF",
+          "supplier": "SupplierC",
+          "risk_level": "Medium",
+          "current_stock": 80,
+          "wks_to_oos": 18,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "SupplierC has recently raised their prices significantly amid raw material shortages and has had issues with minimum order quantities increasing unexpectedly."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-14  \\n**Supplier:** SupplierC  \\n**Snapshot Summary:**  \\nSupplierC has recently raised their prices significantly amid raw material shortages and has had issues with minimum order quantities increasing unexpectedly. ItemE has a seasonal spike in demand around the holiday season, sometimes reported but not consistently documented, affecting the usual stocking.  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 300001   | ItemE    | 30           | 15       | High      | N/A            | N/A                  |\\n| 300002   | ItemF    | 80           | 18       | Medium    | N/A            | N/A                  |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-14  \\n**Supplier:** SupplierC  \\n**Snapshot Summary:**  \\nSupplierC has recently raised their prices significantly amid raw material shortages and has had issues with minimum order quantities increasing unexpectedly. ItemE has a seasonal spike in demand around the holiday season, sometimes reported but not consistently documented, affecting the usual stocking.  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended PO Qty | Recommended Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|-------------------|-------------------------|\\n| 300001   | ItemE    | 30           | 15       | High      | N/A            | N/A                  | N/A               | N/A                    |\\n| 300002   | ItemF    | 80           | 18       | Medium    | N/A            | N/A                  | N/A               | N/A                    |\",\n  \"replenishment_timeline_csv\": \"ItemCode,ItemName,CurrentStock,WksToOOS,RiskLevel,Recommended PO Qty,Recommended Delivery Date\\n300001,ItemE,30,15,High,,\\n300002,ItemF,80,18,Medium,,\"\n}"
+  },
+  {
+    "idx": 17,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierD  \n\n**Summary:**  \nSupplierD has a recent quality issue with ItemG, which may affect their reliability. Both ItemG and ItemH have unique specifications that make substitution challenging, and lead-time adjustments have been noted during peak sales periods.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 400001   | ItemG    | 220          | 2        | Low       | N/A            | N/A                  |\n| 400002   | ItemH    | 110          | 2        | Medium    | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "400001",
+          "question": "What measures are in place to address the recent quality issue with ItemG?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "400002",
+          "question": "How can we mitigate the risk of lead-time adjustments for ItemH during peak sales periods?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "400001",
+          "item_name": "ItemG",
+          "supplier": "SupplierD",
+          "risk_level": "Low",
+          "current_stock": 220,
+          "wks_to_oos": 2,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "SupplierD recently had a quality issue with ItemG batches, questioning their overall reliability rating."
+        },
+        {
+          "item_code": "400002",
+          "item_name": "ItemH",
+          "supplier": "SupplierD",
+          "risk_level": "Medium",
+          "current_stock": 110,
+          "wks_to_oos": 2,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemH has a history of lead-time adjustments during peak sales periods, and substitution is challenging due to unique specifications."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-11  \\n**Supplier:** SupplierD  \\n\\nSupplierD has a recent quality issue with ItemG, questioning their overall reliability rating. Both ItemG and ItemH have substitution history but are not easily replaced due to unique specifications. Historically, lead-time adjustments occur during peak sales periods.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 400001   | ItemG    | 220          | 2        | Low       | N/A            | N/A                  |\\n| 400002   | ItemH    | 110          | 2        | Medium    | N/A            | N/A                  |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-11  \\n**Supplier:** SupplierD  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended PO Qty | Recommended PO Date | Recommended Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|-------------------|----------------------|--------------------------|\\n| 400001   | ItemG    | 220          | 2        | Low       | N/A            | N/A                  | N/A               | N/A                 | N/A                      |\\n| 400002   | ItemH    | 110          | 2        | Medium    | N/A            | N/A                  | N/A               | N/A                 | N/A                      |\",\n  \"replenishment_timeline_csv\": \"ItemCode,ItemName,CurrentStock,WksToOOS,RiskLevel,Latest PO Date,Latest Delivery Date,Recommended PO Qty,Recommended PO Date,Recommended Delivery Date\\n400001,ItemG,220,2,Low,N/A,N/A,N/A,N/A,N/A\\n400002,ItemH,110,2,Medium,N/A,N/A,N/A,N/A,N/A\",\n  \"replenishment_timeline_json\": \"[{\\\"ItemCode\\\":\\\"400001\\\",\\\"ItemName\\\":\\\"ItemG\\\",\\\"CurrentStock\\\":220,\\\"WksToOOS\\\":2,\\\"RiskLevel\\\":\\\"Low\\\",\\\"Latest PO Date\\\":\\\"N/A\\\",\\\"Latest Delivery Date\\\":\\\"N/A\\\",\\\"Recommended PO Qty\\\":\\\"N/A\\\",\\\"Recommended PO Date\\\":\\\"N/A\\\",\\\"Recommended Delivery Date\\\":\\\"N/A\\\"},{\\\"ItemCode\\\":\\\"400002\\\",\\\"ItemName\\\":\\\"ItemH\\\",\\\"CurrentStock\\\":110,\\\"WksToOOS\\\":2,\\\"RiskLevel\\\":\\\"Medium\\\",\\\"Latest PO Date\\\":\\\"N/A\\\",\\\"Latest Delivery Date\\\":\\\"N/A\\\",\\\"Recommended PO Qty\\\":\\\"N/A\\\",\\\"Recommended PO Date\\\":\\\"N/A\\\",\\\"Recommended Delivery Date\\\":\\\"N/A\\\"}]\"\n}"
+  },
+  {
+    "idx": 18,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierE  \n\n**Summary:**  \n- **Risk Levels:** High for ItemI, Medium for ItemJ  \n- **Weeks to Out of Stock (WksToOOS):** 20 for ItemI, unknown for ItemJ due to erratic order patterns  \n- **Recommended Dates:** Based on current stock and risk levels  \n- **Supplier History:** Communication with SupplierE has improved but remains sporadic, causing decision-making delays.  \n- **Item History:** ItemI underperforms against demand forecasts. ItemJ has erratic order patterns affecting WksToOOS.\n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 500001   | ItemI    | 50           | 20       | High      | N/A            | N/A                  |\n| 500002   | ItemJ    | 70           | N/A      | Medium    | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "How can we improve communication with SupplierE to avoid decision-making delays?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "500001",
+          "question": "What measures can be taken to improve the demand forecasting accuracy for ItemI?",
+          "reason": "item_history"
+        },
+        {
+          "target": "500002",
+          "question": "How can we stabilize the order patterns for ItemJ to better predict WksToOOS?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "500001",
+          "item_name": "ItemI",
+          "supplier": "SupplierE",
+          "risk_level": "High",
+          "current_stock": 50,
+          "wks_to_oos": 20,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemI consistently underperforms against forecasted demand levels. Communication with SupplierE has improved but remains sporadic, causing decision-making delays."
+        },
+        {
+          "item_code": "500002",
+          "item_name": "ItemJ",
+          "supplier": "SupplierE",
+          "risk_level": "Medium",
+          "current_stock": 70,
+          "wks_to_oos": null,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "The WksToOOS for ItemJ is uncertain due to erratic order pattern history. Communication with SupplierE has improved but remains sporadic, causing decision-making delays."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-14  \\n**Supplier:** SupplierE  \\n\\nSupplierE has recently improved communication but still experiences sporadic decision-making delays. ItemI consistently underperforms against forecasted demand levels, while ItemJ's WksToOOS is uncertain due to erratic order pattern history.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 500001   | ItemI    | 50           | 20       | High      | N/A            | N/A                  |\\n| 500002   | ItemJ    | 70           | N/A      | Medium    | N/A            | N/A                  |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-14  \\n**Supplier:** SupplierE  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended PO Qty | Recommended Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|-------------------|--------------------------|\\n| 500001   | ItemI    | 50           | 20       | High      | N/A            | N/A                  | N/A               | N/A                     |\\n| 500002   | ItemJ    | 70           | N/A      | Medium    | N/A            | N/A                  | N/A               | N/A                     |\",\n  \"replenishment_timeline_csv\": \"ItemCode,ItemName,CurrentStock,WksToOOS,RiskLevel,Recommended PO Qty,Recommended Delivery Date\\n500001,ItemI,50,20,High,,\\n500002,ItemJ,70,N/A,Medium,,\"\n}"
+  },
+  {
+    "idx": 19,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierF  \n\n**Analysis Summary:**  \n- **Risk Levels:** Medium to High  \n- **Weeks to Out of Stock (WksToOOS):** 5 for ItemK, -1 for ItemL  \n- **Recommended Dates:** Not provided  \n- **Supplier History:** SupplierF recently faced a major supply chain breakdown causing operational stoppage.  \n- **Item History:** ItemK has demand spikes beyond capacity; ItemL lacks historical parameters for demand prediction.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 600001   | ItemK    | 0            | 5        | Medium    | N/A            | N/A                  |\n| 600002   | ItemL    | 25           | -1       | High      | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures have been implemented to prevent future supply chain breakdowns with SupplierF?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "600001",
+          "question": "How can we better manage demand spikes for ItemK?",
+          "reason": "item_history"
+        },
+        {
+          "target": "600002",
+          "question": "What strategies can be employed to improve demand prediction for ItemL?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "600001",
+          "item_name": "ItemK",
+          "supplier": "SupplierF",
+          "risk_level": "Medium",
+          "current_stock": 0,
+          "wks_to_oos": 5,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemK faces abrupt demand spikes beyond current capacity. SupplierF recently faced a major supply chain breakdown."
+        },
+        {
+          "item_code": "600002",
+          "item_name": "ItemL",
+          "supplier": "SupplierF",
+          "risk_level": "High",
+          "current_stock": 25,
+          "wks_to_oos": -1,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemL's historical data often lacks parameters, making demand prediction difficult. SupplierF recently faced a major supply chain breakdown."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierF  \\n**Snapshot Risk Level:** Medium  \\n\\nSupplierF has recently experienced a major supply chain breakdown, leading to complete operational stoppage. ItemK faces abrupt demand spikes beyond current capacity, while ItemL's historical data often lacks parameters, making demand prediction difficult.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 600001   | ItemK    | 0            | 5        | Medium    | N/A           | N/A                 |\\n| 600002   | ItemL    | 25           | -1       | High      | N/A           | N/A                 |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierF  \\n**Snapshot Risk Level:** Medium  \\n\\nSupplierF has recently experienced a major supply chain breakdown, leading to complete operational stoppage. ItemK faces abrupt demand spikes beyond current capacity, while ItemL's historical data often lacks parameters, making demand prediction difficult.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended PO Qty | Recommended PO Date | Recommended Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|-------------------|----------------------|--------------------------|\\n| 600001   | ItemK    | 0            | 5        | Medium    | N/A           | N/A                 | N/A              | N/A                 | N/A                     |\\n| 600002   | ItemL    | 25           | -1       | High      | N/A           | N/A                 | N/A              | N/A                 | N/A                     |\",\n  \"replenishment_timeline_csv\": \"ItemCode,ItemName,CurrentStock,WksToOOS,RiskLevel,Recommended PO Qty,Recommended PO Date,Recommended Delivery Date\\n600001,ItemK,0,5,Medium,,,\\n600002,ItemL,25,-1,High,,,\"\n}"
+  },
+  {
+    "idx": 20,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierB  \n\n**Summary:**  \nSupplierB has generally been consistent with deliveries, but experienced a delivery delay last summer due to unforeseen distribution issues. ItemD often experiences demand spikes during holiday seasons, while ItemC had a slight drop in demand last year due to increased competition.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 100010   | ItemC    | 150          | 4        | Low       | N/A            | N/A                  |\n| 100011   | ItemD    | 120          | 2        | Medium    | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures have been implemented to prevent future distribution issues like the one experienced last summer?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "100011",
+          "question": "How can we better anticipate and manage demand spikes for ItemD during holiday seasons?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "100010",
+          "item_name": "ItemC",
+          "supplier": "SupplierB",
+          "risk_level": "Low",
+          "current_stock": 150,
+          "wks_to_oos": 4,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemC had a slight drop in demand last year due to increased competition."
+        },
+        {
+          "item_code": "100011",
+          "item_name": "ItemD",
+          "supplier": "SupplierB",
+          "risk_level": "Medium",
+          "current_stock": 120,
+          "wks_to_oos": 2,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemD often experiences demand spikes during holiday seasons."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierB  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 100010   | ItemC    | 150          | 4        | Low       | N/A            | N/A                  |\\n| 100011   | ItemD    | 120          | 2        | Medium    | N/A            | N/A                  |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierB  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended Quantity | Recommended PO Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|----------------------|----------------------|\\n| 100010   | ItemC    | 150          | 4        | Low       | N/A            | N/A                  | N/A                 | N/A                 |\\n| 100011   | ItemD    | 120          | 2        | Medium    | N/A            | N/A                  | N/A                 | N/A                 |\",\n  \"risk_assessment_markdown\": \"### Risk Assessment\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierB  \\n\\nSupplierB has generally been consistent with deliveries, but experienced a delivery delay last summer due to unforeseen distribution issues. ItemD often experiences demand spikes during holiday seasons, while ItemC had a slight drop in demand last year due to increased competition. Overall, SupplierB's risk level is considered medium due to the potential for delivery delays and demand fluctuations.\"\n}"
+  },
+  {
+    "idx": 21,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierC  \n\n**Analysis Summary:**  \n- **Risk Levels:** High for ItemE  \n- **Weeks to Out of Stock (WksToOOS):** 20 weeks for ItemE  \n- **Recommended Latest PO Date:** N/A  \n- **Recommended Latest Delivery Date:** N/A  \n- **Supplier History:** SupplierC has a history of price spikes during peak demand periods and has recently increased its minimum order quantities.  \n- **Item History:** ItemE has seen volatile demand with unpredictable trends due to market competition. Lead time has recently been extended from 3 weeks to 5 weeks.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 100020   | ItemE    | 60           | 20       | High      | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "How will the recent increase in minimum order quantities by SupplierC affect our procurement strategy?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "100020",
+          "question": "What strategies can be implemented to manage the volatile demand and extended lead time for ItemE?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "100020",
+          "item_name": "ItemE",
+          "supplier": "SupplierC",
+          "risk_level": "High",
+          "current_stock": 60,
+          "wks_to_oos": 20,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemE has seen volatile demand with unpredictable trends due to market competition. Lead time has recently been extended from 3 weeks to 5 weeks. SupplierC has a history of price spikes during peak demand periods and has recently increased its minimum order quantities."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierC  \\n**Snapshot Items:**  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 100020   | ItemE    | 60           | 20       | High      | N/A            | N/A                  |  \\n**Snapshot Summary:**  \\nSupplierC has a history of price spikes during peak demand periods, and has recently increased its minimum order quantities. ItemE has seen volatile demand with unpredictable trends due to market competition. Lead time has recently been extended from 3 weeks to 5 weeks.  \\n**Key Takeaways:**  \\n- Monitor ItemE's demand closely to avoid stockouts.  \\n- Consider negotiating longer lead times with SupplierC to mitigate risk of price spikes.  \\n**Recommendations:**  \\n- Increase ItemE's safety stock to account for volatile demand.  \\n- Review SupplierC's minimum order quantities and adjust purchasing schedules accordingly.  \\n**Action Items:**  \\n- Schedule a meeting with the procurement team to discuss ItemE's risk management strategies.  \\n- Review SupplierC's historical price trends and develop a contingency plan for potential price spikes.  \\n**Next Steps:**  \\n- Monitor ItemE's demand and adjust safety stock levels as needed.  \\n- Continue monitoring SupplierC's minimum order quantities and adjust purchasing schedules as necessary.  \\n**Snapshot Notes:**  \\nN/A\",\n  \"risk_assessment_markdown\": \"### Risk Assessment Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierC  \\n**Snapshot Items:**  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 100020   | ItemE    | 60           | 20       | High      | N/A            | N/A                  |  \\n**Snapshot Summary:**  \\nSupplierC has a history of price spikes during peak demand periods, and has recently increased its minimum order quantities. ItemE has seen volatile demand with unpredictable trends due to market competition. Lead time has recently been extended from 3 weeks to 5 weeks.  \\n**Key Takeaways:**  \\n- Monitor ItemE's demand closely to avoid stockouts.  \\n- Consider negotiating longer lead times with SupplierC to mitigate risk of price spikes.  \\n**Recommendations:**  \\n- Increase ItemE's safety stock to account for volatile demand.  \\n- Review SupplierC's minimum order quantities and adjust purchasing schedules accordingly.  \\n**Action Items:**  \\n- Schedule a meeting with the procurement team to discuss ItemE's risk management strategies.  \\n- Review SupplierC's historical price trends and develop a contingency plan for potential price spikes.  \\n**Next Steps:**  \\n- Monitor ItemE's demand and adjust safety stock levels as needed.  \\n- Continue monitoring SupplierC's minimum order quantities and adjust purchasing schedules as necessary.  \\n**Snapshot Notes:**  \\nN/A\",\n  \"sourcing_draft_markdown\": \"### Sourcing Draft\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierC  \\n**Snapshot Items:**  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 100020   | ItemE    | 60           | 20       | High      | N/A            | N/A                  |  \\n**Snapshot Summary:**  \\nSupplierC has a history of price spikes during peak demand periods, and has recently increased its minimum order quantities. ItemE has seen volatile demand with unpredictable trends due to market competition. Lead time has recently been extended from"
+  },
+  {
+    "idx": 22,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierD  \n\n**Summary:**  \nSupplierD has faced recent criticism due to a quality issue in one of their batches. ItemF has had brief periods where substitutions were considered due to long production cycles. Current stock levels and weeks to out-of-stock (OOS) are within manageable ranges, but attention to quality and production cycles is advised.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 100030   | ItemF    | 45           | 8        | Medium    | N/A            | N/A                  |\n| 100031   | ItemG    | 300          | 30       | Low       | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures are in place to address the recent quality issue with SupplierD?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "100030",
+          "question": "How can we mitigate the risk of long production cycles for ItemF?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "100030",
+          "item_name": "ItemF",
+          "supplier": "SupplierD",
+          "risk_level": "Medium",
+          "current_stock": 45,
+          "wks_to_oos": 8,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemF had brief periods where substitutions were considered due to long production cycles."
+        },
+        {
+          "item_code": "100031",
+          "item_name": "ItemG",
+          "supplier": "SupplierD",
+          "risk_level": "Low",
+          "current_stock": 300,
+          "wks_to_oos": 30,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "No specific item history issues; stable demand."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-14  \\n**Supplier:** SupplierD  \\n\\nSupplierD has faced recent criticism due to a quality issue in one of their batches.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 100030   | ItemF    | 45           | 8        | Medium    | N/A            | N/A                  |\\n| 100031   | ItemG    | 300          | 30       | Low       | N/A            | N/A                  |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-14  \\n**Supplier:** SupplierD  \\n\\nSupplierD has faced recent criticism due to a quality issue in one of their batches.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended Quantity | Recommended PO Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|----------------------|----------------------|\\n| 100030   | ItemF    | 45           | 8        | Medium    | N/A            | N/A                  | N/A                 | N/A                 |\\n| 100031   | ItemG    | 300          | 30       | Low       | N/A            | N/A                  | N/A                 | N/A                 |\",\n  \"risk_assessment_markdown\": \"### Risk Assessment\\n**Snapshot Date:** 2026-03-14  \\n**Supplier:** SupplierD  \\n\\nSupplierD has faced recent criticism due to a quality issue in one of their batches.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended Quantity | Recommended PO Date | Latest Critical Event Date | Latest Critical Event Description |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|----------------------|----------------------|---------------------------|----------------------------------|\\n| 100030   | ItemF    | 45           | 8        | Medium    | N/A            | N/A                  | N/A                 | N/A                 | N/A                      | N/A                           |\\n| 100031   | ItemG    | 300          | 30       | Low       | N/A            | N/A                  | N/A                 | N/A                 | N/A                      | N/A                           |\"\n}"
+  },
+  {
+    "idx": 23,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierE  \n\n**Summary:**  \nSupplierE has a recent history of failing to notify about shipment delays, which could lead to inconsistencies. ItemI has shown inconsistent demand and has had raw material substitutions, while ItemH experiences sales peaks around summer due to promotional campaigns.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 100040   | ItemH    | 200          | 6        | Medium    | N/A            | N/A                  |\n| 100041   | ItemI    | 180          | N/A      | High      | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures are in place to ensure SupplierE communicates shipment delays promptly?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "100041",
+          "question": "How can we better predict demand for ItemI given its inconsistent history?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "100040",
+          "item_name": "ItemH",
+          "supplier": "SupplierE",
+          "risk_level": "Medium",
+          "current_stock": 200,
+          "wks_to_oos": 6,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemH sales peak around summer due to promotional campaigns."
+        },
+        {
+          "item_code": "100041",
+          "item_name": "ItemI",
+          "supplier": "SupplierE",
+          "risk_level": "High",
+          "current_stock": 180,
+          "wks_to_oos": null,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemI shows inconsistent demand and has substituted raw materials from another item. Data gap — manual stock review needed."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierE  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 100040   | ItemH    | 200          | 6        | Medium    | N/A            | N/A                  |\\n| 100041   | ItemI    | 180          | N/A      | High      | N/A            | N/A                  |\",\n  \"critical_questions\": [\n    {\n      \"target\": \"general\",\n      \"question\": \"What measures are in place to ensure timely communication from SupplierE?\",\n      \"reason\": \"SupplierE recently failed to notify about a shipment delay that resulted in inconsistencies.\"\n    },\n    {\n      \"target\": \"100041\",\n      \"question\": \"How can we stabilize demand for ItemI, which shows inconsistent demand and has substituted raw materials from another item?\",\n      \"reason\": \"ItemI shows inconsistent demand and has substituted raw materials from another item.\"\n    }\n  ],\n  \"replenishment_timeline\": [\n    {\n      \"item_code\": \"100040\",\n      \"item_name\": \"ItemH\",\n      \"supplier\": \"SupplierE\",\n      \"risk_level\": \"Medium\",\n      \"current_stock\": 200,\n      \"wks_to_oos\": 6,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"ItemH sales peak around summer due to promotional campaigns.\"\n    },\n    {\n      \"item_code\": \"100041\",\n      \"item_name\": \"ItemI\",\n      \"supplier\": \"SupplierE\",\n      \"risk_level\": \"High\",\n      \"current_stock\": 180,\n      \"wks_to_oos\": null,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"ItemI shows inconsistent demand and has substituted raw materials from another item.\"\n    }\n  ],\n  \"notes\": \"SupplierE, known for quick communication, recently failed to notify about a shipment delay that resulted in inconsistencies. ItemI shows inconsistent demand and has substituted raw materials from another item, while ItemH sales peak around summer due to promotional campaigns.\"\n}"
+  },
+  {
+    "idx": 24,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierF  \n\nSupplierF has a strong reputation for reliability, though there was a recent incident involving miscommunication about inventory levels. ItemJ and ItemK generally have steady sales, but ItemK has experienced random fluctuations due to minor database errors.\n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 100050   | ItemJ    | 500          | 12       | Low       | N/A            | N/A                  |\n| 100051   | ItemK    | 400          | 1        | Low       | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures are in place to prevent miscommunication about inventory levels with SupplierF?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "100051",
+          "question": "How can we address the database errors causing fluctuations in ItemK's orders?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "100050",
+          "item_name": "ItemJ",
+          "supplier": "SupplierF",
+          "risk_level": "Low",
+          "current_stock": 500,
+          "wks_to_oos": 12,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "SupplierF is reliable, but there was a recent miscommunication about inventory levels. No specific issues with ItemJ."
+        },
+        {
+          "item_code": "100051",
+          "item_name": "ItemK",
+          "supplier": "SupplierF",
+          "risk_level": "Low",
+          "current_stock": 400,
+          "wks_to_oos": 1,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ItemK has experienced random fluctuations due to minor database errors. SupplierF is generally reliable."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierF  \\n\\nSupplierF has consistently been lauded for reliability, although a recent incident involved a miscommunication about inventory levels.  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 100050   | ItemJ    | 500          | 12       | Low       | N/A            | N/A                  |\\n| 100051   | ItemK    | 400          | 1        | Low       | N/A            | N/A                  |\",\n  \"critical_questions\": [\n    {\n      \"target\": \"general\",\n      \"question\": \"What measures are in place to prevent miscommunications regarding inventory levels?\",\n      \"reason\": \"SupplierF has a recent history of miscommunications about inventory levels.\"\n    },\n    {\n      \"target\": \"100051\",\n      \"question\": \"Why do ItemK's orders experience random fluctuations, and how can we mitigate these fluctuations?\",\n      \"reason\": \"ItemK's orders experience random fluctuations due to minor database errors.\"\n    }\n  ],\n  \"replenishment_timeline\": [\n    {\n      \"item_code\": \"100050\",\n      \"item_name\": \"ItemJ\",\n      \"supplier\": \"SupplierF\",\n      \"risk_level\": \"Low\",\n      \"current_stock\": 500,\n      \"wks_to_oos\": 12,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"ItemJ experiences steady sales with no significant issues.\"\n    },\n    {\n      \"item_code\": \"100051\",\n      \"item_name\": \"ItemK\",\n      \"supplier\": \"SupplierF\",\n      \"risk_level\": \"Low\",\n      \"current_stock\": 400,\n      \"wks_to_oos\": 1,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"ItemK experiences steady sales apart from random fluctuations due to minor database errors.\"\n    }\n  ],\n  \"notes\": \"Consider reaching out to SupplierF to discuss their communication processes and strategies for managing inventory levels. Additionally, investigate potential solutions for mitigating ItemK's order fluctuations.\"\n}"
+  },
+  {
+    "idx": 25,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** SupplierTech  \n\n**Summary:**  \nSupplierTech has been generally reliable, with prompt communication and resolution of minor quality issues. However, recent delivery delays have occurred due to transportation strikes. For items, WidgetX experienced a demand surge during the festival season, while GadgetY faces frequent demand volatility due to emerging competing technologies.  \n\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\n| 200010   | WidgetX  | 150          | 4        | Medium    | N/A            | N/A                  |\n| 200011   | GadgetY  | 60           | 12       | High      | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures are in place to mitigate the impact of transportation strikes on delivery schedules?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "200011",
+          "question": "How can we improve forecast accuracy for GadgetY given its demand volatility?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "200010",
+          "item_name": "WidgetX",
+          "supplier": "SupplierTech",
+          "risk_level": "Medium",
+          "current_stock": 150,
+          "wks_to_oos": 4,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "WidgetX experienced a demand surge during the festival season but is otherwise stable."
+        },
+        {
+          "item_code": "200011",
+          "item_name": "GadgetY",
+          "supplier": "SupplierTech",
+          "risk_level": "High",
+          "current_stock": 60,
+          "wks_to_oos": 12,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "GadgetY has frequent demand volatility due to emerging competing technologies, impacting its forecast accuracy."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierTech  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 200010   | WidgetX  | 150          | 4        | Medium    | N/A            | N/A                  |\\n| 200011   | GadgetY  | 60           | 12       | High      | N/A            | N/A                  |\",\n  \"critical_questions\": [\n    {\n      \"target\": \"general\",\n      \"question\": \"What measures are in place to mitigate the impact of transportation strikes on delivery timelines?\",\n      \"reason\": \"SupplierTech has experienced recent delivery delays due to transportation strikes.\"\n    },\n    {\n      \"target\": \"200011\",\n      \"question\": \"How can we better anticipate demand volatility for GadgetY given emerging competing technologies?\",\n      \"reason\": \"GadgetY has frequent demand volatility due to emerging competing technologies, impacting its forecast accuracy.\"\n    }\n  ],\n  \"replenishment_timeline\": [\n    {\n      \"item_code\": \"200010\",\n      \"item_name\": \"WidgetX\",\n      \"supplier\": \"SupplierTech\",\n      \"risk_level\": \"Medium\",\n      \"current_stock\": 150,\n      \"wks_to_oos\": 4,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"WidgetX experienced a demand surge during the festival season but is otherwise stable.\",\n      \"notes\": \"Consider adjusting forecasts to account for seasonal demand fluctuations.\"\n    },\n    {\n      \"item_code\": \"200011\",\n      \"item_name\": \"GadgetY\",\n      \"supplier\": \"SupplierTech\",\n      \"risk_level\": \"High\",\n      \"current_stock\": 60,\n      \"wks_to_oos\": 12,\n      \"recommended_quantity\": null,\n      \"recommended_timing\": \"N/A\",\n      \"recommended_reason\": \"GadgetY has frequent demand volatility due to emerging competing technologies, impacting its forecast accuracy.\",\n      \"notes\": \"Monitor market trends and competitor activity to inform demand planning for GadgetY.\"\n    }\n  ],\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierTech  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Recommended Quantity | Recommended Timing | Recommended Reason | Notes |\\n|----------|----------|--------------|----------|-----------|----------------------|--------------------|---------------------|----------|\\n| 200010   | WidgetX  | 150          | 4        | Medium    | N/A                  | N/A                | WidgetX experienced a demand surge during the festival season but is otherwise stable. Consider adjusting forecasts to account for seasonal demand fluctuations. |          |\\n| 200011   | GadgetY  | 60           | 12       | High      | N/A                  | N/A                | GadgetY has frequent demand volatility due to emerging competing technologies, impacting its forecast accuracy. Monitor market trends and competitor activity to inform demand planning for GadgetY. |          |\"\n}"
+  },
+  {
+    "idx": 26,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** EuroSupply  \n\n**Summary:**  \nEuroSupply has been consistent in pricing, though there was a recent price spike due to raw material shortages. Communication remains responsive. ComponentZ has a history of substituting rarely used items during sudden maintenance demands. PartW's lead time has increased slightly due to new manufacturing processes.  \n\n| ItemCode | ItemName   | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|------------|--------------|----------|-----------|----------------|----------------------|\n| 300020   | ComponentZ | 500          | 2        | Low       | N/A            | N/A                  |\n| 300021   | PartW      | 100          | 5        | Medium    | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "How is EuroSupply addressing the raw material shortages that caused recent price spikes?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "300021",
+          "question": "What measures are in place to mitigate the increased lead time for PartW?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "300020",
+          "item_name": "ComponentZ",
+          "supplier": "EuroSupply",
+          "risk_level": "Low",
+          "current_stock": 500,
+          "wks_to_oos": 2,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ComponentZ historically substitutes rarely used items that experience sudden maintenance demands."
+        },
+        {
+          "item_code": "300021",
+          "item_name": "PartW",
+          "supplier": "EuroSupply",
+          "risk_level": "Medium",
+          "current_stock": 100,
+          "wks_to_oos": 5,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "PartW's lead time has increased slightly because of new manufacturing processes."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-14  \\n**Supplier:** EuroSupply  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 300020   | ComponentZ | 500          | 2        | Low       | N/A            | N/A                  |\\n| 300021   | PartW     | 100          | 5        | Medium    | N/A            | N/A                  |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline Snapshot Date: 2026-03-14  \\n**Supplier:** EuroSupply  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended Quantity | Recommended PO Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|----------------------|----------------------|\\n| 300020   | ComponentZ | 500          | 2        | Low       | N/A            | N/A                  | N/A                 | N/A                 |\\n| 300021   | PartW     | 100          | 5        | Medium    | N/A            | N/A                  | N/A                 | N/A                 |\",\n  \"risk_assessment_markdown\": \"### Risk Assessment Snapshot Date: 2026-03-14  \\n**Supplier:** EuroSupply  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Risk Mitigation Strategies |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|--------------------------|\\n| 300020   | ComponentZ | 500          | 2        | Low       | N/A            | N/A                  | Monitor historical substitution patterns for sudden maintenance demands. |\\n| 300021   | PartW     | 100          | 5        | Medium    | N/A            | N/A                  | Communicate with supplier about lead time increases due to new manufacturing processes. |\"\n}"
+  },
+  {
+    "idx": 27,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02  \n**Supplier:** MegaManufacturers  \n\n**Summary:**  \nMegaManufacturers has a high-risk profile due to recent production halts caused by machinery breakdowns. Communication about resolution timelines has been vague. Both items, MachineAddon and DeviceConnector, are at high risk, with MachineAddon having only 1 week to out-of-stock (OOS) and DeviceConnector 8 weeks. Historical data indicates that MachineAddon experiences demand spikes, while DeviceConnector has erratic supply timelines.  \n\n| ItemCode | ItemName        | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|-----------------|--------------|----------|-----------|----------------|----------------------|\n| 400030   | MachineAddon    | 20           | 1        | High      | N/A            | N/A                  |\n| 400031   | DeviceConnector | 10           | 8        | High      | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures are being taken to resolve the machinery breakdowns at MegaManufacturers?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "400030",
+          "question": "How can we better anticipate the demand spikes for MachineAddon?",
+          "reason": "item_history"
+        },
+        {
+          "target": "400031",
+          "question": "What strategies can be implemented to stabilize the supply timelines for DeviceConnector?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "400030",
+          "item_name": "MachineAddon",
+          "supplier": "MegaManufacturers",
+          "risk_level": "High",
+          "current_stock": 20,
+          "wks_to_oos": 1,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "MachineAddon often sees sudden spikes due to large-scale industrial uptakes. Supplier faced production halts due to machinery breakdowns."
+        },
+        {
+          "item_code": "400031",
+          "item_name": "DeviceConnector",
+          "supplier": "MegaManufacturers",
+          "risk_level": "High",
+          "current_stock": 10,
+          "wks_to_oos": 8,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "DeviceConnector is utilized primarily as a substitute in high-demand scenarios, despite having erratic supply timelines. Supplier faced production halts due to machinery breakdowns."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** MegaManufacturers  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 400030   | MachineAddon   | 20           | 1        | High      | N/A            | N/A                 |\\n| 400031   | DeviceConnector   | 10           | 8        | High      | N/A            | N/A                 |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** MegaManufacturers  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended PO Timing | Recommended Delivery Timing |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|----------------------|--------------------------|\\n| 400030   | MachineAddon   | 20           | 1        | High      | N/A            | N/A                 | N/A                  | N/A                      |\\n| 400031   | DeviceConnector   | 10           | 8        | High      | N/A            | N/A                 | N/A                  | N/A                      |\",\n  \"risk_assessment_markdown\": \"### Risk Assessment\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** MegaManufacturers  \\n\\n**General:** Although labeled as reliable in records, MegaManufacturers faced a significant production halt due to machinery breakdowns, directly conflicting their reputation. Communication has been vague regarding timelines for resolution.  \\n\\n**MachineAddon:** MachineAddon often sees sudden spikes due to large-scale industrial uptakes.  \\n\\n**DeviceConnector:** DeviceConnector is utilized primarily as a substitute in high-demand scenarios, despite having erratic supply timelines.  \\n\\n**Recommendations:** Regular communication and risk mitigation strategies are crucial to manage potential disruptions. Consider implementing contingency plans to mitigate the impact of unexpected delays or shortages.\"\n}"
+  },
+  {
+    "idx": 28,
+    "reference": {
+      "purchasing_report_markdown": "### Purchasing Report\n**Snapshot Date:** 2026-03-02\n**Supplier:** CraftySupplies\n\n**Summary:**\n- **Risk Levels:** ToolsetB (Medium), HandleGrip (Low)\n- **Weeks to Out of Stock (WksToOOS):** ToolsetB (N/A), HandleGrip (15)\n- **Recommended Dates:**\n  - ToolsetB: N/A\n  - HandleGrip: PO by N/A, Delivery by N/A\n- **Supplier History:** Erratic quality issues in recent shipments; delivery timeframes sometimes fluctuate.\n- **Item History:** ToolsetB has variable demand; HandleGrip stable but may rise due to new accessory launch.\n\n| ItemCode | ItemName   | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|------------|--------------|----------|-----------|----------------|----------------------|\n| 500040   | ToolsetB   | N/A          | N/A      | Medium    | N/A            | N/A                  |\n| 500041   | HandleGrip | 300          | 15       | Low       | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "What measures are in place to address the erratic quality issues with CraftySupplies?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "500040",
+          "question": "How can we better predict the demand swings for ToolsetB?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "500040",
+          "item_name": "ToolsetB",
+          "supplier": "CraftySupplies",
+          "risk_level": "Medium",
+          "current_stock": "N/A",
+          "wks_to_oos": "N/A",
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "ToolsetB often swings between high and low demand. Supplier has erratic quality issues and fluctuating delivery timeframes."
+        },
+        {
+          "item_code": "500041",
+          "item_name": "HandleGrip",
+          "supplier": "CraftySupplies",
+          "risk_level": "Low",
+          "current_stock": 300,
+          "wks_to_oos": 15,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "HandleGrip is stable but anticipates a rise in demand due to an upcoming product accessory launch. Supplier has erratic quality issues and fluctuating delivery timeframes."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01\\n**Supplier:** CraftySupplies\\n**Snapshot Summary:**\\nCraftySupplies faces erratic quality issues in recent shipments but generally meets MOQs. Delivery timeframes may fluctuate. ToolsetB swings between high and low demand, while HandleGrip is stable but anticipates a rise due to an upcoming product accessory launch.\\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|\\n| 500040   | ToolsetB | N/A          | N/A      | Medium    | N/A            | N/A                  |\\n| 500041   | HandleGrip | 300          | 15       | Low       | N/A            | N/A                  |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline\\n**Snapshot Date:** 2026-03-01\\n**Supplier:** CraftySupplies\\n**Snapshot Summary:**\\nCraftySupplies faces erratic quality issues in recent shipments but generally meets MOQs. Delivery timeframes may fluctuate. ToolsetB swings between high and low demand, while HandleGrip is stable but anticipates a rise due to an upcoming product accessory launch.\\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date | Recommended Quantity | Recommended PO Date |\\n|----------|----------|--------------|----------|-----------|----------------|----------------------|----------------------|----------------------|\\n| 500040   | ToolsetB | N/A          | N/A      | Medium    | N/A            | N/A                  | N/A                 | N/A                 |\\n| 500041   | HandleGrip | 300          | 15       | Low       | N/A            | N/A                  | 300                 | N/A                 |\",\n  \"notes\": \"Consider discussing potential solutions for CraftySupplies' erratic quality issues and delivery timeframes with relevant stakeholders. Monitor ToolsetB's demand fluctuations and HandleGrip's anticipated rise due to the upcoming product accessory launch.\"\n}"
+  },
+  {
+    "idx": 29,
+    "reference": {
+      "purchasing_report_markdown": "# Purchasing Report\n\n**Snapshot Date:** 2026-03-02  \n**Supplier:** EnviroGoods  \n\nEnviroGoods has faced operational backlogs due to environmental protests, though their pricing strategy remains stable. The items from this supplier show varying risk levels, with EcoBag having a high risk due to frequent substitutions and rapidly changing regulations. PanelFiber is in medium demand, especially during construction booms. \n\n| ItemCode | ItemName   | CurrentStock | WksToOOS | RiskLevel | Latest PO Date | Latest Delivery Date |\n|----------|------------|--------------|----------|-----------|----------------|----------------------|\n| 600050   | PanelFiber | 75           | 12       | Medium    | N/A            | N/A                  |\n| 600051   | EcoBag     | 200          | 3        | High      | N/A            | N/A                  |",
+      "critical_questions": [
+        {
+          "target": "general",
+          "question": "How has EnviroGoods addressed the operational backlogs caused by environmental protests?",
+          "reason": "supplier_history"
+        },
+        {
+          "target": "600051",
+          "question": "What measures are in place to manage the frequent substitutions and regulatory changes affecting EcoBag?",
+          "reason": "item_history"
+        }
+      ],
+      "replenishment_timeline": [
+        {
+          "item_code": "600050",
+          "item_name": "PanelFiber",
+          "supplier": "EnviroGoods",
+          "risk_level": "Medium",
+          "current_stock": 75,
+          "wks_to_oos": 12,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "PanelFiber is in high demand during construction booms. Supplier faced operational backlogs due to environmental protests."
+        },
+        {
+          "item_code": "600051",
+          "item_name": "EcoBag",
+          "supplier": "EnviroGoods",
+          "risk_level": "High",
+          "current_stock": 200,
+          "wks_to_oos": 3,
+          "suggested_quantity": null,
+          "snapshot_date": "2026-03-02",
+          "recommended_latest_po_timing": "N/A",
+          "recommended_latest_delivery_timing": "N/A",
+          "recommended_latest_po_date": "N/A",
+          "recommended_latest_delivery_date": "N/A",
+          "notes": "EcoBag faces frequent substitutions due to rapidly evolving environmental regulations and public interest. Supplier faced operational backlogs due to environmental protests."
+        }
+      ]
+    },
+    "output": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** EnviroGoods  \\n**Snapshot Risk Level:** Medium  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | Latest PO Date | Latest Delivery Date | Latest PO Qty | Latest Delivery Qty | Latest PO Status | Latest Delivery Status |\\n|----------|----------|--------------|----------|----------------|----------------------|--------------|---------------------|------------------|------------------------|\\n| 600050   | PanelFiber | 75           | 12       | N/A            | N/A                  | N/A          | N/A                 | N/A             | N/A                    |\\n| 600051   | EcoBag    | 200          | 3        | N/A            | N/A                  | N/A          | N/A                 | N/A             | N/A                    |\",\n  \"replenishment_timeline_markdown\": \"### Replenishment Timeline Snapshot (2026-03-01)\\n**Supplier:** EnviroGoods  \\n**Snapshot Risk Level:** Medium  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | Latest PO Date | Latest Delivery Date | Latest PO Qty | Latest Delivery Qty | Latest PO Status | Latest Delivery Status | Recommended PO Timing | Recommended Delivery Timing |\\n|----------|----------|--------------|----------|----------------|----------------------|--------------|---------------------|------------------|------------------------|--------------------------|---------------------------|\\n| 600050   | PanelFiber | 75           | 12       | N/A            | N/A                  | N/A          | N/A                 | N/A             | N/A                    | N/A                    | N/A                     |\\n| 600051   | EcoBag    | 200          | 3        | N/A            | N/A                  | N/A          | N/A                 | N/A             | N/A                    | N/A                    | N/A                     |\",\n  \"replenishment_timeline_json\": \"[{\\\"ItemCode\\\":\\\"600050\\\",\\\"ItemName\\\":\\\"PanelFiber\\\",\\\"CurrentStock\\\":75,\\\"WksToOOS\\\":12,\\\"LatestPODate\\\":null,\\\"LatestDeliveryDate\\\":null,\\\"LatestPOQty\\\":null,\\\"LatestDeliveryQty\\\":null,\\\"LatestPOStatus\\\":\\\"N/A\\\",\\\"LatestDeliveryStatus\\\":\\\"N/A\\\",\\\"RecommendedPOTiming\\\":\\\"N/A\\\",\\\"RecommendedDeliveryTiming\\\":\\\"N/A\\\"},{\\\"ItemCode\\\":\\\"600051\\\",\\\"ItemName\\\":\\\"EcoBag\\\",\\\"CurrentStock\\\":200,\\\"WksToOOS\\\":3,\\\"LatestPODate\\\":null,\\\"LatestDeliveryDate\\\":null,\\\"LatestPOQty\\\":null,\\\"LatestDeliveryQty\\\":null,\\\"LatestPOStatus\\\":\\\"N/A\\\",\\\"LatestDeliveryStatus\\\":\\\"N/A\\\",\\\"RecommendedPOTiming\\\":\\\"N/A\\\",\\\"RecommendedDeliveryTiming\\\":\\\"N/A\\\"}]\",\n  \"replenishment_timeline_markdown_with_latest_po\": \"### Replenishment Timeline Snapshot (2026-03-01)\\n**Supplier:** EnviroGoods  \\n**Snapshot Risk Level:** Medium  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | Latest PO Date | Latest Delivery Date | Latest PO Qty | Latest Delivery Qty | Latest PO Status | Latest Delivery Status | Recommended PO Timing | Recommended Delivery Timing |\\n|----------|----------|--------------|----------|----------------|----------------------|--------------|---------------------|------------------|------------------------|--------------------------|---------------------------|\\n| 600050   | PanelFiber | 75           | 12       | N/A            | N/A                  | N/A          | N/A                 | N/A             | N/A                    | N/A                    | N/A                     |\\n| 600051   | EcoBag    | 200          | 3        | N/A            | N/A                  | N/A          | N/A                 | N/A             | N/A                    | N/A                    | N/A                     |\",\n  \"replenishment_timeline_markdown_with_latest_delivery\": \"### Replenishment Timeline Snapshot (2026-03-01)\\n**Supplier:** EnviroGoods  \\n**Snapshot Risk Level:** Medium  \\n\\n| ItemCode | ItemName | CurrentStock | WksToOOS | Latest PO Date | Latest Delivery Date |"
+  }
+]

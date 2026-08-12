@@ -1,0 +1,496 @@
+{
+  "fp16": {
+    "label": "FP16",
+    "mean_score": 7.18,
+    "valid_json_pct": 90.0,
+    "rows": [
+      {
+        "idx": 0,
+        "valid_json": true,
+        "avg": 7.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 6,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the analysis."
+      },
+      {
+        "idx": 1,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate response accurately references supplier names, item codes, stock levels, and risk levels, but has a minor discrepancy in the snapshot date; the reasoning is mostly sound but could be more precise in addressing specific measures for managing demand spikes and stock levels."
+      },
+      {
+        "idx": 2,
+        "valid_json": true,
+        "avg": 8.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the replenishment analysis."
+      },
+      {
+        "idx": 3,
+        "valid_json": true,
+        "avg": 8.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning on labor issues and demand volatility."
+      },
+      {
+        "idx": 4,
+        "valid_json": true,
+        "avg": 8.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and reasoning is less detailed than the reference."
+      },
+      {
+        "idx": 5,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate response accurately references supplier names, item codes, stock levels, and risk levels, but has minor discrepancies in snapshot date and question phrasing; reasoning is generally sound but could be more aligned with the reference."
+      },
+      {
+        "idx": 6,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks specific critical questions and detailed replenishment analysis."
+      },
+      {
+        "idx": 7,
+        "valid_json": false,
+        "avg": 0.0,
+        "data_accuracy": 0,
+        "reasoning_quality": 0,
+        "comment": "invalid JSON"
+      },
+      {
+        "idx": 8,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but slightly deviates in the snapshot date and reasoning details."
+      },
+      {
+        "idx": 9,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but the reasoning could be improved by aligning more closely with the reference's critical questions and replenishment timeline."
+      },
+      {
+        "idx": 10,
+        "valid_json": true,
+        "avg": 8.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the replenishment analysis."
+      },
+      {
+        "idx": 11,
+        "valid_json": true,
+        "avg": 7.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 5,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the analysis."
+      },
+      {
+        "idx": 12,
+        "valid_json": true,
+        "avg": 9.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 9,
+        "comment": "The candidate response accurately references supplier names, item codes, stock levels, and risk levels, with minor discrepancies in snapshot date; the reasoning is logically sound and relevant, closely aligning with the reference."
+      },
+      {
+        "idx": 13,
+        "valid_json": true,
+        "avg": 8.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the replenishment analysis."
+      },
+      {
+        "idx": 14,
+        "valid_json": true,
+        "avg": 8.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but the reasoning lacks critical questions and some logical depth compared to the reference."
+      },
+      {
+        "idx": 15,
+        "valid_json": true,
+        "avg": 8.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the replenishment analysis."
+      },
+      {
+        "idx": 16,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate response accurately references supplier names, item codes, stock levels, and risk levels, but slightly deviates in snapshot date and question phrasing, affecting reasoning quality."
+      },
+      {
+        "idx": 17,
+        "valid_json": true,
+        "avg": 7.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 6,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning present in the reference."
+      },
+      {
+        "idx": 18,
+        "valid_json": true,
+        "avg": 7.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 6,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the analysis."
+      },
+      {
+        "idx": 19,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks specific critical questions and recommended dates, affecting reasoning quality."
+      },
+      {
+        "idx": 20,
+        "valid_json": true,
+        "avg": 7.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 6,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and reasoning about future distribution issues and demand management."
+      },
+      {
+        "idx": 21,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but the snapshot date differs; the reasoning is logical but lacks specific critical questions."
+      },
+      {
+        "idx": 22,
+        "valid_json": true,
+        "avg": 7.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 5,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and reasoning about quality issues and production cycles."
+      },
+      {
+        "idx": 23,
+        "valid_json": true,
+        "avg": 7.0,
+        "data_accuracy": 8,
+        "reasoning_quality": 6,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and reasoning is less detailed compared to the reference."
+      },
+      {
+        "idx": 24,
+        "valid_json": true,
+        "avg": 7.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 5,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning about replenishment issues."
+      },
+      {
+        "idx": 25,
+        "valid_json": false,
+        "avg": 0.0,
+        "data_accuracy": 0,
+        "reasoning_quality": 0,
+        "comment": "invalid JSON"
+      },
+      {
+        "idx": 26,
+        "valid_json": true,
+        "avg": 7.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 5,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the analysis."
+      },
+      {
+        "idx": 27,
+        "valid_json": true,
+        "avg": 9.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 9,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, and provides logically sound and relevant replenishment analysis and critical questions, though the snapshot date differs from the reference."
+      },
+      {
+        "idx": 28,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but the snapshot date is incorrect; the reasoning is mostly sound but lacks critical questions."
+      },
+      {
+        "idx": 29,
+        "valid_json": false,
+        "avg": 0.0,
+        "data_accuracy": 0,
+        "reasoning_quality": 0,
+        "comment": "invalid JSON"
+      }
+    ]
+  },
+  "fp8": {
+    "label": "FP8",
+    "mean_score": 7.08,
+    "valid_json_pct": 86.66666666666667,
+    "rows": [
+      {
+        "idx": 0,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate response accurately references supplier names, item codes, stock levels, and risk levels, but slightly differs in snapshot date and reasoning details."
+      },
+      {
+        "idx": 1,
+        "valid_json": true,
+        "avg": 9.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 9,
+        "comment": "The candidate response accurately references supplier names, item codes, stock levels, and risk levels, with minor date discrepancy; reasoning is logical and relevant, aligning well with the reference."
+      },
+      {
+        "idx": 2,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but omits a critical question about SupplierD's impact on procurement strategy."
+      },
+      {
+        "idx": 3,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but introduces unnecessary elements like 'Snapshot Risk Level' and 'Risk Analysis Summary' which are not in the reference."
+      },
+      {
+        "idx": 4,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate response accurately references supplier names, item codes, stock levels, and risk levels, but slightly differs in snapshot date; the reasoning is mostly sound but could better align with the reference's focus on specific historical issues."
+      },
+      {
+        "idx": 5,
+        "valid_json": false,
+        "avg": 0.0,
+        "data_accuracy": 0,
+        "reasoning_quality": 0,
+        "comment": "invalid JSON"
+      },
+      {
+        "idx": 6,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but the snapshot date is slightly off; the reasoning is mostly sound but lacks specific critical questions."
+      },
+      {
+        "idx": 7,
+        "valid_json": true,
+        "avg": 7.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 5,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the replenishment analysis."
+      },
+      {
+        "idx": 8,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but slightly misrepresents the nature of demand spikes for ItemO as seasonal rather than unexpected."
+      },
+      {
+        "idx": 9,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but the reasoning lacks specific critical questions and recommended actions are not fully aligned with the reference."
+      },
+      {
+        "idx": 10,
+        "valid_json": true,
+        "avg": 8.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the analysis."
+      },
+      {
+        "idx": 11,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but the reasoning could be improved by aligning more closely with the reference's focus on substitution rates and demand spikes."
+      },
+      {
+        "idx": 12,
+        "valid_json": true,
+        "avg": 9.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 9,
+        "comment": "The candidate response accurately references supplier names, item codes, stock levels, and risk levels, with minor date discrepancy; reasoning is logical and aligns well with the reference."
+      },
+      {
+        "idx": 13,
+        "valid_json": true,
+        "avg": 8.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the replenishment analysis."
+      },
+      {
+        "idx": 14,
+        "valid_json": false,
+        "avg": 0.0,
+        "data_accuracy": 0,
+        "reasoning_quality": 0,
+        "comment": "invalid JSON"
+      },
+      {
+        "idx": 15,
+        "valid_json": true,
+        "avg": 8.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the replenishment analysis."
+      },
+      {
+        "idx": 16,
+        "valid_json": true,
+        "avg": 7.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 6,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the replenishment analysis."
+      },
+      {
+        "idx": 17,
+        "valid_json": true,
+        "avg": 7.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 6,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the analysis."
+      },
+      {
+        "idx": 18,
+        "valid_json": true,
+        "avg": 7.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 6,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the analysis."
+      },
+      {
+        "idx": 19,
+        "valid_json": true,
+        "avg": 7.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 6,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed analysis present in the reference."
+      },
+      {
+        "idx": 20,
+        "valid_json": true,
+        "avg": 7.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 6,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning in the replenishment analysis."
+      },
+      {
+        "idx": 21,
+        "valid_json": false,
+        "avg": 0.0,
+        "data_accuracy": 0,
+        "reasoning_quality": 0,
+        "comment": "invalid JSON"
+      },
+      {
+        "idx": 22,
+        "valid_json": true,
+        "avg": 7.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 6,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks depth in reasoning and critical questions compared to the reference."
+      },
+      {
+        "idx": 23,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate response accurately references supplier names, item codes, stock levels, and risk levels, but has a minor date discrepancy; the reasoning is mostly sound but could better align with the reference's focus on demand prediction rather than stabilization."
+      },
+      {
+        "idx": 24,
+        "valid_json": true,
+        "avg": 9.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 9,
+        "comment": "The candidate response accurately references supplier names, item codes, stock levels, and risk levels, with minor discrepancies in snapshot date and terminology, while the reasoning is logically sound and relevant."
+      },
+      {
+        "idx": 25,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but the snapshot date is slightly off; the reasoning is mostly sound but lacks some depth in analysis."
+      },
+      {
+        "idx": 26,
+        "valid_json": true,
+        "avg": 8.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning found in the reference."
+      },
+      {
+        "idx": 27,
+        "valid_json": true,
+        "avg": 8.0,
+        "data_accuracy": 9,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed reasoning found in the reference."
+      },
+      {
+        "idx": 28,
+        "valid_json": true,
+        "avg": 8.5,
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed replenishment analysis."
+      },
+      {
+        "idx": 29,
+        "valid_json": false,
+        "avg": 0.0,
+        "data_accuracy": 0,
+        "reasoning_quality": 0,
+        "comment": "invalid JSON"
+      }
+    ]
+  }
+}

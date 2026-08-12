@@ -1,0 +1,188 @@
+{
+  "n": 30,
+  "fp16_wins": 9,
+  "fp8_wins": 15,
+  "ties": 6,
+  "detail": [
+    {
+      "idx": 0,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 1,
+      "v1": "A",
+      "v2": "A",
+      "winner": "tie"
+    },
+    {
+      "idx": 2,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 3,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 4,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 5,
+      "v1": "A",
+      "v2": "A",
+      "winner": "tie"
+    },
+    {
+      "idx": 6,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 7,
+      "v1": "B",
+      "v2": "B",
+      "winner": "tie"
+    },
+    {
+      "idx": 8,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 9,
+      "v1": "A",
+      "v2": "B",
+      "winner": "FP16"
+    },
+    {
+      "idx": 10,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 11,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 12,
+      "v1": "A",
+      "v2": "B",
+      "winner": "FP16"
+    },
+    {
+      "idx": 13,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 14,
+      "v1": "A",
+      "v2": "B",
+      "winner": "FP16"
+    },
+    {
+      "idx": 15,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 16,
+      "v1": "A",
+      "v2": "B",
+      "winner": "FP16"
+    },
+    {
+      "idx": 17,
+      "v1": "A",
+      "v2": "A",
+      "winner": "tie"
+    },
+    {
+      "idx": 18,
+      "v1": "A",
+      "v2": "B",
+      "winner": "FP16"
+    },
+    {
+      "idx": 19,
+      "v1": "A",
+      "v2": "B",
+      "winner": "FP16"
+    },
+    {
+      "idx": 20,
+      "v1": "A",
+      "v2": "B",
+      "winner": "FP16"
+    },
+    {
+      "idx": 21,
+      "v1": "B",
+      "v2": "B",
+      "winner": "tie"
+    },
+    {
+      "idx": 22,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 23,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 24,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 25,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 26,
+      "v1": "B",
+      "v2": "A",
+      "winner": "FP8"
+    },
+    {
+      "idx": 27,
+      "v1": "A",
+      "v2": "B",
+      "winner": "FP16"
+    },
+    {
+      "idx": 28,
+      "v1": "A",
+      "v2": "B",
+      "winner": "FP16"
+    },
+    {
+      "idx": 29,
+      "v1": "B",
+      "v2": "B",
+      "winner": "tie"
+    }
+  ]
+}

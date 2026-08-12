@@ -25,7 +25,8 @@ actually depends on: **"how efficiently can we serve it, and what does quantizat
 
 Everything below is reproducible from `scripts/`: `bench_vllm.py` (concurrency sweep),
 `bench_hf_baseline.py` (the naive baseline), and `gen_serving_outputs.py` → `eval_quantization_quality.py`
-(the FP16-vs-FP8 quality check).
+(the FP16-vs-FP8 quality check). The raw model outputs and judge scores behind the quality
+numbers are in [../eval_results/](../eval_results/).
 
 Serving is containerized (the standard production path), so the deployment is one reproducible command:
 
