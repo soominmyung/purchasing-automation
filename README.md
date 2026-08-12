@@ -158,6 +158,8 @@ Throughput rises **~15× from concurrency 1 → 16 (16 → 242 tok/s) while per-
 - **FP8 quantization** (on-the-fly, Ada FP8 tensor cores) — **393 tok/s (~1.6× over FP16)**, and KV-cache capacity **21k → 81k tokens (~3.9×)** — headroom for longer contexts / more concurrent sequences.
 - **Quality check** — FP16 vs FP8 scored with the project's own GPT-4o-as-judge over **all 30 scenarios**: **7.2 → 7.1 / 10 (−0.1, no meaningful regression)**. Using all 30 is fair because the two share the same weights (quantization only), so no unseen-holdout is needed.
 
+Reproduce with `scripts/bench_vllm.py` (concurrency sweep), `scripts/bench_hf_baseline.py` (naive baseline), and `scripts/gen_serving_outputs.py` → `scripts/eval_quantization_quality.py` (quality check).
+
 **Takeaway** — end to end, **~36× the naive baseline on one L4** (11 → 242 → 393 tok/s); FP8 adds throughput and memory headroom at no quality cost. This closes the *serving* half of the self-hosting migration the fine-tuning study set up — the model is not only accurate enough (SFT ≈ 95% of GPT-4o) but also efficient to serve.
 
 ---
@@ -207,7 +209,7 @@ The API is then available at `http://localhost:8080`, with interactive docs at `
 * **routers/** — API layer (pipeline, ingest, output)
 * **services/** — business logic (AI agents, vector store, security, grouping)
 * **utils/** — utilities (CSV parsing, PDF extraction, Word generation)
-* **scripts/** — fine-tuning pipeline (`train_sft.py`, `train_dpo.py`, `generate_dpo_pairs.py`, `eval_sft.py`, `eval_dpo.py`) and Vertex AI job submission
+* **scripts/** — fine-tuning pipeline (`train_sft.py`, `train_dpo.py`, `generate_dpo_pairs.py`, `eval_sft.py`, `eval_dpo.py`) and Vertex AI job submission; serving benchmarks (`bench_vllm.py`, `bench_hf_baseline.py`, `gen_serving_outputs.py`, `eval_quantization_quality.py`)
 * **training_data/** — GPT-4o-distilled teacher dataset (JSONL)
 * **docs/** — documentation, portfolio write-up, and sample dataset (Examples.zip)
 * **.github/workflows/deploy.yml** — CI/CD pipeline configuration

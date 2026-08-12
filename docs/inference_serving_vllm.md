@@ -23,6 +23,10 @@ actually depends on: **"how efficiently can we serve it, and what does quantizat
 | **Baseline** | The original `eval_sft.py` path — HuggingFace `transformers` + PEFT, sequential `generate()` (no batching engine) |
 | **Workload** | A representative purchasing-analysis prompt; concurrency sweep, 16 requests/level, 128 output tokens |
 
+Everything below is reproducible from `scripts/`: `bench_vllm.py` (concurrency sweep),
+`bench_hf_baseline.py` (the naive baseline), and `gen_serving_outputs.py` → `eval_quantization_quality.py`
+(the FP16-vs-FP8 quality check).
+
 Serving is containerized (the standard production path), so the deployment is one reproducible command:
 
 ```bash
