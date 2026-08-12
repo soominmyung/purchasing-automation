@@ -137,12 +137,38 @@ Two criteria scored 1–10 each (data accuracy, reasoning quality) and averaged,
 
 ---
 
+## Inference Serving & Quantization (vLLM)
+
+The fine-tuning study produced a self-hostable analysis model; this stage measures **how efficiently it can actually be served** — the deciding factor for the GPT-4o → self-hosted migration. I served the fine-tuned Llama-3-8B (base + LoRA) on a single **NVIDIA L4 (24 GB, GCP `g2-standard-8`)** via the official **vLLM** OpenAI-compatible container, benchmarked against the naive HuggingFace `generate()` loop used in the original evaluation. Full write-up: [docs/inference_serving_vllm.md](docs/inference_serving_vllm.md).
+
+### Continuous batching — throughput scales, latency stays flat
+
+| Concurrency | Throughput (tok/s) | p50 latency (s) |
+|:---:|:---:|:---:|
+| 1  | 16.1  | 7.94 |
+| 8  | 122.8 | 8.31 |
+| **16** | **242.2** | 8.44 |
+| 32 | 240.5 | 8.45 |
+
+Throughput rises **~15× from concurrency 1 → 16 (16 → 242 tok/s) while per-request latency stays ~8 s** — the signature of continuous batching, where requests are packed onto the GPU together so aggregate tokens/sec climbs without slowing any individual request. It saturates at ~16 (compute-bound here).
+
+### vs. the naive baseline & FP8 quantization
+
+- **vs. naive HuggingFace loop** — sequential `generate()` 11 tok/s → vLLM batched 242 tok/s (**~22×**) on the same GPU.
+- **FP8 quantization** (on-the-fly, Ada FP8 tensor cores) — **393 tok/s (~1.6× over FP16)**, and KV-cache capacity **21k → 81k tokens (~3.9×)** — headroom for longer contexts / more concurrent sequences.
+- **Quality check** — FP16 vs FP8 scored with the project's own GPT-4o-as-judge over **all 30 scenarios**: **7.2 → 7.1 / 10 (−0.1, no meaningful regression)**. Using all 30 is fair because the two share the same weights (quantization only), so no unseen-holdout is needed.
+
+**Takeaway** — end to end, **~36× the naive baseline on one L4** (11 → 242 → 393 tok/s); FP8 adds throughput and memory headroom at no quality cost. This closes the *serving* half of the self-hosting migration the fine-tuning study set up — the model is not only accurate enough (SFT ≈ 95% of GPT-4o) but also efficient to serve.
+
+---
+
 ## Tech Stack
 
 * **Backend**: Python, FastAPI (async, SSE streaming)
 * **Orchestration**: LangGraph (state-based multi-agent), LangChain, LangSmith (LLMOps)
 * **LLM**: GPT-4o / GPT-4o-mini → fine-tuned Llama-3-8B (QLoRA)
 * **Fine-tuning**: Unsloth + TRL (SFTTrainer / DPOTrainer), QLoRA (4-bit), Vertex AI Custom Training, W&B
+* **Inference serving**: vLLM (containerized, continuous batching), FP8 quantization, NVIDIA L4 GPU
 * **Vector DB**: ChromaDB (RAG)
 * **Frontend**: React, TypeScript, Framer custom code components
 * **Data processing**: Pandas, PyPDF, python-docx
