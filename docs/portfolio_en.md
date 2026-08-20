@@ -161,6 +161,33 @@ I tested whether the GPT-4o analysis agent could be replaced with a self-hosted 
 
 ---
 
+## Inference Serving & Quantization (vLLM)
+
+The fine-tuning study produced a self-hostable analysis model; this stage measures **how efficiently that model can actually be served** — the deciding factor in whether the switch from GPT-4o to self-hosting is worth making. I served the fine-tuned Llama-3-8B (base + LoRA) on a single **NVIDIA L4 (24 GB, GCP `g2-standard-8`)** via the official **vLLM** OpenAI-compatible container, and compared it against the plain HuggingFace `generate()` loop used in the earlier evaluation.
+
+**Continuous batching — throughput rises without added latency**
+
+| Concurrency | Throughput (tok/s) | p50 latency (s) |
+|:---:|:---:|:---:|
+| 1 | 16.1 | 7.94 |
+| 8 | 122.8 | 8.31 |
+| **16** | **242.2** | 8.44 |
+| 32 | 240.5 | 8.45 |
+
+Going from concurrency 1 to 16, **throughput rises about 15x (16 -> 242 tok/s) while per-request latency stays at roughly 8 seconds** — the benefit of continuous batching, which processes many requests on the GPU in parallel. Past about 16 the GPU's compute is saturated, so adding concurrency no longer increases throughput.
+
+**Comparison with the previous inference path, and FP8 quantization**
+
+- **Throughput vs. the previous path** — on the same GPU, the sequential HuggingFace `generate()` calls used in the earlier evaluation managed 11 tok/s, while serving with vLLM raised throughput to 242 tok/s, **about 22x**.
+- **FP8 quantization** — loading the model in 8-bit (a single vLLM flag, no separate converted checkpoint, using the L4's FP8 compute units) pushed throughput to **393 tok/s**. That is **about 1.6x** over FP16, and because the weights take up less memory, KV-cache capacity grew from **21k to 81k tokens (about 3.9x)** — headroom for longer contexts or more concurrent requests.
+- **Checking for quality loss from quantization** — to verify that 8-bit serving does not degrade output, I scored the FP16 and FP8 outputs for all 30 scenarios with this project's GPT-4o evaluation method. The result was **7.2 -> 7.1 out of 10 (-0.1)**, i.e. no difference.
+
+**Takeaway**
+
+On a single GPU (L4), throughput went from **11 -> 242 -> 393 tok/s, roughly 36x overall**. FP8 quantization delivered both higher throughput and more memory headroom without costing quality. Together with the fine-tuning results, this confirms the feasibility of replacing GPT-4o with a local model on both quality and performance grounds.
+
+---
+
 ## Outcomes
 
 - **Higher automation and analysis quality** — automated repetitive SKU-level inventory review and document authoring, standardizing analysis quality that previously varied by person and situation.
@@ -199,6 +226,7 @@ The current approach (metadata filter + most-recent-first retrieval) is sufficie
 | Orchestration | LangGraph (state-based multi-agent), LangChain |
 | LLM | GPT-4o / GPT-4o-mini; Llama-3-8B (QLoRA) |
 | Fine-tuning | Unsloth, TRL (SFTTrainer / DPOTrainer), Vertex AI, W&B |
+| Inference serving | vLLM (containerized, continuous batching), FP8 quantization, NVIDIA L4 |
 | Vector DB | ChromaDB (RAG) |
 | Observability | LangSmith |
 | Frontend | React, TypeScript, Framer custom code components |
