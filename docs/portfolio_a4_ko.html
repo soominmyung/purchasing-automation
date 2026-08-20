@@ -642,8 +642,8 @@
 <p>소스: https://github.com/soominmyung/purchasing-automation</p>
 </blockquote>
 <hr />
-<section id="한눈에-보기" class="level2">
-<h2>한눈에 보기</h2>
+<section id="프로젝트-개요" class="level2">
+<h2>프로젝트 개요</h2>
 <table>
 <tbody>
 <tr class="odd">
@@ -675,8 +675,8 @@
 <p>구매 담당자는 수백 건의 SKU 단위 재고 데이터를 검토하고, 이를 토대로 분석 보고서·구매 요청서·공급업체 이메일 같은 문서를 작성하는 데 상당한 수작업을 들입니다.</p>
 <p>문제는 이 과정이 <strong>사람의 상황에 크게 좌우된다</strong>는 점입니다. <strong>바쁜 일정이나 담당자의 숙련도 등의 이슈로 인해</strong> 공급업체의 납기·품질 이력, 과거 협상 조건, 통관·규제·안전 이슈, 품목의 시장 반응처럼 <strong>여러 문서에 흩어진 근거 자료를 미처 다 확인하지 못하면</strong> — 그 결과는 곧 <strong>비효율적인 발주 및 잠재적 이윤 손실</strong>로 이어집니다.</p>
 </section>
-<section id="무엇을-하는가" class="level2">
-<h2>무엇을 하는가</h2>
+<section id="주요-기능" class="level2">
+<h2>주요 기능</h2>
 <p>재고 스냅샷을 입력받으면 시스템이 네 가지 결과물을 자동으로 생성합니다.</p>
 <ol type="1">
 <li><strong>구매 분석 보고서</strong> — 공급업체별로 그룹화된 재고 리스크 평가 및 충당 계획 수립</li>
@@ -734,7 +734,7 @@
 <li><strong>내용 구조화 에이전트와 문서화 에이전트의 역할 분리</strong> — 분석→분석 보고서, PR 내용 생성→PR 문서 두 흐름 모두 “내용을 구조화하는 에이전트”와 “그 결과를 정식 문서로 포맷팅하는 에이전트”를 분리하는 동일한 설계 원칙을 따릅니다. 하나의 프롬프트에 내용에 대한 추론(사고)과 문서 형식 준수(포맷팅)를 함께 맡기면 프롬프트가 무거워져 통제·유지보수가 어려워지고, 할루시네이션 관리도 힘들어지며, RAG 관점에서도 내용 판단용 참고와 형식 참고용이 한 프롬프트 안에 뒤섞여 복잡해집니다.
 <p>구체적으로 내용 구조화 에이전트(분석/PR 내용 생성)는 “각 항목에 어떤 판단 기준·내용이 들어가야 하는지”(정당화 사유, buyer 체크사항의 구체성)를 참고하고, 문서화 에이전트(분석 보고서/PR 문서)는 “실제 문서가 어떻게 포맷되는지”(헤더 구성, 문체)만 참고합니다. 내용 구조화 에이전트가 사례의 판단 기준이 아닌 내용 자체를 참조하지 않도록, 프롬프트에 “예시의 구조만 참고하고 실제 내용은 복사하지 말 것”을 명시했고, 배송 지연·가격 급등·품질 이슈 등 서로 다른 리스크 유형 케이스로 실제 테스트해 예시 내용이 섞이지 않았음을 확인했습니다.</p></li>
 </ul>
-<p><strong class="subhead">AI 분석 품질 평가(Evaluator) 에이전트</strong> 별도 분석 평가 에이전트가 분석 에이전트의 출력(JSON)과 그 근거가 된 공급업체·품목 이력 원문을 대조해, <strong>데이터 정확성·이력 충실도(할루시네이션 여부)·논리적 추론·운영 적합성</strong> 4개 기준으로 10점 만점 채점합니다. 재조회가 아니라 분석 에이전트가 실제로 조회했던 이력 원문을 그대로 전달받아 대조하기 때문에, 실제로는 근거가 있는 서술을 “출처 불명”으로 오판해 허위 할루시네이션으로 잘못 채점하는 문제를 방지합니다.</p>
+<p><strong class="subhead">AI 분석 품질 평가(Evaluator) 에이전트</strong> 별도 분석 평가 에이전트가 분석 에이전트의 출력(JSON)과 그 근거가 된 공급업체·품목 이력 원문을 대조해, <strong>데이터 정확성·이력 충실도(할루시네이션 여부)·논리적 추론·운영 적합성</strong> 4개 기준으로 10점 만점 채점합니다. 재조회가 아니라 분석 에이전트가 실제로 참고했던 이력 원문을 그대로 전달받기 때문에, 두 에이전트가 동일한 근거를 놓고 판단합니다. 근거가 어긋나면 채점 기준 전반이 흔들리는데(예: 실제로는 근거가 있는 서술을 “출처 불명”으로 오판), 이를 원천적으로 방지합니다.</p>
 <p><strong class="subhead">가드레일(Guardrail) — 자기 교정 루프</strong> 이메일 결과물은 검증 노드를 거치며 민감정보(재고 현황, 분석 자료 등) 유출 여부를 점검합니다. 유출이 감지되면 그대로 반환하지 않고 그래프가 초안 재생성으로 되돌아갑니다.</p>
 <p><strong class="subhead">실시간 스트리밍 (SSE)</strong> 단일 요청-응답 대신, 파이프라인 각 단계(CSV 파싱 → 그룹화 → 분석 → 문서 생성)의 진행 상황을 Server-Sent Events로 클라이언트에 실시간 전송함으로써 사용자에게 “지금 어느 단계인지”를 실시간으로 보여주고, 오류 발생 시에도 즉시 알릴 수 있습니다.</p>
 <p><strong class="subhead">하이브리드(Hybrid) 설계 — 결정론적 계산과 LLM 추론의 역할 분리</strong> 공급업체 그룹화 단계에서 <code>WksToOOS</code>(품절까지 남은 주 수)와 <code>CurrentStock</code>을 바탕으로 <strong>권장 발주일과 수량을 파이썬 산식으로 계산</strong>합니다. 날짜·수량처럼 정확도가 중요한 값은 LLM 추론에 맡기지 않고 결정론적 코드로 처리해 할루시네이션 리스크를 없앴고, LLM은 그 결과를 받아 우선순위가 정리된 구조화 데이터를 대상으로 리스크 해석과 문서 작성에만 집중합니다.</p>
@@ -745,13 +745,13 @@
 </section>
 <section id="파인튜닝-연구-llama-3-8b에-sft-dpo-적용" class="level2">
 <h2>파인튜닝 연구: Llama-3-8B에 SFT + DPO 적용</h2>
-<p>GPT-4o 분석 에이전트를 자체 호스팅 모델로 대체할 수 있는지를 테스트했습니다. <strong>목적은 호출당 비용과 데이터 프라이버시 노출을 줄이는 것</strong>이고, 접근 방식은 GPT-4o의 지식을 Llama-3-8B로 증류(distillation)하는 것이었습니다.</p>
+<p>분석 에이전트는 매 요청마다 GPT-4o를 호출하기 때문에 <strong>호출할 때마다 비용이 발생하고, 데이터도 외부로 전송됩니다</strong>. 그래서 GPT-4o가 만든 분석 결과를 Llama-3-8B에 학습시키는 지식 증류(distillation)로, 자체 호스팅 모델이 GPT-4o를 대신할 수 있는지 검증했습니다.</p>
 <p><strong class="subhead">학습 데이터</strong></p>
 <ul>
 <li><strong>데이터 출처</strong> — 실제 회사 데이터 대신 GPT-4o로 생성한 <strong>합성 구매 시나리오</strong>를 사용했습니다.</li>
 <li><strong>시나리오 구성</strong> — 재고 행(품목코드·품목명·공급업체·리스크 등급·현재고·품절까지 주수)과 공급업체·품목 이력(자연어)으로 구성됩니다.</li>
 <li><strong>다양성</strong> — 배송 지연·가격 급등·품질 이슈·수요 변동 같은 이력 패턴을 다양하게 담았습니다.</li>
-<li><strong>적대적(adversarial) 케이스 포함</strong> — 데이터 모순(재고는 많은데 품절 임박)·상충 맥락(신뢰 표기 vs 최근 실패)·모호한 이력·결측값 같은 케이스도 의도적으로 포함해 강건성을 높였습니다. 이런 케이스를 학습한 모델은 실전에서 유사한 상황을 마주쳐도, 모순을 얼버무리거나 없는 정보를 지어내는 대신 <strong>모순·결측을 있는 그대로 명시</strong>하도록 반응합니다.</li>
+<li><strong>적대적(adversarial) 케이스 포함</strong> — 깔끔한 데이터만 학습하면 정작 지저분한 실제 데이터 앞에서 무너지기 때문에, 판단이 까다로운 네 가지 유형을 의도적으로 섞었습니다. ① 현재고(<code>CurrentStock</code>)는 넉넉한데 품절까지 남은 주수(<code>WksToOOS</code>)는 짧아 두 수치가 서로 어긋나는 경우, ② 공급업체 이력에는 신뢰할 만한 업체로 적혀 있는데 품목 이력에는 그 업체의 납품 실패 기록이 남아 있어 두 이력이 상충하는 경우, ③ 이력 서술이 두루뭉술해 분석 근거로 삼기 어려운 경우, ④ 현재고나 리스크 등급 같은 값이 아예 비어 있는 경우입니다. 이런 데이터까지 학습한 모델은 억지로 답을 만들지 않고, <strong>무엇이 모순되고 무엇이 빠졌는지 명시</strong>합니다.</li>
 <li><strong>지식 증류(Knowledge Distillation)</strong> — 이 시나리오에 대해 GPT-4o가 만든 분석 결과(JSON: 분석 보고서·핵심 질문·보충 타임라인)를 정답으로 삼아 Llama가 이를 재현하도록 학습했습니다.</li>
 <li><strong>파인튜닝 범위</strong> — 파이프라인 전체가 아니라 대체하려는 <strong>분석 에이전트의 출력</strong>으로 한정했습니다.</li>
 </ul>
@@ -818,6 +818,36 @@
 <hr />
 </section>
 </section>
+<section id="추론-서빙-및-양자화-vllm" class="level2">
+<h2>추론 서빙 및 양자화 (vLLM)</h2>
+<p>파인튜닝 연구로 자체 호스팅 가능한 분석 모델을 확보했다면, 이 단계에서는 <strong>그 모델을 실제로 얼마나 효율적으로 서빙할 수 있는지</strong>를 측정합니다 — GPT-4o로부터 자체 호스팅으로의 전환 여부를 좌우하는 핵심 요소입니다. 파인튜닝한 Llama-3-8B(base + LoRA)를 단일 <strong>NVIDIA L4(24GB, GCP <code>g2-standard-8</code>)</strong>에서 공식 <strong>vLLM</strong> OpenAI 호환 컨테이너로 서빙하고, 기존 평가에 쓰였던 순수 HuggingFace <code>generate()</code> 루프와 비교했습니다.</p>
+<p><strong class="subhead">Continuous batching — 지연 증가 없이 처리량만 상승</strong></p>
+<table class="eval-table">
+<thead>
+<tr class="header">
+<th style="text-align: center;">동시 요청</th>
+<th style="text-align: center;">처리량 (tok/s)</th>
+<th style="text-align: center;">p50 지연 (s)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd"><td style="text-align: center;">1</td><td style="text-align: center;">16.1</td><td style="text-align: center;">7.94</td></tr>
+<tr class="even"><td style="text-align: center;">8</td><td style="text-align: center;">122.8</td><td style="text-align: center;">8.31</td></tr>
+<tr class="odd"><td style="text-align: center;"><strong>16</strong></td><td style="text-align: center;"><strong>242.2</strong></td><td style="text-align: center;">8.44</td></tr>
+<tr class="even"><td style="text-align: center;">32</td><td style="text-align: center;">240.5</td><td style="text-align: center;">8.45</td></tr>
+</tbody>
+</table>
+<p>동시 요청을 1 → 16으로 올리면 <strong>처리량이 약 15배(16 → 242 tok/s) 오르는데도 요청당 지연은 ~8초로 거의 그대로입니다</strong> — 여러 요청을 GPU에서 병렬로 처리하는 continuous batching의 이점입니다. 약 16을 넘어서면 GPU 연산이 한계에 다다라, 동시 요청을 더 늘려도 처리량이 늘지 않습니다.</p>
+<p><strong class="subhead">기존 추론 방식과의 비교, 그리고 FP8 양자화</strong></p>
+<ul>
+<li><strong>기존 방식 대비 처리량</strong> — 같은 GPU에서 기존 평가에 쓰던 HuggingFace <code>generate()</code> 순차 호출은 11 tok/s였지만, vLLM으로 서빙하자 처리량이 242 tok/s로 <strong>약 22배</strong> 늘었습니다.</li>
+<li><strong>FP8 양자화 적용</strong> — 모델을 8비트로 로딩해(별도 변환 파일 없이 vLLM 옵션 하나로 적용, L4의 FP8 연산 유닛 활용) 처리량이 <strong>393 tok/s</strong>까지 올랐습니다. FP16 대비 <strong>약 1.6배</strong>이며, 가중치가 차지하던 메모리가 줄어든 만큼 KV 캐시 용량이 <strong>21k → 81k 토큰(약 3.9배)</strong>으로 늘어, 더 긴 문맥이나 더 많은 동시 요청을 감당할 여유가 생겼습니다.</li>
+<li><strong>양자화로 인한 품질 저하 확인</strong> — 8비트 양자화 시 품질 저하 여부를 확인하기 위해, 시나리오 30개에 대한 FP16 출력과 FP8 출력을 이 프로젝트의 GPT-4o 평가 방식으로 채점하였습니다. 결과는 <strong>7.2점 → 7.1점(10점 만점, −0.1)</strong>으로 차이가 없었습니다.</li>
+</ul>
+<p><strong class="subhead">요점</strong></p>
+<p>GPU 한 장(L4)에서 처리량을 <strong>11 → 242 → 393 tok/s, 총 약 36배</strong>까지 끌어올렸습니다. FP8 양자화를 통해 품질 저하 없이 처리량과 메모리 여유를 함께 얻을 수 있었습니다. 따라서 로컬 모델을 통한 대체 가능성을 품질과 성능 측면에서 모두 확인했습니다.</p>
+<hr />
+</section>
 <section id="성과" class="level2">
 <h2>성과</h2>
 <ul>
@@ -878,22 +908,26 @@
 <td style="text-align: left;">Unsloth, TRL (SFTTrainer / DPOTrainer), Vertex AI, W&amp;B</td>
 </tr>
 <tr class="odd">
+<td style="text-align: left;">추론 서빙</td>
+<td style="text-align: left;">vLLM (컨테이너, continuous batching), FP8 양자화, NVIDIA L4</td>
+</tr>
+<tr class="even">
 <td style="text-align: left;">벡터 DB</td>
 <td style="text-align: left;">ChromaDB (RAG)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">관측성</td>
 <td style="text-align: left;">LangSmith</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">프런트엔드</td>
 <td style="text-align: left;">React, TypeScript, Framer 커스텀 코드 컴포넌트</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">데이터 처리</td>
 <td style="text-align: left;">Pandas, PyPDF, python-docx</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">인프라 / CI-CD</td>
 <td style="text-align: left;">Docker, GCP Cloud Run, Vertex AI, Artifact Registry, GitHub Actions</td>
 </tr>
