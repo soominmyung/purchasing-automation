@@ -732,6 +732,7 @@
 <li><strong>Examples — rank across the whole collection</strong> — these are a <strong>style reference</strong> for how the company's format has recently changed, so there is no need to narrow to a specific entity.</li>
 </ul>
 <p>Both collections therefore parse a date from the document text at ingest time and store it as event_date (falling back to the ingest timestamp if parsing fails); <strong>only the history collections layer a metadata filter on top</strong>.</p></li>
+<li><strong>Mandatory history lookups</strong> — leaving the decision to the model invites <strong>skipped lookups even when history exists</strong>: the input already carries stock levels and weeks-to-out-of-stock, so the model can conclude it has enough. That is not hallucination but an analysis missing available evidence, which is harder to notice. The prompt therefore <strong>requires exactly one supplier-history and one item-history lookup</strong>, followed by rules that any incident found must surface as a critical question and that an empty result must be stated as “no history available”. Skipping the lookup would deny those later rules any chance to fire, which is why the mandate is the first link in the chain that keeps evidence from going missing.</li>
 <li><strong>Separating content-structuring agents from documentation agents</strong> — both flows (analysis → report, PR content → PR document) follow one design principle: <strong>the agent that structures the content is separate from the agent that formats it. Loading a single prompt with both content reasoning and format compliance would make it heavy to control and maintain, harder to manage hallucination, and — from a RAG standpoint — would tangle content-judgment references with format references.</strong>
 <p>The split shows up in what each side retrieves: the structuring agents (analysis / PR content) reference <strong>what belongs in each field</strong> (e.g. how specific the justification or buyer-check items should be), while the documentation agents (report / PR document) reference <strong>only how the document is formatted</strong> (header structure, tone). To stop the structuring agent from lifting an example's content instead of its judgment criteria, the prompt explicitly instructs it to reference structure only and never copy content — verified by testing across different risk types (shipping delays, price spikes, quality issues) to confirm example content does not leak through.</p></li>
 </ul>
@@ -739,6 +740,29 @@
 <p><strong class="subhead">Guardrail — self-correction loop</strong> The email output passes through the validator node, which checks for sensitive-info leakage (inventory figures, analysis details, etc.). If a leak is detected, it is not returned as-is; the graph loops back to regenerate the draft.</p>
 <p><strong class="subhead">Real-time streaming (SSE)</strong> Instead of a single request-response, the progress of each pipeline stage (CSV parsing → grouping → analysis → document generation) is streamed to the client in real time via Server-Sent Events, showing the current pipeline stage live and surfacing errors immediately when they occur.</p>
 <p><strong class="subhead">Hybrid design — separating deterministic computation from LLM reasoning</strong> In the supplier-grouping stage, the recommended order date and quantity are <strong>computed with a Python formula</strong> based on <code>WksToOOS</code> (weeks to out-of-stock) and <code>CurrentStock</code>. Accuracy-critical values like dates and quantities are handled by deterministic code rather than left to LLM reasoning, eliminating hallucination risk; the LLM then takes that result and focuses solely on risk interpretation and document authoring over the prioritized, structured data.</p>
+<p><strong class="subhead">Operating cost structure</strong> Processing one supplier group calls seven agents. Measuring the actual system prompts and observed input/output with OpenAI's tokenizer (<code>tiktoken</code>) gives the following, at GPT-4o's published rates ($2.50/$10.00 per 1M tokens).</p>
+<table class="eval-table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Agent</th>
+<th style="text-align: center;">Input</th>
+<th style="text-align: center;">Output</th>
+<th style="text-align: center;">Cost</th>
+<th style="text-align: center;">Share</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd"><td style="text-align: left;">Analysis</td><td style="text-align: center;">4,606</td><td style="text-align: center;">611</td><td style="text-align: center;">$0.0176</td><td style="text-align: center;">29.1%</td></tr>
+<tr class="even"><td style="text-align: left;">Analysis evaluation</td><td style="text-align: center;">2,983</td><td style="text-align: center;">350</td><td style="text-align: center;">$0.0110</td><td style="text-align: center;">18.1%</td></tr>
+<tr class="odd"><td style="text-align: left;">Analysis report</td><td style="text-align: center;">1,302</td><td style="text-align: center;">550</td><td style="text-align: center;">$0.0088</td><td style="text-align: center;">14.4%</td></tr>
+<tr class="even"><td style="text-align: left;">PR document</td><td style="text-align: center;">1,222</td><td style="text-align: center;">550</td><td style="text-align: center;">$0.0086</td><td style="text-align: center;">14.1%</td></tr>
+<tr class="odd"><td style="text-align: left;">PR content</td><td style="text-align: center;">1,242</td><td style="text-align: center;">450</td><td style="text-align: center;">$0.0076</td><td style="text-align: center;">12.5%</td></tr>
+<tr class="even"><td style="text-align: left;">Email draft</td><td style="text-align: center;">1,406</td><td style="text-align: center;">350</td><td style="text-align: center;">$0.0070</td><td style="text-align: center;">11.6%</td></tr>
+<tr class="odd"><td style="text-align: left;">Validator (mini)</td><td style="text-align: center;">650</td><td style="text-align: center;">80</td><td style="text-align: center;">$0.0001</td><td style="text-align: center;">0.2%</td></tr>
+<tr class="even"><td style="text-align: left;"><strong>Total</strong></td><td style="text-align: center;"><strong>13,411</strong></td><td style="text-align: center;"><strong>2,941</strong></td><td style="text-align: center;"><strong>$0.0607</strong></td><td style="text-align: center;">—</td></tr>
+</tbody>
+</table>
+<p>About <strong>40% of the 13,411 input tokens are hand-offs between agents</strong> — passing the analysis to the four downstream agents, and giving the evaluator the same history text the analysis was grounded in. That is not waste but <strong>what modularity and scoring accuracy cost</strong>: removing the first collapses the pipeline back into a single prompt, and removing the second brings back the mis-scoring of grounded claims as hallucinations.</p>
 <p><strong class="subhead">Security &amp; Observability</strong> Security: the public demo has header-based API-key authentication (<code>X-API-Key</code>) and per-IP rate limiting to prevent token abuse by anonymous users. The in-house deployment implements per-user intranet ID/PW login. Observability: LangSmith tracks token usage, latency, and prompt performance for every node, and custom logic outside LangChain is also instrumented with <code>@traceable</code>.</p>
 <p><strong class="subhead">Deployment</strong> The public demo runs as a Docker container on GCP Cloud Run (serverless, scale-to-zero) so anyone can access it, with CI/CD via GitHub Actions building and auto-deploying the image on every push to <code>main</code>. For actual in-house operations, the app runs continuously on the same 24/7 local server as SAP ERP, so the team uses it over the intranet — an environment with no cold-start or vector-store volatility issues.</p>
 <hr />
@@ -847,6 +871,31 @@
 </ul>
 <p><strong class="subhead">Takeaway</strong></p>
 <p>On a single GPU (L4), throughput went from <strong>11 → 242 → 393 tok/s, roughly 36× overall</strong>. FP8 quantization delivered both higher throughput and more memory headroom without costing quality. Together with the fine-tuning results, this confirms the feasibility of replacing GPT-4o with a local model on both quality and performance grounds.</p>
+<p><strong class="subhead">How the cost structure changes</strong> Fine-tuning targeted one agent, so localising it moves only that line.</p>
+<table class="eval-table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Item</th>
+<th style="text-align: center;">Current (GPT-4o)</th>
+<th style="text-align: center;">Analysis localised</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd"><td style="text-align: left;">Analysis agent</td><td style="text-align: center;">$0.0176</td><td style="text-align: center;"><strong>$0.00037</strong> (~1/47)</td></tr>
+<tr class="even"><td style="text-align: left;">Other six agents</td><td style="text-align: center;">$0.0430</td><td style="text-align: center;">$0.0430 (unchanged)</td></tr>
+<tr class="odd"><td style="text-align: left;"><strong>Per run</strong></td><td style="text-align: center;"><strong>$0.0607</strong></td><td style="text-align: center;"><strong>$0.0434 (−28.5%)</strong></td></tr>
+</tbody>
+</table>
+<p>Per token that is roughly 47× cheaper, but <strong>a GPU bills as a fixed cost whether or not it is used</strong>. At cloud L4 rates that is about $612 a month, putting the <strong>breakeven at roughly 35,000 runs a month (about 1,200 a day)</strong> — far above what a purchasing team actually processes.</p>
+<p><strong class="subhead">Where savings are available</strong></p>
+<ul>
+<li><strong>Prompt caching</strong> — the system prompt is identical on every call, so prefix cache hit rates are high. It needs no structural change, though it trims only around 10% of the total.</li>
+<li><strong>Smaller models for the documentation agents</strong> — the report, PR and email steps are mostly format compliance, where a frontier model may be more than the work needs. Subject to quality checks, <code>gpt-4o-mini</code> or a similar tier is worth evaluating.</li>
+<li><strong>Localising several agents at once</strong> — the continuous batching measured above lets one GPU carry requests from several agents together. Localising the others as well recovers the fixed cost and improves the economics: migrating the whole pipeline cuts the breakeven to roughly a third (about 1,200 → 340 runs a day).</li>
+</ul>
+<p><strong class="subhead">What self-hosting is really for — data residency</strong></p>
+<p>At the volumes this team actually runs, the breakeven is out of reach, so what justifies self-hosting is not the saving but <strong>the fact that data never leaves the building</strong>. For a workflow handling purchase history, negotiated terms and supplier assessments, that is the more decisive requirement, and cost is closer to a side benefit. Adding a GPU to the existing always-on in-house server would also shift the arithmetic from hourly billing to hardware amortisation, lowering the breakeven considerably.</p>
+<p style="font-size:9pt;color:var(--soft)">Costs are estimates: token counts measured with <code>tiktoken</code> over the real prompts, using observed averages for retrieval volume and output length, priced at published rates. Rates change.</p>
 <hr />
 </section>
 <section id="outcomes" class="level2">
@@ -854,7 +903,7 @@
 <ul>
 <li><strong>Higher automation and analysis quality</strong> — automated repetitive SKU-level inventory review and document authoring, standardizing analysis quality that previously varied by person and situation.</li>
 <li><strong>RAG-based context analysis</strong> — multi-source context such as supplier history and lead times, which can be missed in manual review under time and experience constraints, is pulled in and combined within seconds by RAG, supporting risk-priority-based decisions quickly and consistently.</li>
-<li><strong>Validated self-hosting feasibility</strong> — demonstrated that the fine-tuned local model (SFT) reaches about 95% of GPT-4o's quality. Confirmed two concrete benefits of a self-hosting switch: eliminating per-call API costs and keeping data internal for privacy.</li>
+<li><strong>Validated self-hosting feasibility</strong> — the fine-tuned local model (SFT) reaches about 95% of GPT-4o's quality, and vLLM serving gets roughly 36× the throughput of the naive baseline on a single L4 — confirming feasibility on both quality and performance. This validation covers one agent; extending the same approach to the rest would remove the API cost and keep data in-house together.</li>
 <li><strong>Operations-oriented design</strong> — SSE real-time streaming (live progress even while waiting, avoiding timeout risk), a self-correcting agent graph (automatic sensitive-info leak detection and rewrite), and LangSmith-based observability (per-node token/latency/prompt-performance and cost monitoring plus root-cause tracing).</li>
 <li><strong>Accuracy and reliability</strong> — separated roles so that accuracy-critical computation (order date, quantity) is handled by deterministic formulas while context-dependent judgment is handled by LLM reasoning.</li>
 <li><strong>Workflow-tailored efficiency design</strong> — after recognizing the actual document-authoring convention (supplier name and item code stated at the top), I solved RAG-retrieval cross-contamination (documents from other suppliers or items being mixed in) with regex metadata extraction + forced filtering alone, without heavy structuring like an ontology. Rather than applying a generic engineering pattern as-is, I observed how the work is actually done and designed a lightweight, efficient solution around it.</li>
@@ -864,10 +913,11 @@
 <section id="future-work" class="level2">
 <h2>Future Work</h2>
 <p><strong class="subhead">GPT-4o → self-hosted model migration</strong></p>
-<p>The analysis agent currently relies on GPT-4o calls, incurring per-call cost and sending data externally. To reduce this, I validated a self-hosted model and confirmed migration feasibility with SFT alone reaching about 95% of GPT-4o's quality (on Llama-3-8B). DPO was additionally tested with judge-verified preference pairs but yielded no improvement over SFT at this scale, so I am proceeding with <strong>SFT alone</strong> for now. That said, the following remain before an actual migration:</p>
+<p>The analysis agent currently relies on GPT-4o calls, incurring per-call cost and sending data externally. To reduce this, I validated a self-hosted model: SFT alone reached about 95% of GPT-4o's quality (on Llama-3-8B), and vLLM serving then showed sufficient throughput on a single GPU, <strong>confirming feasibility on both quality and performance</strong>. DPO was additionally tested with judge-verified preference pairs but yielded no improvement over SFT at this scale, so I am proceeding with <strong>SFT alone</strong> for now. Further improvements worth considering:</p>
 <ul>
-<li><strong>Conditions for revisiting DPO</strong> — the regression here appears to stem from DPO's contrastive learning being unable to pinpoint “which part is responsible” (a credit-assignment limitation) compounded by the small sample size of 25 pairs. It could be revisited by <strong>scaling up</strong>, by reusing the existing four-criterion analysis evaluation-agent structure to break the preference signal down per field/criterion as a <strong>multi-attribute reward</strong>, or by switching to <strong>Best-of-N filtering + SFT</strong>, which eliminates contrastive (push-down) learning altogether and thereby removes the side-effect risk at the source. For now, though, at this scale (25 pairs, 5-example holdout) the remaining gap (5%) is too small to justify that engineering investment, making SFT-alone the more reasonable choice.</li>
+<li><strong>Conditions for revisiting DPO</strong> — SFT alone is the sensible choice at this scale, but if the training set grows and closing the remaining 5% gap becomes worthwhile, <strong>DPO is worth reconsidering</strong>. The options then are ① <strong>enlarging the preference set</strong>, or ② reusing the existing four-criterion evaluation agent to split the preference signal per field, a <strong>multi-attribute reward</strong>. To avoid contrastive training altogether, ③ <strong>Best-of-N filtering plus SFT</strong> — keeping only the best candidates and training on those — is another way around it.</li>
 <li><strong>Evaluating newer models</strong> — in this project GPT-4o plays two roles: the production analysis agent (repeated calls, cost-sensitive) and the teacher that produces the training data (one-off calls, cost-insensitive). The teacher side could be swapped for a higher-tier model like GPT-5 — a one-off cost with little burden — to raise training-data quality, while the student (replacement) side could benchmark, beyond Llama-3-8B, newer open-source small models released since (Qwen, newer Llama versions) to improve production cost and performance together.</li>
+<li><strong>Limits of the evaluation, and how to move past them</strong> — GPT-4o acted as <strong>teacher (generating the training data), reference (the comparison target) and judge (the scorer)</strong>, so 9.5/10 measures <strong>how closely the model reproduces GPT-4o</strong> more than how correct it is. The training and evaluation scenarios are synthetic too; accumulating real in-house documents in operation and folding them into training and evaluation would <strong>capture the wording of real documents and the buyers' own judgment criteria directly</strong>, rather than approximating them. Beyond that, <strong>scoring with a model from a different family</strong> removes the self-preference bias, and <strong>checking in code</strong> whether the item codes and figures in the output actually exist in the input adds a measure with no judge involved.</li>
 </ul>
 <p><strong class="subhead">RAG retrieval extension idea — evaluating ontology / knowledge graph</strong></p>
 <p>The current approach (metadata filter + most-recent-first retrieval) is sufficient for its core purpose: finding relevant documents quickly and precisely at the supplier/item level. To go one step further and <strong>support relational/aggregate queries that span multiple documents</strong> — e.g. “Among the other items this supplier supplies, which have had similar quality issues in the past?” — an ontology / knowledge graph could be added.</p>
