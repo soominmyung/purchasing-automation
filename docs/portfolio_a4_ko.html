@@ -736,6 +736,7 @@
 <li><strong>예시 — 컬렉션 전체에서 정렬</strong> — 회사 서식이 최근 어떻게 바뀌었는지를 보는 <strong>스타일 참고</strong>라, 특정 대상으로 좁힐 필요가 없습니다.</li>
 </ul>
 <p>그래서 두 컬렉션 모두 인제스트 시점에 문서 내 날짜 표기를 파싱해 event_date로 남기고(파싱 실패 시 인제스트 시점으로 대체), <strong>공급업체·품목 이력 쪽만 메타데이터 필터를 추가로 거치도록</strong> 설계했습니다.</p></li>
+<li><strong>이력 조회 강제</strong> — 조회 여부를 모델 판단에 맡기면, 입력에 이미 재고·품절 주수가 들어 있어 <strong>이력이 있는데도 조회를 건너뛰는 누락</strong>이 생기기 쉽습니다. 할루시네이션은 아니지만 근거를 빠뜨린 분석이라 오히려 발견하기 어렵습니다. 그래서 프롬프트에서 공급업체·품목 이력 조회를 각각 정확히 1회씩 <strong>의무화</strong>하고, 그 뒤로 조회 결과에 사건이 있으면 반드시 핵심 질문으로 남기고 결과가 없으면 “이력 없음”을 명시하도록 규칙을 이어 붙였습니다. 조회 자체를 건너뛰면 이후 장치들이 작동할 기회조차 사라지기 때문에, 이 강제가 근거 누락 방지 체계의 첫 고리에 해당합니다.</li>
 <li><strong>내용 구조화 에이전트와 문서화 에이전트의 역할 분리</strong> — 분석→분석 보고서, PR 내용 생성→PR 문서 두 흐름 모두 <strong>“내용을 구조화하는 에이전트”와 “그 결과를 정식 문서로 포맷팅하는 에이전트”를 분리하는 동일한 설계 원칙을 따릅니다. 하나의 프롬프트에 내용에 대한 추론(사고)과 문서 형식 준수(포맷팅)를 함께 맡기면 프롬프트가 무거워져 통제·유지보수가 어려워지고, 할루시네이션 관리도 힘들어지며, RAG 관점에서도 내용 판단용 참고와 형식 참고용이 한 프롬프트 안에 뒤섞여 복잡해집니다.</strong>
 <p>구체적으로 내용 구조화 에이전트(분석/PR 내용 생성)는 <strong>“각 항목에 어떤 판단 기준·내용이 들어가야 하는지”</strong>(정당화 사유, buyer 체크사항의 구체성)를 참고하고, 문서화 에이전트(분석 보고서/PR 문서)는 <strong>“실제 문서가 어떻게 포맷되는지”</strong>(헤더 구성, 문체)만 참고합니다. 내용 구조화 에이전트가 사례의 판단 기준이 아닌 내용 자체를 참조하지 않도록, 프롬프트에 “예시의 구조만 참고하고 실제 내용은 복사하지 말 것”을 명시했고, 배송 지연·가격 급등·품질 이슈 등 서로 다른 리스크 유형 케이스로 실제 테스트해 예시 내용이 섞이지 않았음을 확인했습니다.</p></li>
 </ul>
@@ -743,6 +744,29 @@
 <p><strong class="subhead">가드레일(Guardrail) — 자기 교정 루프</strong> 이메일 결과물은 검증 노드를 거치며 민감정보(재고 현황, 분석 자료 등) 유출 여부를 점검합니다. 유출이 감지되면 그대로 반환하지 않고 그래프가 초안 재생성으로 되돌아갑니다.</p>
 <p><strong class="subhead">실시간 스트리밍 (SSE)</strong> 단일 요청-응답 대신, 파이프라인 각 단계(CSV 파싱 → 그룹화 → 분석 → 문서 생성)의 진행 상황을 Server-Sent Events로 클라이언트에 실시간 전송함으로써 사용자에게 “지금 어느 단계인지”를 실시간으로 보여주고, 오류 발생 시에도 즉시 알릴 수 있습니다.</p>
 <p><strong class="subhead">하이브리드(Hybrid) 설계 — 결정론적 계산과 LLM 추론의 역할 분리</strong> 공급업체 그룹화 단계에서 <code>WksToOOS</code>(품절까지 남은 주 수)와 <code>CurrentStock</code>을 바탕으로 <strong>권장 발주일과 수량을 파이썬 산식으로 계산</strong>합니다. 날짜·수량처럼 정확도가 중요한 값은 LLM 추론에 맡기지 않고 결정론적 코드로 처리해 할루시네이션 리스크를 없앴고, LLM은 그 결과를 받아 우선순위가 정리된 구조화 데이터를 대상으로 리스크 해석과 문서 작성에만 집중합니다.</p>
+<p><strong class="subhead">운영 비용 구조</strong> 공급업체 그룹 한 건을 처리할 때 7개 에이전트가 호출되며, 실제 시스템 프롬프트와 입출력을 OpenAI 토크나이저(<code>tiktoken</code>)로 계측한 결과는 다음과 같습니다(GPT-4o 기준 $2.50/$10.00 per 1M 토큰 가정).</p>
+<table class="eval-table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">에이전트</th>
+<th style="text-align: center;">입력</th>
+<th style="text-align: center;">출력</th>
+<th style="text-align: center;">비용</th>
+<th style="text-align: center;">비중</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd"><td style="text-align: left;">분석</td><td style="text-align: center;">4,606</td><td style="text-align: center;">611</td><td style="text-align: center;">$0.0176</td><td style="text-align: center;">29.1%</td></tr>
+<tr class="even"><td style="text-align: left;">분석 평가</td><td style="text-align: center;">2,983</td><td style="text-align: center;">350</td><td style="text-align: center;">$0.0110</td><td style="text-align: center;">18.1%</td></tr>
+<tr class="odd"><td style="text-align: left;">분석 보고서</td><td style="text-align: center;">1,302</td><td style="text-align: center;">550</td><td style="text-align: center;">$0.0088</td><td style="text-align: center;">14.4%</td></tr>
+<tr class="even"><td style="text-align: left;">PR 문서</td><td style="text-align: center;">1,222</td><td style="text-align: center;">550</td><td style="text-align: center;">$0.0086</td><td style="text-align: center;">14.1%</td></tr>
+<tr class="odd"><td style="text-align: left;">PR 내용 생성</td><td style="text-align: center;">1,242</td><td style="text-align: center;">450</td><td style="text-align: center;">$0.0076</td><td style="text-align: center;">12.5%</td></tr>
+<tr class="even"><td style="text-align: left;">이메일 초안</td><td style="text-align: center;">1,406</td><td style="text-align: center;">350</td><td style="text-align: center;">$0.0070</td><td style="text-align: center;">11.6%</td></tr>
+<tr class="odd"><td style="text-align: left;">검증 (mini)</td><td style="text-align: center;">650</td><td style="text-align: center;">80</td><td style="text-align: center;">$0.0001</td><td style="text-align: center;">0.2%</td></tr>
+<tr class="even"><td style="text-align: left;"><strong>합계</strong></td><td style="text-align: center;"><strong>13,411</strong></td><td style="text-align: center;"><strong>2,941</strong></td><td style="text-align: center;"><strong>$0.0607</strong></td><td style="text-align: center;">—</td></tr>
+</tbody>
+</table>
+<p>전체 입력 13,411토큰 중 <strong>약 40%는 에이전트 간 재전달</strong>(분석 결과를 후속 4개 에이전트에 넘기는 몫, 평가 에이전트가 분석과 동일한 이력 원문을 받는 몫)입니다. 이는 낭비가 아니라 <strong>모듈성과 채점 정확성을 위해 지불하는 비용</strong>으로, 제거하면 각각 단일 프롬프트 구조로의 회귀와 할루시네이션 오판을 초래합니다.</p>
 <p><strong class="subhead">보안(Security) &amp; 관측성(Observability)</strong> 보안: 공개 데모는 익명 사용자의 토큰 남용을 막기 위해 헤더 기반 API 키 인증(<code>X-API-Key</code>)과 IP 단위 요청 제한을 두었습니다. 사내 배포는 내부망 ID/PW 개인별 로그인을 구현했습니다. 관측성: LangSmith로 모든 노드의 토큰 사용량·지연·프롬프트 성능을 추적하고, LangChain 밖의 자체 로직도 <code>@traceable</code>로 계측합니다.</p>
 <p><strong class="subhead">배포</strong> 공개 데모는 Docker 컨테이너로 GCP Cloud Run(서버리스, 스케일 투 제로)에 올려 누구나 접속할 수 있게 했고, CI/CD는 GitHub Actions로 구성해 <code>main</code> 브랜치에 푸시할 때마다 이미지를 빌드·자동 배포합니다. 실제 사내 운영에서는 SAP ERP가 상시 구동되는 24시간 로컬 서버에 앱을 상주시켜 내부망에서 팀이 사용하도록 구성했으며, 이 환경에서는 콜드 스타트나 벡터스토어 휘발성 문제가 없습니다.</p>
 <hr />
@@ -851,6 +875,31 @@
 </ul>
 <p><strong class="subhead">요점</strong></p>
 <p>GPU 한 장(L4)에서 처리량을 <strong>11 → 242 → 393 tok/s, 총 약 36배</strong>까지 끌어올렸습니다. FP8 양자화를 통해 품질 저하 없이 처리량과 메모리 여유를 함께 얻을 수 있었습니다. 따라서 로컬 모델을 통한 대체 가능성을 품질과 성능 측면에서 모두 확인했습니다.</p>
+<p><strong class="subhead">전환 시 비용 구조 변화</strong> 파인튜닝 대상은 분석 에이전트 하나이므로, 로컬 전환의 효과도 그 항목에만 발생합니다.</p>
+<table class="eval-table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">항목</th>
+<th style="text-align: center;">현재 (GPT-4o)</th>
+<th style="text-align: center;">분석만 로컬 전환</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd"><td style="text-align: left;">분석 에이전트</td><td style="text-align: center;">$0.0176</td><td style="text-align: center;"><strong>$0.00037</strong> (약 1/47)</td></tr>
+<tr class="even"><td style="text-align: left;">나머지 6개 에이전트</td><td style="text-align: center;">$0.0430</td><td style="text-align: center;">$0.0430 (변화 없음)</td></tr>
+<tr class="odd"><td style="text-align: left;"><strong>건당 합계</strong></td><td style="text-align: center;"><strong>$0.0607</strong></td><td style="text-align: center;"><strong>$0.0434 (−28.5%)</strong></td></tr>
+</tbody>
+</table>
+<p>토큰 단가로는 약 47배 저렴하지만, <strong>GPU는 사용량과 무관하게 상시 과금되는 고정비</strong>입니다. 클라우드 L4 기준 월 약 $612이므로 <strong>손익분기점은 월 35,000건(하루 약 1,200건)</strong>이고, 이는 구매팀의 실제 사용량을 크게 웃돕니다.</p>
+<p><strong class="subhead">비용 절감이 가능한 지점</strong></p>
+<ul>
+<li><strong>프롬프트 캐싱</strong> — 시스템 프롬프트가 매 호출 동일해 접두부 캐시 적중률이 높습니다. 구조 변경 없이 입력 비용의 일부를 줄일 수 있으나, 절감 폭은 전체의 10% 안팎입니다.</li>
+<li><strong>문서화 계열 에이전트의 모델 하향</strong> — 보고서·PR·이메일은 형식 준수 비중이 커서 상위 모델이 과할 수 있습니다. 품질 검증을 전제로 <code>gpt-4o-mini</code> 등 하위 모델 적용을 검토할 수 있습니다.</li>
+<li><strong>복수 에이전트 동시 로컬화</strong> — 이미 확인한 continuous batching으로 같은 GPU에 여러 에이전트 요청을 함께 태울 수 있습니다. 다른 에이전트도 함께 로컬화하면 고정비를 회수하고 경제성을 높일 수 있습니다. 파이프라인 전체를 전환하면 절감액이 커져 손익분기점이 약 3분의 1로 낮아집니다(하루 약 1,200건 → 340건).</li>
+</ul>
+<p><strong class="subhead">자체 호스팅의 의의 — 데이터 보안</strong></p>
+<p>실제 사용 규모에서는 손익분기점에 도달하지 못하므로, 자체 호스팅을 정당화하는 것은 절감액이 아니라 <strong>데이터가 외부로 전송되지 않는다는 점</strong>입니다. 구매 이력·거래 조건·공급업체 평가처럼 민감한 정보를 다루는 워크플로우에서는 이쪽이 더 결정적인 요구사항이며, 비용은 부수적 이점에 가깝습니다. 다만 사내 상시 서버에 GPU를 증설하는 방식이라면 시간당 과금이 아니라 장비 상각으로 계산되어 손익분기점은 크게 낮아집니다.</p>
+<p style="font-size:9pt;color:var(--soft)">※ 비용은 실제 프롬프트를 <code>tiktoken</code>으로 계측한 토큰 수에 공개 요율을 적용한 추정치이며, RAG 검색량과 출력 길이는 실측 평균을 사용했습니다. 요율은 변동될 수 있습니다.</p>
 <hr />
 </section>
 <section id="성과" class="level2">
@@ -858,7 +907,7 @@
 <ul>
 <li><strong>자동화 및 분석 품질 향상</strong> — 반복적인 SKU 단위 재고 검토와 문서 작성을 자동화 — 담당자·상황에 따라 들쭉날쭉하던 판단을 일관된 품질로 끌어올림.</li>
 <li><strong>RAG 기반 컨텍스트 분석</strong> — 사람이 하면 담당자의 분석 속도·숙련도에 따라 누락되기 쉬웠던 공급업체 이력·리드 타임 등 다중 소스 컨텍스트를, RAG로 몇 초 만에 모두 끌어와 결합함으로써 리스크 우선순위 기반 의사결정을 빠르고 일관되게 지원.</li>
-<li><strong>자체 호스팅 대체 가능성 검증</strong> — 파인튜닝한 로컬 모델(SFT)이 GPT-4o 대비 약 95% 품질에 도달함을 실증. 자체 호스팅 전환 시 API 호출 비용 제로화와 데이터 외부 미전송(프라이버시 확보)이라는 두 가지 실익 확인.</li>
+<li><strong>자체 호스팅 대체 가능성 검증</strong> — 파인튜닝한 로컬 모델(SFT)이 GPT-4o 대비 약 95% 품질에 도달했고, vLLM 서빙으로 단일 GPU(L4)에서 순수 baseline 대비 약 36배 처리량까지 확보해 품질·성능 양쪽에서 대체 타당성 확인. 이번 검증은 분석 에이전트 한 곳에 한정되지만, 같은 방식을 나머지 에이전트로 확장하면 API 호출 비용 제거와 데이터 외부 미전송을 함께 달성 가능.</li>
 <li><strong>운영 지향 설계</strong> — SSE 실시간 스트리밍(대기 중에도 진행 상황 실시간 확인, 타임아웃 리스크 회피), 자기 교정 에이전트 그래프(민감정보 유출 자동 검출·재작성), LangSmith 기반 관측성(노드별 토큰·지연·프롬프트 성능 및 비용 모니터링과 문제 원인 추적)을 갖춘 설계.</li>
 <li><strong>정확성과 신뢰성 확보</strong> — 정확도가 중요한 계산(발주일·수량)은 결정론적 산식으로, 맥락 판단이 필요한 부분은 LLM 추론으로 역할을 분리.</li>
 <li><strong>현업 맞춤형 효율화 설계</strong> — 실제 문서 작성 관행(공급업체명·아이템 코드를 서두에 명시)을 파악한 뒤, 온톨로지 같은 무거운 구조화 없이 정규식 메타데이터 추출 + 강제 필터링만으로 RAG 검색의 교차 오염(다른 공급업체·품목 문서가 섞여 들어오는 문제)을 해결. 일반적인 엔지니어링 패턴을 그대로 적용하기보다, 현업의 실제 작업 방식을 관찰해 거기 맞춘 가볍고 효율적인 해법을 설계.</li>
@@ -868,10 +917,11 @@
 <section id="향후-과제" class="level2">
 <h2>향후 과제</h2>
 <p><strong class="subhead">GPT-4o → 자체 호스팅 모델 전환</strong></p>
-<p>현재 분석 에이전트는 GPT-4o 호출에 의존하므로 호출 비용이 발생하고 데이터가 외부로 전송됩니다. 이를 줄이기 위해 자체 호스팅 모델을 검증했고, SFT만으로 GPT-4o 대비 약 95% 품질에 도달해 대체 타당성을 확인했습니다(Llama-3-8B 기준). DPO는 judge 검증까지 거친 선호 쌍으로 추가 실험했지만 이 규모에서는 SFT 대비 개선을 얻지 못해, 현재는 <strong>SFT 단독</strong>으로 전환을 진행합니다. 다만 실제 전환까지는 다음 과제들이 남아 있습니다.</p>
+<p>현재 분석 에이전트는 GPT-4o 호출에 의존하므로 호출 비용이 발생하고 데이터가 외부로 전송됩니다. 이를 줄이기 위해 자체 호스팅 모델을 검증했고, SFT만으로 GPT-4o 대비 약 95% 품질에 도달한 데 이어 vLLM 서빙으로 단일 GPU에서 충분한 처리량까지 확인해 <strong>품질·성능 양쪽에서 대체 타당성을 확인</strong>했습니다(Llama-3-8B 기준). DPO는 judge 검증까지 거친 선호 쌍으로 추가 실험했지만 이 규모에서는 SFT 대비 개선을 얻지 못해, 현재는 <strong>SFT 단독</strong>으로 전환을 진행합니다. 다만 추가로 개선할 여지는 다음과 같습니다.</p>
 <ul>
 <li><strong>DPO 재도전 조건</strong> — 이번 실험에서 하락 원인은 DPO의 대조 학습이 “어느 부분이 원인인지” 짚어주지 못하는 credit assignment 한계와 25쌍이라는 적은 표본 규모가 겹친 결과로 보입니다. <strong>규모를 키우거나</strong>, 기존 4기준 분석 평가 에이전트 구조를 재사용해 필드·기준별로 선호 신호를 세분화하는 <strong>다축 보상(multi-attribute reward)</strong>, 혹은 대조(밀어내기) 학습 자체를 없애 부작용 리스크를 원천 차단하는 <strong>Best-of-N 필터링 + SFT 방식</strong>을 적용한다면 재검토할 수 있습니다. 다만 지금 규모(25쌍, 홀드아웃 5개)에서는 그 정도 엔지니어링 투자 대비 남은 격차(5%)가 작아, SFT 단독 채택이 더 합리적인 선택입니다.</li>
 <li><strong>최신 모델 활용 검토</strong> — GPT-4o는 이 프로젝트에서 프로덕션 분석 에이전트(반복 호출, 비용 민감)이자 학습 데이터를 만드는 교사(일회성 호출, 비용 무관)라는 두 가지 역할을 겸합니다. 교사 쪽은 GPT-5 같은 상위 모델로 바꿔도 일회성 비용이라 부담이 적어 학습 데이터 품질을 높이는 데 활용할 수 있고, 학생(대체) 쪽은 Llama-3-8B 외에 이후 공개된 Qwen, Llama 최신 버전 등 오픈소스 소형 모델을 비교 검증해 프로덕션 비용·성능을 함께 개선할 여지가 있습니다.</li>
+<li><strong>평가 방법의 한계와 보완 방향</strong> — 이번 평가는 GPT-4o가 <strong>교사(학습 데이터 생성)·정답(비교 기준)·심판(채점)</strong>을 겸했으므로, 9.5/10은 “얼마나 정확한가”보다 <strong>“GPT-4o를 얼마나 잘 재현하는가”</strong>에 가깝습니다. 학습·평가 시나리오도 모두 합성 데이터 기반인데, 운영하면서 실제 사내 문서를 축적해 학습·평가에 활용하면 <strong>합성 데이터로 근사했던 실제 문서의 표현과 현업의 판단 기준을 직접 반영</strong>할 수 있습니다. 나아가 <strong>교사와 다른 계열 모델로 채점</strong>해 자기 선호 편향을 걷어내거나, 출력에 등장한 품목코드·수치가 입력에 실제로 존재하는지 <strong>코드로 검증</strong>해 심판이 개입하지 않는 지표를 함께 두는 방식이 가능합니다.</li>
 </ul>
 <p><strong class="subhead">RAG 검색 확장 아이디어 — 온톨로지/지식 그래프 적용 검토</strong></p>
 <p>현재 방식(메타데이터 필터 + 최신순 조회)은 공급업체·품목 단위로 관련 문서를 빠르고 정확하게 찾아온다는 본래 목적에는 충분합니다. 여기서 한 걸음 더 나아가, “이 공급업체가 납품하는 다른 품목 중 과거 유사 품질 이슈가 있었던 것은?”처럼 <strong>여러 문서를 넘나드는 관계·집계 질의까지 지원하고 싶다면</strong>, 온톨로지/지식 그래프를 추가로 검토해볼 수 있습니다.</p>
