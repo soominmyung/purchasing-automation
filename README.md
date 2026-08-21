@@ -79,6 +79,7 @@ Compared to handling everything with a single monolithic prompt, this design off
     - **Metadata tagging** — at ingest time, regex extracts the supplier name and item code and attaches them as document metadata. Since every child chunk inherits the parent document's metadata after chunking, the filter always applies correctly even when a given chunk's text doesn't literally contain that name.
     - **Explicit metadata filtering + most-recent-first retrieval (two-stage retrieval)** — when the analysis agent looks up history, it passes the actual supplier name and item code the pipeline already knows as a metadata filter, narrowing the candidate set to documents belonging to that supplier/item only. Since filtering alone already leaves nothing but documents that genuinely belong to that supplier/item, it then fetches the top N by **the document's own recorded date (event_date)** — no similarity ranking involved. If date extraction fails, it falls back to the ingest timestamp. Other filtering strategies can, of course, be swapped in depending on the retrieval purpose.
     - **Strength** — pure semantic similarity search risks pulling in similar narratives from other suppliers (e.g. comparable shipping-delay cases), but the metadata filter blocks this cross-contamination at the source. Building on an existing documentation convention, this was achieved without implementing any ontology or knowledge graph.
+- **Mandatory history lookups** — leaving the decision to the model invites **skipped lookups even when history exists**: the input already carries stock levels and weeks-to-out-of-stock, so the model can conclude it has enough. That is not hallucination but an analysis missing available evidence, which is harder to notice. The prompt therefore requires exactly one supplier-history and one item-history lookup, followed by rules that any incident found must surface as a critical question and that an empty result must be stated as "no history available" — skipping the lookup would deny those later rules any chance to fire.
 - **Purpose-differentiated retrieval strategy** — the supplier/item history collections and the example (analysis report/PR/email best-practice) collections both fetch the top N by the document's own date (event_date), but differ in whether they filter first. History retrieval is looking for "facts about this supplier/item," so it must narrow by metadata before ranking by date; the example collection is a style reference for "how has the company's format recently changed," so there's no need to narrow to a specific entity — pulling the top N by date from the whole collection is enough. So both collections parse a date from the document text at ingest time and store it as event_date (falling back to the ingest timestamp if parsing fails), and only the history collections additionally layer a metadata filter on top.
 
 **AI quality-evaluation (Evaluator) agent** — A separate evaluation agent cross-references the analysis agent's output (JSON) against the source supplier/item history it was based on, scoring it out of 10 on four criteria — **data accuracy, history faithfulness (hallucination check), logical reasoning, and operational suitability**. Because it compares against the exact history retrieved by the analysis agent — passed directly rather than re-fetched — it avoids the failure mode of misjudging a genuinely grounded statement as "unsourced" and wrongly scoring it as a hallucination.
@@ -161,6 +162,20 @@ Throughput rises **~15× from concurrency 1 → 16 (16 → 242 tok/s) while per-
 Reproduce with `scripts/bench_vllm.py` (concurrency sweep), `scripts/bench_hf_baseline.py` (naive baseline), and `scripts/gen_serving_outputs.py` → `scripts/eval_quantization_quality.py` (quality check).
 
 **Takeaway** — end to end, **~36× the naive baseline on one L4** (11 → 242 → 393 tok/s); FP8 adds throughput and memory headroom at no quality cost. This closes the *serving* half of the self-hosting migration the fine-tuning study set up — the model is not only accurate enough (SFT ≈ 95% of GPT-4o) but also efficient to serve.
+
+### Cost analysis
+
+Token counts measured with `tiktoken` over the real system prompts, priced at GPT-4o's published rates:
+
+| | Current (GPT-4o) | Analysis agent localised |
+|---|---:|---:|
+| Analysis agent | $0.0176 | **$0.00037** |
+| Other six agents | $0.0430 | $0.0430 |
+| **Per supplier group** | **$0.0607** | **$0.0434 (−29%)** |
+
+Per token the self-hosted model is ~47× cheaper, but a GPU bills as a **fixed cost** — about $612/month at cloud L4 rates, putting breakeven near **1,200 runs/day**, well above what a purchasing team processes. So at this volume **data residency, not saving, is what justifies self-hosting**; migrating the remaining agents onto the same GPU would cut breakeven to roughly 340/day.
+
+Worth noting where the tokens go: **~40% of pipeline input is hand-offs between agents** — passing the analysis downstream, and giving the evaluator the same history the analysis saw. That is the price of modularity and of scoring against the right evidence, not waste to be optimised away.
 
 ---
 
