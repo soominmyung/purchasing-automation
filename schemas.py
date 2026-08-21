@@ -1,4 +1,13 @@
-"""Pydantic schemas: n8n workflow input/output structures."""
+"""Pydantic schemas: n8n workflow input/output structures.
+
+Runtime contract — only RunPipelineRequest / RunPipelineResponse are enforced; they
+validate the API boundary in routers/pipeline.py.
+
+The remaining models document the shapes handed between agents inside the pipeline.
+Those hand-offs are plain dicts at runtime: the analysis agent's output format is
+enforced by its prompt, with a fallback in agents.py if parsing fails. They are kept
+as a structural reference, not as validation.
+"""
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
