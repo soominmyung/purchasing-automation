@@ -1,0 +1,83 @@
+{
+  "run_name": "eval-llama3-vs-gpt4o-20260305-0854",
+  "llama_mean_score": 3.6,
+  "gpt4o_mean_score": 9.4,
+  "llama_json_valid_pct": 40.0,
+  "results": [
+    {
+      "example_idx": 25,
+      "supplier": "SupplierTech",
+      "llama_json_valid": true,
+      "llama_data_accuracy": 10,
+      "llama_reasoning": 9,
+      "llama_avg_score": 9.5,
+      "gpt4o_json_valid": true,
+      "gpt4o_data_accuracy": 10,
+      "gpt4o_reasoning": 9,
+      "gpt4o_avg_score": 9.5,
+      "llama_comment": "The candidate accurately references all data points from the input and provides relevant critical questions, though the reasoning could be slightly improved by aligning more closely with the reference's focus on forecast accuracy for GadgetY.",
+      "llama_output_preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierTech  \\n**Snapshot Summary:**  \\nSupplierTech has been prompt in communication and resolving minor quality issues over the past year. However, there have been recent delivery delays large",
+      "gpt4o_output_preview": "```json\n{\n  \"analysis\": {\n    \"supplier_overview\": {\n      \"name\": \"SupplierTech\",\n      \"communication\": \"Prompt\",\n      \"quality_issues\": \"Minor, resolved quickly\",\n      \"delivery_issues\": \"Recent delays due to transportation strikes\"\n    },\n    \"items_analysis\": [\n      {\n        \"item_code\": \"2"
+    },
+    {
+      "example_idx": 26,
+      "supplier": "EuroSupply",
+      "llama_json_valid": false,
+      "llama_data_accuracy": 0,
+      "llama_reasoning": 0,
+      "llama_avg_score": 0.0,
+      "gpt4o_json_valid": true,
+      "gpt4o_data_accuracy": 10,
+      "gpt4o_reasoning": 8,
+      "gpt4o_avg_score": 9.0,
+      "llama_comment": "invalid JSON",
+      "llama_output_preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** EuroSupply  \\n**Snapshot Items:**  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel |\\n|----------|----------|--------------|----------|-----------|\\n| 300020   | ComponentZ | 500   ",
+      "gpt4o_output_preview": "```json\n{\n  \"SupplierAnalysis\": {\n    \"Name\": \"EuroSupply\",\n    \"Strengths\": [\n      \"Consistent pricing\",\n      \"Responsive communication\"\n    ],\n    \"Weaknesses\": [\n      \"Recent price spike due to raw material shortages\"\n    ]\n  },\n  \"ItemAnalysis\": [\n    {\n      \"ItemCode\": \"300020\",\n      \"Item"
+    },
+    {
+      "example_idx": 27,
+      "supplier": "MegaManufacturers",
+      "llama_json_valid": false,
+      "llama_data_accuracy": 0,
+      "llama_reasoning": 0,
+      "llama_avg_score": 0.0,
+      "gpt4o_json_valid": true,
+      "gpt4o_data_accuracy": 10,
+      "gpt4o_reasoning": 9,
+      "gpt4o_avg_score": 9.5,
+      "llama_comment": "invalid JSON",
+      "llama_output_preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** MegaManufacturers  \\n**Snapshot Items:**  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel |\\n|----------|----------|--------------|----------|-----------|\\n| 400030   | MachineAddon",
+      "gpt4o_output_preview": "```json\n{\n  \"analysis\": {\n    \"supplier\": {\n      \"name\": \"MegaManufacturers\",\n      \"reliability\": \"Historically reliable but currently facing production issues due to machinery breakdowns. Communication on resolution timelines is unclear, increasing risk.\"\n    },\n    \"items\": [\n      {\n        \"it"
+    },
+    {
+      "example_idx": 28,
+      "supplier": "CraftySupplies",
+      "llama_json_valid": false,
+      "llama_data_accuracy": 0,
+      "llama_reasoning": 0,
+      "llama_avg_score": 0.0,
+      "gpt4o_json_valid": true,
+      "gpt4o_data_accuracy": 10,
+      "gpt4o_reasoning": 9,
+      "gpt4o_avg_score": 9.5,
+      "llama_comment": "invalid JSON",
+      "llama_output_preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** CraftySupplies  \\n**Snapshot Items:**  \\n| ItemCode | ItemName | CurrentStock | WksToOOS | RiskLevel |\\n|----------|----------|--------------|----------|-----------|\\n| 500040   | ToolsetB  | N/A",
+      "gpt4o_output_preview": "```json\n{\n  \"SupplierAnalysis\": {\n    \"Name\": \"CraftySupplies\",\n    \"Strengths\": [\n      \"Generally adheres to MOQs\"\n    ],\n    \"Weaknesses\": [\n      \"Erratic quality issues in recent shipments\",\n      \"Fluctuating delivery timeframes without notice\"\n    ]\n  },\n  \"ItemAnalysis\": [\n    {\n      \"ItemC"
+    },
+    {
+      "example_idx": 29,
+      "supplier": "EnviroGoods",
+      "llama_json_valid": true,
+      "llama_data_accuracy": 10,
+      "llama_reasoning": 7,
+      "llama_avg_score": 8.5,
+      "gpt4o_json_valid": true,
+      "gpt4o_data_accuracy": 10,
+      "gpt4o_reasoning": 9,
+      "gpt4o_avg_score": 9.5,
+      "llama_comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks critical questions and detailed replenishment analysis.",
+      "llama_output_preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** EnviroGoods  \\n**Snapshot Summary:**  \\nEnviroGoods is known for its commitment to ecological sustainability, but recent environmental protests have caused temporary production disruptions. Their",
+      "gpt4o_output_preview": "```json\n{\n  \"supplier_analysis\": {\n    \"name\": \"EnviroGoods\",\n    \"strengths\": [\n      \"Prominent for improving ecological footprints\",\n      \"Stable pricing strategy\"\n    ],\n    \"weaknesses\": [\n      \"Faced severe backlog due to environmental protests\"\n    ],\n    \"opportunities\": [\n      \"Potential"
+    }
+  ]
+}

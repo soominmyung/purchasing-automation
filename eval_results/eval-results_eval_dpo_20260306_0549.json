@@ -1,0 +1,203 @@
+{
+  "run_name": "eval-dpo-comparison-20260306-0549",
+  "summary": {
+    "base_llama": {
+      "mean_avg_score": 0.0,
+      "json_valid_count": 0
+    },
+    "sft": {
+      "mean_avg_score": 9.3,
+      "json_valid_count": 5
+    },
+    "sft_dpo": {
+      "mean_avg_score": 7.4,
+      "json_valid_count": 5
+    },
+    "gpt4o": {
+      "mean_avg_score": 10.0,
+      "json_valid_count": 5
+    }
+  },
+  "results": [
+    {
+      "scenario_id": "scenario_0",
+      "supplier": "SupplierTech",
+      "base_llama": {
+        "data_accuracy": 0,
+        "reasoning_quality": 0,
+        "avg": 0.0,
+        "json_valid": false,
+        "comment": "invalid JSON",
+        "preview": "Draft a report on the supplier's performance and item history for management review. Highlight any potential risks or opportunities for improvement."
+      },
+      "sft": {
+        "data_accuracy": 10,
+        "reasoning_quality": 9,
+        "comment": "The candidate accurately references all data points from the input and provides relevant critical questions, though the reasoning could be slightly improved by aligning more closely with the reference's focus on forecast accuracy for GadgetY.",
+        "avg": 9.5,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** SupplierTech  \\n**Summary:**  \\nSupplierTech has been prompt in communication and resolving min"
+      },
+      "sft_dpo": {
+        "data_accuracy": 9,
+        "reasoning_quality": 5,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks detailed replenishment analysis and critical questions.",
+        "avg": 7.0,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"## Purchasing Report\\n\\n**Date:** 2026-02-15\\n\\nThis report highlights key insights for SupplierTech's purchasing decisions.\\n\\n---\\n\\n**Key Insights**: SupplierTech"
+      },
+      "gpt4o": {
+        "data_accuracy": 10,
+        "reasoning_quality": 10,
+        "comment": "The candidate response accurately references all data points from the input and provides logically sound and relevant analysis and questions.",
+        "avg": 10.0,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-02  \\n**Supplier:** SupplierTech  \\n\\n**Summary:**  \\nSupplierTech has been generally reliable, with prompt communi"
+      }
+    },
+    {
+      "scenario_id": "scenario_1",
+      "supplier": "EuroSupply",
+      "base_llama": {
+        "data_accuracy": 0,
+        "reasoning_quality": 0,
+        "avg": 0.0,
+        "json_valid": false,
+        "comment": "invalid JSON",
+        "preview": "* The current stock levels are sufficient for the next two weeks. However, we should monitor the situation closely in case of any unexpected demand spikes or supply chain disruptions. We may need to c"
+      },
+      "sft": {
+        "data_accuracy": 9,
+        "reasoning_quality": 8,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but incorrectly attributes increased lead time to ComponentZ instead of PartW; the reasoning is mostly sound but includes an unnecessary question about ComponentZ's lead time.",
+        "avg": 8.5,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** EuroSupply  \\n**Summary:**  \\n* EuroSupply is known for consistent pricing but recently had a p"
+      },
+      "sft_dpo": {
+        "data_accuracy": 8,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names and item codes but omits stock levels and weeks to OOS; the reasoning is generally sound but lacks depth in critical questions and replenishment analysis.",
+        "avg": 7.5,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"## Purchasing Report\\n\\n**Date:** 2026-03-02\\n\\nThis report covers purchasing decisions for **EuroSupply**, taking into account recent supplier and item histories.\\n"
+      },
+      "gpt4o": {
+        "data_accuracy": 10,
+        "reasoning_quality": 10,
+        "comment": "The candidate response accurately references all data points from the input and provides logically sound and relevant analysis and questions.",
+        "avg": 10.0,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-02  \\n**Supplier:** EuroSupply  \\n\\n**Summary:**  \\nEuroSupply has been consistent in pricing, though there was a r"
+      }
+    },
+    {
+      "scenario_id": "scenario_2",
+      "supplier": "MegaManufacturers",
+      "base_llama": {
+        "data_accuracy": 0,
+        "reasoning_quality": 0,
+        "avg": 0.0,
+        "json_valid": false,
+        "comment": "invalid JSON",
+        "preview": "Draft a report on the current state of affairs with recommendations for future action."
+      },
+      "sft": {
+        "data_accuracy": 10,
+        "reasoning_quality": 9,
+        "comment": "The candidate accurately references all data points from the input and provides logical and relevant analysis and questions, though it could improve by suggesting specific actions or timelines.",
+        "avg": 9.5,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** MegaManufacturers  \\n**Summary:**  \\nAlthough MegaManufacturers maintains a positive reputation"
+      },
+      "sft_dpo": {
+        "data_accuracy": 9,
+        "reasoning_quality": 6,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks detailed replenishment analysis and critical questions.",
+        "avg": 7.5,
+        "json_valid": true,
+        "preview": "{\n  \"supplier_report_markdown\": \"## Supplier Report\\n\\n**Supplier:** MegaManufacturers\\n\\nMegaManufacturers experienced recent production issues caused by machine failures, casting doubt on their reli"
+      },
+      "gpt4o": {
+        "data_accuracy": 10,
+        "reasoning_quality": 10,
+        "comment": "The candidate response accurately references all data points from the input and provides logically sound and relevant analysis and questions.",
+        "avg": 10.0,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-02  \\n**Supplier:** MegaManufacturers  \\n\\n**Summary:**  \\nMegaManufacturers has a high-risk profile due to recent "
+      }
+    },
+    {
+      "scenario_id": "scenario_3",
+      "supplier": "CraftySupplies",
+      "base_llama": {
+        "data_accuracy": 0,
+        "reasoning_quality": 0,
+        "avg": 0.0,
+        "json_valid": false,
+        "comment": "invalid JSON",
+        "preview": "Draft a report on the above information. Include any relevant insights or recommendations you may have for the team."
+      },
+      "sft": {
+        "data_accuracy": 10,
+        "reasoning_quality": 9,
+        "comment": "The candidate accurately references all data points from the input and provides logical and relevant analysis and questions, though it could include more detailed recommendations.",
+        "avg": 9.5,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** CraftySupplies  \\n**Summary:**  \\nCraftySupplies has faced quality issues recently but typicall"
+      },
+      "sft_dpo": {
+        "data_accuracy": 9,
+        "reasoning_quality": 7,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks depth in replenishment analysis and critical questions.",
+        "avg": 8.0,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"## Purchasing Report\\n\\n**Date:** 2026-03-02\\n\\nThis report highlights potential risks associated with CraftySupplies' current stock levels.\\n\\n---\\n\\n| Item Code | "
+      },
+      "gpt4o": {
+        "data_accuracy": 10,
+        "reasoning_quality": 10,
+        "comment": "The candidate response accurately references all data points from the input and provides logically sound and relevant analysis and questions.",
+        "avg": 10.0,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-02\\n**Supplier:** CraftySupplies\\n\\n**Summary:**\\n- **Risk Levels:** ToolsetB (Medium), HandleGrip (Low)\\n- **Weeks"
+      }
+    },
+    {
+      "scenario_id": "scenario_4",
+      "supplier": "EnviroGoods",
+      "base_llama": {
+        "data_accuracy": 0,
+        "reasoning_quality": 0,
+        "avg": 0.0,
+        "json_valid": false,
+        "comment": "invalid JSON",
+        "preview": "The company should consider increasing its stock of EcoBags by at least 50% to avoid shortages. The company should also keep an eye on the PanelFiber supply chain as it may be affected by the same env"
+      },
+      "sft": {
+        "data_accuracy": 10,
+        "reasoning_quality": 9,
+        "comment": "The candidate accurately references all data points from the input and provides logical and relevant analysis and questions, though it could benefit from more specific replenishment recommendations.",
+        "avg": 9.5,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"### Purchasing Report\\n**Snapshot Date:** 2026-03-01  \\n**Supplier:** EnviroGoods  \\n**Summary:**  \\nProminent supplier known for reducing ecological footprints, but"
+      },
+      "sft_dpo": {
+        "data_accuracy": 9,
+        "reasoning_quality": 5,
+        "comment": "The candidate accurately references supplier names, item codes, stock levels, and risk levels, but lacks detailed replenishment analysis and critical questions.",
+        "avg": 7.0,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"## Purchasing Report\\n\\n**Date:** 2026-02-15\\n\\nThis report highlights key insights regarding recent supplier and item developments.\\n\\n---\\n\\n**Supplier:** EnviroGo"
+      },
+      "gpt4o": {
+        "data_accuracy": 10,
+        "reasoning_quality": 10,
+        "comment": "The candidate response accurately references all data points from the input and provides logically sound and relevant analysis and questions.",
+        "avg": 10.0,
+        "json_valid": true,
+        "preview": "{\n  \"purchasing_report_markdown\": \"# Purchasing Report\\n\\n**Snapshot Date:** 2026-03-02  \\n**Supplier:** EnviroGoods  \\n\\nEnviroGoods has faced operational backlogs due to environmental protests, thou"
+      }
+    }
+  ]
+}
