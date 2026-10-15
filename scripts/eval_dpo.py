@@ -257,13 +257,15 @@ def run_comparison():
             if not valid:
                 print(f"    {label}: 0/10 (invalid JSON — skipping judge)")
                 return {"data_accuracy": 0, "reasoning_quality": 0, "avg": 0.0,
-                        "json_valid": False, "comment": "invalid JSON", "preview": text[:200]}
+                        "json_valid": False, "comment": "invalid JSON", "preview": text[:200],
+                        "output": text}
             candidate_text = json.dumps(parsed, ensure_ascii=False, indent=2)
             s = score_with_gpt4o(client, prompt, reference, candidate_text, label)
             avg = round((s["data_accuracy"] + s["reasoning_quality"]) / 2, 1)
             print(f"    {label}: data={s['data_accuracy']}/10 reasoning={s['reasoning_quality']}/10 avg={avg}")
             time.sleep(0.5)  # Rate limit buffer
-            return {**s, "avg": avg, "json_valid": True, "preview": text[:200]}
+            # Full output kept so the run can be re-scored without re-running inference.
+            return {**s, "avg": avg, "json_valid": True, "preview": text[:200], "output": text}
 
         # GPT-4o ground truth scored against itself as upper bound
         gpt4o_text = json.dumps(reference, ensure_ascii=False, indent=2)
@@ -275,10 +277,12 @@ def run_comparison():
         results.append({
             "scenario_id": sid,
             "supplier": supplier,
+            "prompt": prompt,
             "base_llama": _score(base_outputs[i], "Base"),
             "sft":        _score(sft_outputs[i],  "SFT"),
             "sft_dpo":    _score(dpo_outputs[i],  "SFT+DPO"),
-            "gpt4o":      {**gpt4o_s, "avg": gpt4o_avg, "json_valid": True, "preview": gpt4o_text[:200]},
+            "gpt4o":      {**gpt4o_s, "avg": gpt4o_avg, "json_valid": True, "preview": gpt4o_text[:200],
+                           "output": gpt4o_text},
         })
 
     # ── Summary ────────────────────────────────────────────────────────────────

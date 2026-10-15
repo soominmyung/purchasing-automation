@@ -275,6 +275,11 @@ def main():
             "llama_comment":         llama_scores.get("comment", ""),
             "llama_output_preview":  llama_output[:300],
             "gpt4o_output_preview":  gpt4o_output[:300],
+            # Full text is kept so the run can be re-scored under a different rubric
+            # without re-running inference. Left out of the W&B table below.
+            "prompt":                prompt,
+            "llama_output":          llama_output,
+            "gpt4o_output":          gpt4o_output,
         }
         results.append(row)
 
@@ -283,7 +288,9 @@ def main():
 
     # 5. Log to W&B
     print("\n[4/4] Logging results to W&B ...")
-    table = wandb.Table(columns=list(results[0].keys()), data=[list(r.values()) for r in results])
+    full_text_fields = {"prompt", "llama_output", "gpt4o_output"}
+    table_cols = [k for k in results[0] if k not in full_text_fields]
+    table = wandb.Table(columns=table_cols, data=[[r[k] for k in table_cols] for r in results])
     wandb.log({"comparison_table": table})
 
     # Summary metrics
