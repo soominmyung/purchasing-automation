@@ -283,6 +283,13 @@
       break-after: avoid;
     }
 
+    /* Chrome honours break-inside in paged media but not break-after, so the
+       heading, its intro and the diagram are wrapped and kept whole together. */
+    .pipeline-block {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
     p {
       margin: 0 0 3.2mm;
       color: var(--muted);
@@ -443,8 +450,8 @@
       background: #f8faf9;
       border: 1px solid var(--line);
       border-radius: 8px;
-      page-break-inside: auto;
-      break-inside: auto;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
 
     .pipeline-input {
@@ -695,6 +702,7 @@
 <p>검증이 끝난 뒤, 복잡한 분기 로직·상태 관리·컨테이너 배포를 구현하기 위해 전체를 <strong>Python(FastAPI + LangGraph)</strong>으로 재설계했습니다. 이 과정에서 노드 기반 흐름을 비동기 API와 상태 그래프로 옮기고, API 키 인증·스트리밍을 갖춘 배포 가능한 서비스로 다듬었으며, 공개 데모는 CI/CD(GitHub Actions → Cloud Run)까지 구성했습니다 (실제 운영은 회사 로컬 서버 구동).</p>
 </section>
 <section id="멀티-에이전트-파이프라인-langgraph" class="level3">
+<div class="pipeline-block">
 <h3>멀티 에이전트 파이프라인 (LangGraph)</h3>
 <p>6개의 특화된 에이전트를 LangGraph 상태 그래프로 연결하고, 검증 노드에서 필요 시 이전 단계로 되돌아가 재작성합니다.</p>
 <div class="pipeline-diagram">
@@ -708,6 +716,7 @@
 <div class="pipeline-step"><span class="step-no">06</span><div><strong>PR 문서 작성 에이전트</strong><p>정식 구매 요청 문서 작성</p></div><span class="tag">RAG: 최신 업로드 순 상위 N개 모범 양식 참고</span></div>
 <div class="pipeline-step"><span class="step-no">07</span><div><strong>이메일 에이전트</strong><p>공급업체용 이메일 초안</p></div><span class="tag">RAG: 최신 업로드 순 상위 N개 모범 양식 참고</span></div>
 <div class="pipeline-step verify"><span class="step-no">08</span><div><strong>검증 노드</strong><p>민감정보(재고 현황, 분석 자료 등) 유출 검사 →<br>자동 재작성 루프</p></div><span class="tag">가드레일(민감정보 유출 방지),<br>실패 사유 피드백 기반 정밀 재작성 지시</span></div>
+</div>
 </div>
 </div>
 <p><strong class="subhead">왜 멀티 에이전트인가</strong> 하나의 거대한 에이전트 및 프롬프트로 전체를 처리하는 방식에 비해 다음과 같은 장점이 있습니다.</p>

@@ -282,6 +282,13 @@
       break-after: avoid;
     }
 
+    /* Chrome honours break-inside in paged media but not break-after, so the
+       heading, its intro and the diagram are wrapped and kept whole together. */
+    .pipeline-block {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
     p {
       margin: 0 0 3.2mm;
       color: var(--muted);
@@ -442,8 +449,8 @@
       background: #f8faf9;
       border: 1px solid var(--line);
       border-radius: 8px;
-      page-break-inside: auto;
-      break-inside: auto;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
 
     .pipeline-input {
@@ -691,6 +698,7 @@
 <p>Once validated, I re-architected the entire workflow in <strong>Python (FastAPI + LangGraph)</strong> to implement complex branching logic, state management, and container deployment. In the process I moved the node-based flow onto an async API and a state graph, refined it into a deployable service with API-key authentication and streaming, and set up CI/CD (GitHub Actions → Cloud Run) for the public demo (actual operations run on the company's local server).</p>
 </section>
 <section id="multi-agent-pipeline" class="level3">
+<div class="pipeline-block">
 <h3>Multi-agent pipeline (LangGraph)</h3>
 <p>Six specialized agents are connected as a LangGraph state graph, and the validator node loops back to an earlier step to rewrite when needed.</p>
 <div class="pipeline-diagram">
@@ -704,6 +712,7 @@
 <div class="pipeline-step"><span class="step-no">06</span><div><strong>PR Document agent</strong><p>Formal purchase request document authoring</p></div><span class="tag">RAG: latest N approved templates</span></div>
 <div class="pipeline-step"><span class="step-no">07</span><div><strong>Email agent</strong><p>Supplier email draft</p></div><span class="tag">RAG: latest N approved templates</span></div>
 <div class="pipeline-step verify"><span class="step-no">08</span><div><strong>Validator node</strong><p>Sensitive-info (inventory figures, analysis details, etc.) leak check → auto-rewrite loop</p></div><span class="tag">Guardrail against sensitive-info leaks, precise rewrite instructed via failure-reason feedback</span></div>
+</div>
 </div>
 </div>
 <p><strong class="subhead">Why multi-agent</strong> Compared to handling everything with a single monolithic prompt, this design offers:</p>
