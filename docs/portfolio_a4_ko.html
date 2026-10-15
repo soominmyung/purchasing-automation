@@ -796,7 +796,7 @@
 <p><strong class="subhead">1단계 — 지도 파인튜닝 (SFT)</strong></p>
 <ul>
 <li>Llama-3-8B + QLoRA (4-bit, LoRA rank 16 — 학습 파라미터 약 41M / 8B, 0.51%)</li>
-<li>교사 예제 30개 (GPT-4o가 시나리오별로 생성한 분석 JSON)</li>
+<li>교사 예제 25개 (GPT-4o가 시나리오별로 생성한 분석 JSON) — 시나리오 30개 중 마지막 5개는 평가용 홀드아웃으로 남겨 학습에 쓰지 않음</li>
 <li><strong>학습 데이터 형태</strong>: JSONL, <code>{instruction, input: {inventory, supplier_history, item_history}, output: {analysis: {...}}}</code> — 정답 라벨은 <code>output.analysis</code>(분석 보고서·핵심 질문·보충 타임라인)만 사용</li>
 <li>Vertex AI, Tesla T4 1장, 5 epoch, 367초</li>
 <li>학습 손실: 1.14 → 0.41</li>

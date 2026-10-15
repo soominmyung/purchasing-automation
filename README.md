@@ -111,7 +111,7 @@ I tested whether the GPT-4o analysis agent could be replaced with a self-hosted 
 ### Stage 1 — Supervised Fine-Tuning (SFT)
 
 - Llama-3-8B + QLoRA (4-bit, LoRA rank 16 — ~41M trainable params / 8B, 0.51%)
-- 30 teacher examples (analysis JSON GPT-4o generated per scenario)
+- 25 teacher examples (analysis JSON GPT-4o generated per scenario) — of the 30 scenarios, the last 5 are held out for evaluation and never used in training
 - Vertex AI, 1× Tesla T4, 5 epochs, 367s — training loss 1.14 → 0.41
 - Artifact: `gs://purchasing-automation-models/sft-runs/lora_adapter/` · [W&B](https://wandb.ai/msm1640-/purchasing-automation-sft)
 

@@ -792,7 +792,7 @@
 <p><strong class="subhead">Stage 1 — Supervised Fine-Tuning (SFT)</strong></p>
 <ul>
 <li>Llama-3-8B + QLoRA (4-bit, LoRA rank 16 — ~41M trainable params / 8B, 0.51%)</li>
-<li>30 teacher examples (analysis JSON GPT-4o generated per scenario)</li>
+<li>25 teacher examples (analysis JSON GPT-4o generated per scenario) — of the 30 scenarios, the last 5 are held out for evaluation and never used in training</li>
 <li><strong>Training-data shape</strong>: JSONL, <code>{instruction, input: {inventory, supplier_history, item_history}, output: {analysis: {...}}}</code> — only <code>output.analysis</code> (analysis report, critical questions, supplementary timeline) is used as the label</li>
 <li>Vertex AI, 1× Tesla T4, 5 epochs, 367s</li>
 <li>Training loss: 1.14 → 0.41</li>
