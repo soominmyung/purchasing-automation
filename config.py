@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     # API access token (X-API-Key header verification)
     api_access_token: Optional[str] = None
 
+    # Model that checks each analysis ("provider:model"). From a different provider than the
+    # model that writes the analysis (GPT-4o), so the analysis is never judged by its own
+    # author or a model of the same family. Needs GEMINI_API_KEY.
+    evaluator_model: str = "gemini:gemini-3.7-flash"
+
 
     # Vector store backend: "memory" | "chroma"
     vector_store_backend: str = "memory"
