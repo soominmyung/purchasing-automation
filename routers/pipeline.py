@@ -16,7 +16,7 @@ from langsmith import traceable
 from services.security import verify_api_access
 from config import settings
 from schemas import RunPipelineRequest, RunPipelineResponse
-from utils.csv_utils import parse_csv_rows
+from utils.csv_utils import SnapshotDateError, parse_csv_rows
 from utils.docx_utils import (
     save_analysis_docx,
     save_pr_docx,
@@ -25,7 +25,7 @@ from utils.docx_utils import (
     markdown_to_docx_bytes,
     _sanitize_filename,
 )
-from services.item_grouping import group_by_supplier_and_recommend
+from services.item_grouping import group_by_supplier_and_recommend, group_risk_level, screen_rows
 from services.agents import (
     run_purchasing_pipeline_graph,
     purchasing_graph,
@@ -52,7 +52,10 @@ def _run_pipeline(
             progress_callback(step, detail or {})
 
     progress("csv_parsing", {})
-    rows = parse_csv_rows(csv_content, csv_filename)
+    try:
+        rows = parse_csv_rows(csv_content, csv_filename)
+    except SnapshotDateError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     if not rows:
         raise HTTPException(
             status_code=400,
@@ -60,6 +63,10 @@ def _run_pipeline(
         )
     progress("item_grouping", {})
     groups = group_by_supplier_and_recommend(rows)
+    if not groups:
+        _, excluded = screen_rows(rows)
+        reasons = " ".join(e["line"] for e in excluded[:10])
+        raise HTTPException(status_code=400, detail=f"No row could be analysed. {reasons}")
     if not groups:
         raise HTTPException(
             status_code=400,
@@ -76,7 +83,7 @@ def _run_pipeline(
         snapshot_date = group["snapshot_date"]
         supplier = group["supplier"]
         items = group["items"]
-        risk_level = items[0].get("risk_level", "N/A") if items else "N/A"
+        risk_level = group.get("risk_level") or group_risk_level(items)
         safe_supplier = _sanitize_filename(supplier)
 
         # --- LangGraph Execution with Progress Streaming ---
@@ -94,6 +101,7 @@ def _run_pipeline(
                 "supplier": supplier,
                 "items": items,
                 "risk_level": risk_level,
+                "data_issue_lines": group.get("data_issue_lines", []),
                 "iteration_count": 0,
                 "is_valid_email": False
             },
@@ -124,6 +132,7 @@ def _run_pipeline(
             b64 = base64.b64encode(docx_bytes).decode("ascii")
             evaluations.append({
                 "snapshot_date": snapshot_date, "supplier": supplier, "markdown": evaluation_md,
+                "checks": final_state.get("evaluation_result"),
                 "filename": evaluation_filename, "saved_path": "", "content_base64": b64,
             })
             if stream_mode:
@@ -132,6 +141,7 @@ def _run_pipeline(
             evaluation_saved_path = save_evaluation_docx(snapshot_date, supplier, evaluation_md)
             evaluations.append({
                 "snapshot_date": snapshot_date, "supplier": supplier, "markdown": evaluation_md,
+                "checks": final_state.get("evaluation_result"),
                 "filename": evaluation_filename, "saved_path": evaluation_saved_path,
                 "content_base64": _read_file_base64(evaluation_saved_path),
             })
@@ -338,7 +348,10 @@ def run_group_only(req: RunPipelineRequest):
     CSV만 파싱하여 Item Grouping만 수행 (LLM 호출 없음).
     권장 PO일/납기일/수량 계산 결과만 반환.
     """
-    rows = parse_csv_rows(req.csv_content, req.csv_filename or "")
+    try:
+        rows = parse_csv_rows(req.csv_content, req.csv_filename or "")
+    except SnapshotDateError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     if not rows:
         raise HTTPException(status_code=400, detail="No valid CSV rows.")
     groups = group_by_supplier_and_recommend(rows)
