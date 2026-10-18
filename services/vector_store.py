@@ -103,12 +103,13 @@ def _most_recent(collection_name: str, k: int, filter: dict[str, Any] | None = N
     return [Document(page_content=text, metadata=meta) for text, meta in pairs[:k]]
 
 
-def ingest_supplier_history(text: str, supplier_name: str) -> None:
-    """Ingest supplier history text with supplier_name metadata."""
+def ingest_supplier_history(text: str, supplier_name: str, source: str = "") -> None:
+    """Ingest supplier history text with supplier_name metadata. source: the uploaded file name, shown in the report's referenced documents."""
     _add_docs(
         "supplier_history",
         [Document(page_content=text, metadata={
             "supplier_name": supplier_name,
+            "source": source,
             "doc_type": "supplier_history",
             "ingested_at": _now_iso(),
             "event_date": _extract_event_date(text),
@@ -116,12 +117,13 @@ def ingest_supplier_history(text: str, supplier_name: str) -> None:
     )
 
 
-def ingest_item_history(text: str, item_code: str | None) -> None:
-    """Ingest item history text with item_code metadata."""
+def ingest_item_history(text: str, item_code: str | None, source: str = "") -> None:
+    """Ingest item history text with item_code metadata. source: the uploaded file name, shown in the report's referenced documents."""
     _add_docs(
         "item_history",
         [Document(page_content=text, metadata={
             "item_code": item_code or "",
+            "source": source,
             "doc_type": "item_history",
             "ingested_at": _now_iso(),
             "event_date": _extract_event_date(text),

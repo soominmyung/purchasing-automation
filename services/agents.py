@@ -7,12 +7,12 @@ import re
 from typing import Any, TypedDict, Annotated, List, Union
 import operator
 
-from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage, ToolMessage, AIMessage
-from langchain_core.tools import tool
+from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 
 from config import settings
+from services.item_grouping import data_issue_lines, group_risk_level, insert_data_issues_section
 from services.vector_store import (
     search_supplier_history,
     search_item_history,
@@ -26,8 +26,8 @@ from services.prompts import (
     PR_DRAFT_AGENT_SYSTEM,
     PR_DOC_AGENT_SYSTEM,
     EMAIL_DRAFT_AGENT_SYSTEM,
-    EVALUATION_AGENT_SYSTEM,
 )
+from services.quality_checks import evaluate_analysis, evaluation_markdown, has_history
 
 
 def _llm(model: str = "gpt-4o") -> ChatOpenAI:
@@ -38,22 +38,31 @@ def _llm(model: str = "gpt-4o") -> ChatOpenAI:
     )
 
 
-# ----- Tools for Analysis Agent -----
-# NOTE: these @tool wrappers only supply the name/description/schema for llm.bind_tools() below.
-# The actual retrieval (metadata-filtered, most-recent-first) happens in the manual
-# tool_calls interception further down — these function bodies are never invoked.
-@tool
-def supplier_history(query: str) -> str:
-    """Look up past information about ONE supplier. Input: short JSON or text including supplier name (e.g. 'SupplierA'). Output: concise documents about delivery delays, price changes, quality incidents, negotiation patterns. If no relevant document, return empty list."""
-    docs = search_supplier_history(k=5)
-    return "\n\n".join(d.page_content for d in docs) if docs else "No supplier history found."
+# ----- History retrieval for the Analysis Agent -----
+# Retrieval is a metadata filter (supplier name, item codes) ranked by document date, done
+# in code before the model is called. The model never writes a search query: it would not
+# change what is retrieved, and leaving the lookup to the model meant it could be skipped.
+NO_SUPPLIER_HISTORY = "No supplier history found."
+NO_ITEM_HISTORY = "No item history found."
+HISTORY_DOCS_PER_LOOKUP = 5
 
 
-@tool
-def item_history(query: str) -> str:
-    """Look up past information about ONE OR MORE items. Input: text including one or more item codes (e.g. 'Item history for 100000 ItemA and 100004 ItemE'). Output: concise documents about stock-outs, demand spikes, quality incidents, lead times. If no relevant document, return empty list."""
-    docs = search_item_history(k=5)
-    return "\n\n".join(d.page_content for d in docs) if docs else "No item history found."
+def retrieve_supplier_history(supplier: str) -> list:
+    """The most recent documents for this supplier only; none if the supplier is unnamed."""
+    if not supplier:
+        return []
+    return search_supplier_history(k=HISTORY_DOCS_PER_LOOKUP, filter={"supplier_name": supplier})
+
+
+def retrieve_item_history(item_codes: list[str]) -> list:
+    """The most recent documents for these item codes only; none if there are no codes."""
+    if not item_codes:
+        return []
+    return search_item_history(k=HISTORY_DOCS_PER_LOOKUP, filter={"item_code": {"$in": item_codes}})
+
+
+def _history_text(docs: list, none_text: str) -> str:
+    return "\n\n".join(d.page_content for d in docs) if docs else none_text
 
 
 def _extract_json_from_text(text: str) -> dict | list:
@@ -69,6 +78,53 @@ def _extract_json_from_text(text: str) -> dict | list:
     return json.loads(text.strip())
 
 
+# ----- Referenced documents (recorded by code, not by the model) -----
+REFERENCES_HEADING = "## Referenced Documents"
+
+
+def _doc_references(history: str, docs: list) -> list[dict[str, str]]:
+    """One entry per source document retrieved (chunks of one file are merged)."""
+    refs, seen = [], set()
+    for d in docs:
+        meta = d.metadata or {}
+        source = meta.get("source") or "(file name not recorded)"
+        applies_to = meta.get("supplier_name") if history == "supplier" else meta.get("item_code")
+        date = meta.get("event_date") or (meta.get("ingested_at") or "")[:10]
+        key = (source, applies_to, date)
+        if key in seen:
+            continue
+        seen.add(key)
+        refs.append({"history": history, "source": source, "applies_to": applies_to or "", "date": date})
+    return refs
+
+
+def _supplied_reference(history: str, text: str) -> list[dict[str, str]]:
+    """History passed in directly (evaluation, training) rather than retrieved from the store."""
+    if has_history(text):
+        return [{"history": history, "source": "history supplied with the request", "applies_to": "", "date": ""}]
+    return []
+
+
+def references_markdown(references: dict[str, Any] | None) -> str:
+    """The report's closing section: which history documents the analysis was based on."""
+    refs = (references or {}).get("documents") or []
+    lines = [REFERENCES_HEADING, ""]
+    if refs:
+        lines += ["| History | Document | Applies to | Date |", "| --- | --- | --- | --- |"]
+        lines += [f"| {r['history']} | {r['source']} | {r['applies_to'] or '-'} | {r['date'] or '-'} |" for r in refs]
+        lines.append("")
+    for history in ("supplier", "item"):
+        if not any(r["history"] == history for r in refs):
+            lines.append(f"- No {history} history was found.")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def append_references_section(markdown: str, references: dict[str, Any] | None) -> str:
+    if references is None:
+        return markdown
+    return (markdown or "").rstrip() + "\n\n" + references_markdown(references)
+
+
 def run_analysis_agent(
     input_json: dict[str, Any],
     supplier_history_override: str = None,
@@ -76,81 +132,38 @@ def run_analysis_agent(
 ) -> dict[str, Any]:
     """
     Analysis Agent: input = { snapshot_date, supplier, items[] }.
-    Tools: supplier_history, item_history (unless overridden).
+    The supplier and item histories are retrieved in code (or supplied as overrides for
+    evaluation and training) and passed to the model with the items, in one call.
     Returns: (analysis_dict, used_supplier_history, used_item_history) — the history
-    texts are the exact tool outputs the analysis was grounded in, for the Evaluator.
+    texts are exactly what the model was given, for the evaluation node.
     """
-    llm = _llm().bind_tools([supplier_history, item_history])
-    user_text = json.dumps(input_json, ensure_ascii=False)
-    messages = [
+    documents: list[dict[str, str]] = []  # for the report's "Referenced Documents" section
+
+    if supplier_history_override:
+        used_supplier_history = supplier_history_override
+        documents += _supplied_reference("supplier", supplier_history_override)
+    else:
+        docs = retrieve_supplier_history(str(input_json.get("supplier") or ""))
+        used_supplier_history = _history_text(docs, NO_SUPPLIER_HISTORY)
+        documents += _doc_references("supplier", docs)
+
+    if item_history_override:
+        used_item_history = item_history_override
+        documents += _supplied_reference("item", item_history_override)
+    else:
+        item_codes = [str(i.get("item_code")) for i in input_json.get("items", []) if i.get("item_code")]
+        docs = retrieve_item_history(item_codes)
+        used_item_history = _history_text(docs, NO_ITEM_HISTORY)
+        documents += _doc_references("item", docs)
+
+    user_text = json.dumps(
+        {**input_json, "supplier_history": used_supplier_history, "item_history": used_item_history},
+        ensure_ascii=False,
+    )
+    final_response = _llm().invoke([
         SystemMessage(content=ANALYSIS_AGENT_SYSTEM),
         HumanMessage(content=user_text),
-    ]
-
-    # Track the history text actually used, so the Evaluation Agent can
-    # cross-reference the analysis against the SAME source it was grounded in
-    # (otherwise grounded claims get flagged as hallucinations).
-    used_supplier_history = ""
-    used_item_history = ""
-
-    # Synthetic history injection for training or testing
-    if supplier_history_override or item_history_override:
-        used_supplier_history = supplier_history_override or ""
-        used_item_history = item_history_override or ""
-        # Manually construct tool results
-        synthetic_results = []
-        fake_tool_calls_list = []
-        
-        if supplier_history_override:
-            synthetic_results.append(ToolMessage(content=supplier_history_override, tool_call_id="synth_s_1"))
-            fake_tool_calls_list.append({"name": "supplier_history", "args": {"query": "synthetic"}, "id": "synth_s_1"})
-        
-        if item_history_override:
-            synthetic_results.append(ToolMessage(content=item_history_override, tool_call_id="synth_i_1"))
-            fake_tool_calls_list.append({"name": "item_history", "args": {"query": "synthetic"}, "id": "synth_i_1"})
-            
-        # Create message as if AI called the tools
-        ai_msg = AIMessage(content="", tool_calls=fake_tool_calls_list)
-        
-        # Construct [System, Human, AI_with_ToolCalls, ToolResults] sequence for LLM
-        extended_messages = messages + [ai_msg] + synthetic_results
-        final_response = llm.invoke(extended_messages)
-    else:
-        # Standard tool-call loop (dynamic history lookup)
-        first_resp = llm.invoke(messages)
-        
-        t_calls = getattr(first_resp, "tool_calls", []) or []
-        if t_calls:
-            t_results = []
-            for tc in t_calls:
-                t_name = (tc.get("name") if isinstance(tc, dict) else getattr(tc, "name", None)) or "supplier_history"
-                t_id = (tc.get("id") if isinstance(tc, dict) else getattr(tc, "id", "")) or ""
-                
-                if t_name == "supplier_history":
-                    supplier_name = str(input_json.get("supplier", ""))
-                    docs = search_supplier_history(
-                        k=5,
-                        filter={"supplier_name": supplier_name} if supplier_name else None,
-                    )
-                    t_out = "\n\n".join(d.page_content for d in docs) if docs else "No supplier history found."
-                    used_supplier_history = t_out
-                elif t_name == "item_history":
-                    item_codes = [str(i.get("item_code")) for i in input_json.get("items", []) if i.get("item_code")]
-                    docs = search_item_history(
-                        k=5,
-                        filter={"item_code": {"$in": item_codes}} if item_codes else None,
-                    )
-                    t_out = "\n\n".join(d.page_content for d in docs) if docs else "No item history found."
-                    used_item_history = t_out
-                else:
-                    t_out = ""
-                
-                t_results.append(ToolMessage(content=str(t_out), tool_call_id=t_id))
-            
-            # Re-invoke with tool results
-            final_response = llm.invoke(messages + [first_resp] + t_results)
-        else:
-            final_response = first_resp
+    ])
 
     final_text = final_response.content if hasattr(final_response, "content") else str(final_response)
     try:
@@ -161,6 +174,8 @@ def run_analysis_agent(
             "critical_questions": [],
             "replenishment_timeline": input_json.get("items", []),
         }
+    if isinstance(analysis, dict):
+        analysis["references"] = {"documents": documents}
     return analysis, used_supplier_history, used_item_history
 
 
@@ -258,22 +273,15 @@ def run_evaluation_agent(
     analysis_output: dict[str, Any],
     supplier_history: str = None,
     item_history: str = None,
-) -> str:
-    """Evaluation Agent: Critique the analysis and provide a score report."""
-    llm = _llm(model="gpt-4o") # Use strong model for evaluation
-    payload = {
-        "supplier": supplier,
-        "items": items,
-        "analysis_output": analysis_output,
-        "provided_supplier_history": supplier_history or "No supplier history was provided.",
-        "provided_item_history": item_history or "No item history was provided.",
-    }
-    user = json.dumps(payload, ensure_ascii=False)
-    out = llm.invoke([
-        SystemMessage(content=EVALUATION_AGENT_SYSTEM),
-        HumanMessage(content=user),
-    ])
-    return out.content if hasattr(out, "content") else str(out)
+) -> tuple[str, dict[str, Any]]:
+    """
+    Check the analysis against the rubric in services/quality_checks.py: deterministic
+    checks in code, judgement checks by a model other than the one that wrote it.
+    Returns (report markdown, structured result).
+    """
+    result = evaluate_analysis(supplier, items, analysis_output, supplier_history, item_history,
+                               judge=settings.evaluator_model)
+    return evaluation_markdown(supplier, result), result
 # ----- LangGraph Implementation -----
 
 class PurchasingState(TypedDict):
@@ -283,7 +291,9 @@ class PurchasingState(TypedDict):
     supplier: str
     risk_level: str
     items: list[dict]
-    
+    # Problems in the input data, written by code and placed first in the report
+    data_issue_lines: list[str]
+
     # Inter-agent result passing
     analysis_output: dict[str, Any]
     report_md: str
@@ -291,6 +301,7 @@ class PurchasingState(TypedDict):
     pr_md: str
     email_text: str
     evaluation_md: str
+    evaluation_result: dict[str, Any]
     
     # Loop control
     iteration_count: int
@@ -306,6 +317,25 @@ class PurchasingState(TypedDict):
     retrieved_supplier_history: str
     retrieved_item_history: str
 
+def apply_system_notes(analysis: Any, items: list[dict]) -> Any:
+    """
+    Put the pipeline's fixed sentences (data gaps, invalid figures, Critical stockout
+    gaps) at the start of each item's notes. They are computed in code, so they must
+    reach the report whether or not the model repeated them.
+    """
+    if not isinstance(analysis, dict) or not isinstance(analysis.get("replenishment_timeline"), list):
+        return analysis
+    fixed_by_code = {str(it.get("item_code")): it.get("system_notes") or [] for it in items}
+    for entry in analysis["replenishment_timeline"]:
+        if not isinstance(entry, dict):
+            continue
+        existing = str(entry.get("notes") or "")
+        missing = [n for n in fixed_by_code.get(str(entry.get("item_code")), []) if n not in existing]
+        if missing:
+            entry["notes"] = " ".join(missing + ([existing] if existing else []))
+    return analysis
+
+
 def analysis_node(state: PurchasingState):
     input_json = {
         "snapshot_date": state["snapshot_date"],
@@ -317,6 +347,7 @@ def analysis_node(state: PurchasingState):
         supplier_history_override=state.get("supplier_history_override"),
         item_history_override=state.get("item_history_override")
     )
+    out = apply_system_notes(out, state["items"])
     return {
         "analysis_output": out,
         "retrieved_supplier_history": used_supplier_history,
@@ -332,7 +363,8 @@ def evaluation_node(state: PurchasingState):
         supplier_history=state.get("retrieved_supplier_history") or state.get("supplier_history_override"),
         item_history=state.get("retrieved_item_history") or state.get("item_history_override"),
     )
-    return {"evaluation_md": out}
+    report, result = out
+    return {"evaluation_md": report, "evaluation_result": result}
 
 def report_node(state: PurchasingState):
     analysis_result = {
@@ -343,7 +375,11 @@ def report_node(state: PurchasingState):
         "replenishment_timeline": state["analysis_output"].get("replenishment_timeline", state["items"]),
     }
     out = run_report_doc_agent(analysis_result)
-    return {"report_md": out}
+    lines = state.get("data_issue_lines")
+    if lines is None:
+        lines = data_issue_lines(state["items"])
+    out = insert_data_issues_section(out, lines)
+    return {"report_md": append_references_section(out, state["analysis_output"].get("references"))}
 
 def pr_draft_node(state: PurchasingState):
     out = run_pr_draft_agent(
@@ -475,7 +511,7 @@ def run_purchasing_pipeline_graph(input_data: dict[str, Any]) -> dict[str, Any]:
         "snapshot_date": input_data["snapshot_date"],
         "supplier": input_data["supplier"],
         "items": input_data["items"],
-        "risk_level": input_data["items"][0].get("risk_level", "N/A") if input_data["items"] else "N/A",
+        "risk_level": group_risk_level(input_data["items"]),
         "iteration_count": 0,
         "correction_feedback": "",
         "is_valid_email": False,

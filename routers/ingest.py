@@ -70,7 +70,7 @@ async def ingest_supplier_history_pdf(
         try:
             text = extract_text_from_pdf(path)
             supplier_name = _extract_supplier_name(text)
-            ingest_supplier_history(text, supplier_name)
+            ingest_supplier_history(text, supplier_name, source=file.filename)
             results.append({"filename": file.filename, "ok": True, "supplier_name": supplier_name})
         except Exception as e:
             results.append({"filename": file.filename, "ok": False, "error": str(e)})
@@ -96,7 +96,7 @@ async def ingest_supplier_history_zip(
         try:
             text = extract_text_from_pdf(path)
             supplier_name = _extract_supplier_name(text)
-            ingest_supplier_history(text, supplier_name)
+            ingest_supplier_history(text, supplier_name, source=name)
             results.append({"filename": name, "ok": True, "supplier_name": supplier_name})
         except Exception as e:
             results.append({"filename": name, "ok": False, "error": str(e)})
@@ -122,7 +122,7 @@ async def ingest_item_history_pdf(
         try:
             text = extract_text_from_pdf(path)
             item_code = _extract_item_code(text)
-            ingest_item_history(text, item_code)
+            ingest_item_history(text, item_code, source=file.filename)
             results.append({"filename": file.filename, "ok": True, "item_code": item_code})
         except Exception as e:
             results.append({"filename": file.filename, "ok": False, "error": str(e)})
@@ -148,7 +148,7 @@ async def ingest_item_history_zip(
         try:
             text = extract_text_from_pdf(path)
             item_code = _extract_item_code(text)
-            ingest_item_history(text, item_code)
+            ingest_item_history(text, item_code, source=name)
             results.append({"filename": name, "ok": True, "item_code": item_code})
         except Exception as e:
             results.append({"filename": name, "ok": False, "error": str(e)})
