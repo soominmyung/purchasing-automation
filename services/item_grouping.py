@@ -2,6 +2,7 @@
 Item Grouping, Suggested dates & quantities logic.
 - Groups CSV rows by supplier
 - Calculates per-item recommended_latest_po_date, recommended_latest_delivery_date, timing labels
+- Derives risk_level from WksToOOS (any RiskLevel column in the CSV is ignored)
 - suggested_quantity: order quantity to cover 26 weeks after latest delivery
 """
 from datetime import datetime, timedelta
@@ -14,6 +15,14 @@ IMPORT_LEAD_WEEKS = 16
 INTERNAL_LEAD_WEEKS = 2
 TOTAL_LEAD_WEEKS = IMPORT_LEAD_WEEKS + INTERNAL_LEAD_WEEKS
 COVERAGE_WEEKS_AFTER_DELIVERY = 26
+
+# Risk level is derived from weeks-to-stockout rather than taken from the source data,
+# so it can never disagree with WksToOOS. With a lead time of about four months:
+#   High    under 6 months of cover (26 weeks)
+#   Medium  6 to 8 months (8 months is ~34.7 weeks, taken as 35)
+#   Low     8 months or more
+RISK_HIGH_BELOW_WEEKS = 26
+RISK_MEDIUM_BELOW_WEEKS = 35
 
 
 def _parse_date(date_str: str) -> datetime:
@@ -43,6 +52,19 @@ def _build_timing_label_from_weeks(weeks_diff: float) -> str:
     if weeks_diff <= 8:
         return "within 4–8 weeks"
     return f"within {round(weeks_diff)} weeks"
+
+
+def risk_level_from_weeks(wks_to_oos_raw: Any) -> str:
+    """High / Medium / Low from weeks-to-stockout; N/A when the figure is missing."""
+    try:
+        wks = float(wks_to_oos_raw)
+    except (TypeError, ValueError):
+        return "N/A"
+    if wks < RISK_HIGH_BELOW_WEEKS:
+        return "High"
+    if wks < RISK_MEDIUM_BELOW_WEEKS:
+        return "Medium"
+    return "Low"
 
 
 def build_recommendations_for_item(snapshot_date_str: str, wks_to_oos_raw: Any) -> dict[str, Any]:
@@ -104,7 +126,6 @@ def group_by_supplier_and_recommend(
     for row in csv_rows:
         snapshot_date = str(find_field(row, "snapshotdate") or find_field(row, "snapshot_date") or "").strip()
         supplier = str(find_field(row, "suppliername") or find_field(row, "supplier") or "").strip()
-        risk_level = str(find_field(row, "risklevel") or find_field(row, "risk_level") or "").strip()
         item_code_raw = find_field(row, "itemcode")
         item_name = find_field(row, "itemname") or find_field(row, "item_name")
         current_stock_raw = find_field(row, "currentstock") or find_field(row, "current_stock")
@@ -119,7 +140,7 @@ def group_by_supplier_and_recommend(
         item_obj = {
             "item_code": str(item_code_raw),
             "item_name": str(item_name),
-            "risk_level": risk_level or "N/A",
+            "risk_level": risk_level_from_weeks(wks_to_oos_raw),
             "current_stock": float(current_stock_raw) if current_stock_raw is not None else None,
             "wks_to_oos": float(wks_to_oos_raw) if wks_to_oos_raw is not None else None,
             "suggested_quantity": suggested_qty,

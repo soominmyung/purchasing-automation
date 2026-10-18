@@ -56,7 +56,7 @@ def _run_pipeline(
     if not rows:
         raise HTTPException(
             status_code=400,
-            detail="No valid CSV rows. Ensure columns: SupplierName, ItemCode, ItemName, CurrentStock, WksToOOS, RiskLevel (or similar).",
+            detail="No valid CSV rows. Ensure columns: SupplierName, ItemCode, ItemName, CurrentStock, WksToOOS (or similar).",
         )
     progress("item_grouping", {})
     groups = group_by_supplier_and_recommend(rows)
