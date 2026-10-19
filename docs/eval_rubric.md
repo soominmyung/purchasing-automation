@@ -45,7 +45,7 @@ Generated scenarios by type:
 | `clear_supplier_incident` | 3 | Named, unresolved supplier problem |
 | `clear_item_incident` | 3 | Named item problem |
 | `high_stock_short_cover` | 2 | Large stock with one to two weeks of cover |
-| `missing_values` | 2 | One item has no CurrentStock or WksToOOS |
+| `missing_values` | 2 | One item has no AvailableStock or WksToOOS |
 
 Supplier and item names do not overlap with the training data.
 
@@ -84,7 +84,7 @@ before any model sees them, exactly as the pipeline does in use:
 - risk level is derived from weeks to stockout (Critical below the 18-week lead time,
   High below 26 weeks, Medium below 35, Low beyond)
 - Critical items carry `expected_stockout_weeks` and a fixed note written by code
-- items whose CurrentStock or WksToOOS is missing or invalid are excluded and reported in
+- items whose AvailableStock or WksToOOS is missing or invalid are excluded and reported in
   the report's opening "Data Issues Requiring Attention" section, so the model never sees them
 
 ## Checks
@@ -95,7 +95,7 @@ before any model sees them, exactly as the pipeline does in use:
 |---|---|
 | C1 | The output parses and has `purchasing_report_markdown`, `critical_questions` (may be empty) and `replenishment_timeline` |
 | C2 | It names no item code and no supplier that is absent from the input |
-| C3 | Every CurrentStock and WksToOOS figure it quotes next to an item code matches the input |
+| C3 | Every AvailableStock and WksToOOS figure it quotes next to an item code matches the input |
 
 ### Judge checks — yes or no
 

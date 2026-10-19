@@ -4,7 +4,7 @@ Before a judge model is trusted to score the analysis agent (`docs/eval_rubric.m
 itself tested on outputs whose correct verdict is already known. Without this, a difference
 between two analysis models could just as well be a judge getting things wrong.
 
-**Status:** seeded errors built 2026-10-18 (`scripts/build_judge_calibration.py`); hand scoring and the judge run not yet done.
+**Status:** seeded errors built 2026-10-18 (`scripts/build_judge_calibration.py`); hand-scoring sheet ready (`eval_data/hand_scoring_sheet.md`), scores not yet in; judge run not yet done.
 
 ## Calibration set
 
@@ -45,8 +45,12 @@ expected verdict, a one-line description of the change, and the full modified ou
 
 ### 2. Hand-scored originals — the false-alarm test
 
-About ten unmodified analyses, chosen across scenario types, are scored on every applicable
-check by a person with purchasing domain knowledge. These give the correct verdict where the
+Ten unmodified analyses (eval_01, 03, 06, 08, 11, 14, 16, 18, 19 and H3: every scenario type,
+and suppliers with no, some and only Critical items) are scored on every applicable check, 43
+in all, by a person with purchasing domain knowledge. The sheet shows each check worded exactly
+as the judges receive it, and the applicable checks are chosen by the same code the judges use
+(`scripts/hand_scoring.py sheet`); `scripts/hand_scoring.py collect` writes the verdicts to
+`eval_data/hand_scores.jsonl`. These give the correct verdict where the
 analysis is sound, so a judge that fails a good analysis can be caught.
 
 Judge agreement is deliberately **not** used as ground truth here: that would test the judges

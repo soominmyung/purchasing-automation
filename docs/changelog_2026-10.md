@@ -49,8 +49,8 @@ before these changes is kept on branch `legacy/v1` (3866d60). Not yet committed:
   makes production and evaluation inputs identical, and makes the prompt describe what the
   code actually does.
 - Also fixed: an empty supplier name used to retrieve every supplier's documents.
-- The previous prompts are kept in `services/legacy/prompts_tool_calling_20261018.py`; the
-  previous tool-calling code is in git history.
+- The previous prompts are kept as `prompts/v2/`; the previous tool-calling code is in git
+  history.
 
 ### 5. "Referenced Documents" section
 
@@ -89,6 +89,102 @@ before these changes is kept on branch `legacy/v1` (3866d60). Not yet committed:
 - Email: Critical items get the earliest dispatch date and a faster shipping option, without
   revealing internal urgency.
 
+### 9. One kind of history, scoped by the document's header *(uncommitted)*
+
+- Supplier history and item history are no longer separate. Many records sit across the
+  boundary (a defect in one item from one supplier), and the split depended on whoever
+  uploaded a document choosing the right folder. When a supplier-level record mentioned a
+  quality problem without naming items, GPT-4o copied it into every item's notes (eval_08).
+- Each document's header decides what it is about: `Supplier:` only = the supplier as a
+  whole; `Supplier:` and `Item:` = those items from that supplier; `Item:` only = the items
+  whoever supplies them (e.g. a demand spike). A document naming neither is refused.
+- Retrieval: the 10 most recent documents whose supplier is this supplier or whose items
+  include any item in the analysis, matched by item name or code, ignoring case and spacing.
+- The model receives the documents with their header fields and applies each only to what
+  it names: supplier-wide records once in the summary, item records in that item's notes,
+  an unattributed quality problem as a question about which items were affected.
+- J1 now also fails an analysis that attributes a document to a supplier or item it does
+  not name.
+- The earlier upload routes still work and are handled the same way. Existing documents
+  were moved with `scripts/migrate_history_store.py`. The previous prompts are kept as
+  `prompts/v3/`.
+
+### 10. Sync from the shared folder *(uncommitted)*
+
+- `scripts/sync_history_folder.py` walks the shared history folder (any layout: by year, by
+  supplier, …) and sends only what changed: new files added, changed files replaced, deleted
+  files removed. Documents are identified by their path, so a file sent twice is held once.
+- The folder layout is never used to classify; a header that disagrees with a supplier
+  folder is reported as a warning (usually a misfiled document or a header typo).
+- Deletions are held back when they would remove more than half of the documents on file,
+  which is what a disconnected drive looks like.
+- Deployment as described for the company: the script runs `--local` on the on-prem server
+  that is always on for SAP ERP and sees the network drive directly. The store is derived
+  data: it can be rebuilt from the folder at any time, and the on-prem backup server keeps
+  the previous day's copy. Schedule the sync outside the backup window.
+- The Cloud Run deployment is a demo. Its disk is temporary, so ingested history is lost on
+  restart and differs between instances.
+- `/history` (single upload, for the homepage showcase) is kept; re-uploading a file name
+  now replaces it.
+
+### 11. `CurrentStock` renamed `AvailableStock` *(uncommitted)*
+
+- The stock column has always been on hand + on order − committed, but its name read as
+  the quantity in the warehouse. Renamed in the CSV, the item fields (`available_stock`),
+  the prompts, the report table and the evaluation data; the prompt now defines it and
+  tells the model never to call it "in stock" or "on hand". A CSV with the old column name
+  is still read.
+- The fixed no-history sentence now ends "analysis based on available stock and deadlines
+  only".
+
+### 12. Judge calls traced *(uncommitted)*
+
+- The evaluation node's judge calls go to the providers' SDKs directly, so LangSmith showed
+  the node but not what the judge was sent, what it answered or what it cost. They are now
+  traced (`Judge` and `Judge_LLM` runs under the evaluation node) with token usage,
+  including Gemini's thinking tokens. No effect when tracing is off.
+
+### 13. Tracing without sending company data *(uncommitted)*
+
+- New setting `langsmith_hide_content`, for wherever real data runs: traces keep the run
+  tree, timings, token counts and model names but no prompt or response text.
+- Tested against LangSmith: token counts survive hiding; a marker string in the data did not
+  appear in any run. Error messages are still sent in full, so exceptions in traced code
+  must not quote data. Details and the split between LangSmith and in-house records:
+  `docs/observability.md`.
+
+### 14. Prompt versions *(uncommitted)*
+
+- Prompts now live in `prompts/<version>/`, one folder per version holding the whole set,
+  including the email check and rewrite prompts that were written inline in the code.
+  `prompt_version` in `config.py` picks the folder; run records and evaluation outputs store
+  the version name (earlier, evaluation outputs stored a hash of the prompt, which a person
+  could not read).
+- v1 (branch `legacy/v1`) to v4 (current) reconstructed from the earlier prompts, verbatim;
+  `prompts/CHANGES.md` says what each changed. `services/legacy/` removed.
+- A version is not edited once results have been recorded with it.
+- The Docker image now copies `prompts/`.
+
+### 15. Run records *(uncommitted)*
+
+- Every run writes `runs/<run_id>.json`, also when it fails: the CSV as received, client IP,
+  prompt version and models, and per supplier the preprocessed items, the history documents
+  read, all outputs, the evaluation, each email check, and per node time, tokens and errors.
+  Details: `docs/observability.md`. Summary across runs: `scripts/summarize_runs.py`.
+- Nodes are timed and their token use recorded (LangChain usage callback, plus the judge's
+  own counts). Agent models are set in one table (`AGENT_MODELS`) that the record copies.
+- Email checks are kept in a record-only list; the rewrite still receives only the latest
+  feedback.
+- Generated files carry the run id, so a rerun no longer overwrites an earlier run's
+  documents. Evaluation reports can now be downloaded (they were missing from the download
+  route). Responses include `run_id`.
+- With content hidden, the supplier name is no longer sent in the LangSmith run name and
+  metadata.
+- First real run (sample CSV, three suppliers): the judge took 9–56 s per supplier, up to
+  four times the analysis agent, with up to 7,032 output tokens; the email check rejected one
+  draft for "internal stock quantities" that were proposed order quantities (the known
+  validator fault), and the rewrite passed.
+
 ## Evaluation
 
 - **Rubric** (`docs/eval_rubric.md`): fixed checklist replacing imitation-of-GPT-4o scoring;
@@ -120,6 +216,37 @@ to be written after testing in Claude Desktop.
   a failing email is still sent after three rewrites.
 - Undecided: whether to call the model at all when every item is Low; whether the PR
   document also gets the data-issues section.
+- Undecided: keep or drop `target` / `reason` on critical questions. No code reads them,
+  downstream prompts use only the question text, and `reason` is sometimes wrong (H2: a
+  stock-driven question marked `item_history`). Decide when the output format is settled
+  for the model benchmark and SFT retraining.
+- README and portfolio: explain what is hidden from LangSmith and what is still sent, from
+  the summary at the top of `docs/observability.md`.
+- The evaluation node runs between analysis and report, so the judge's time (9–56 s per
+  supplier in the first run record) adds to every run, though nothing after it uses its
+  result. Once the production judge is chosen, consider running evaluation alongside
+  report → purchase request → email.
 - Re-ingest history PDFs so file names appear in Referenced Documents.
+- Demo: load sample history PDFs at startup when the store is empty, so a restarted
+  Cloud Run container still shows history-based questions.
+- Chroma embeds every document with OpenAI at ingest, but retrieval never uses similarity;
+  either use the embeddings for something (e.g. similar past cases) or store history
+  without them.
+- Convert the evaluation scenarios to history documents and regenerate the GPT-4o outputs,
+  seeded errors and hand-scoring sheet.
+- Interview prep for the on-prem deployment (`docs/interview_prep_deployment.md`, not
+  committed), separating what was done from what the design allows.
+- README: the sentence "the in-house deployment implements per-user intranet ID/PW login"
+  does not match the code, which has no login (only a shared API key and a per-IP limit).
+  Replace it with what is true: runs are recorded with the requesting IP, which the IT
+  manager already uses to track SAP use. No login is planned.
 - Update README, portfolio and resume: risk rule, input CSV format, evaluator, retrieval.
+  State the input definitions, which the documents do not give today:
+  `AvailableStock` = on hand + on order − committed (from SAP Business One 9.3:
+  `OITW.OnHand + OnOrder − IsCommited`), and `WksToOOS` = `AvailableStock` ÷ average
+  weekly sales over the previous four months (invoice lines net of returns, in inventory
+  units). Because both use the same stock, `AvailableStock ÷ WksToOOS` is the weekly sales
+  the suggested quantity is built on. On-order stock is counted to avoid overstock on
+  perishable food; known limits: on-order stock is counted as if already arrived, and
+  weeks out of stock pull the average down.
 - Workload Identity Federation for deployment; delete branch `backup/before-coauthor-fix`.

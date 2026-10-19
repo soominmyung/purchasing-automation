@@ -21,7 +21,7 @@ SOURCE = ROOT / "eval_results" / "eval_v2_gpt4o_outputs.jsonl"
 SCENARIOS = [ROOT / "eval_data" / "eval_scenarios.jsonl", ROOT / "eval_data" / "holdout_scenarios.jsonl"]
 OUT_FILE = ROOT / "eval_data" / "judge_calibration.jsonl"
 
-NO_HISTORY = "No historical supplier or item data available; analysis based on current stock/deadlines only."
+NO_HISTORY = "No historical supplier or item data available; analysis based on available stock and deadlines only."
 
 # Edit operations:
 #   ("md", old, new)              replace text in purchasing_report_markdown

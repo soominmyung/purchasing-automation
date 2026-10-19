@@ -8,7 +8,7 @@ items in the same supplier.
 
 Each analysable item is given a target risk level below (in input order; rows with N/A
 figures are skipped and stay excluded). An item already in its target band keeps its
-weeks. Otherwise its weeks are drawn from the band with a fixed seed, and CurrentStock is
+weeks. Otherwise its weeks are drawn from the band with a fixed seed, and AvailableStock is
 scaled by the same factor so the implied weekly demand, and so the consistency of the two
 figures, is unchanged. Histories and labels are not touched.
 
@@ -59,20 +59,20 @@ def main():
         for r in rows:
             analysable = [it for it in r["input_data"]
                           if parse_figure(it.get("WksToOOS"), "WksToOOS", 520)[0] is not None
-                          and parse_figure(it.get("CurrentStock"), "CurrentStock", 1e7)[0] is not None]
+                          and parse_figure(it.get("AvailableStock"), "AvailableStock", 1e7)[0] is not None]
             targets = PLAN[r["scenario_id"]]
             if len(targets) != len(analysable):
                 raise SystemExit(f"{r['scenario_id']}: plan has {len(targets)} levels for {len(analysable)} items")
             for it, target in zip(analysable, targets):
                 if risk_level_from_weeks(it["WksToOOS"]) == target:
                     continue
-                old_wks, old_stock = float(it["WksToOOS"]), float(it["CurrentStock"])
+                old_wks, old_stock = float(it["WksToOOS"]), float(it["AvailableStock"])
                 new_wks = rng.randint(*BANDS[target])
                 it["WksToOOS"] = new_wks
-                it["CurrentStock"] = round_stock(old_stock * new_wks / old_wks)
+                it["AvailableStock"] = round_stock(old_stock * new_wks / old_wks)
                 changed += 1
                 print(f"  {r['scenario_id']:<8} {it['ItemName']:<26} {old_stock:>6.0f}/{old_wks:>4.0f}w"
-                      f" -> {it['CurrentStock']:>6}/{new_wks:>3}w  {target}")
+                      f" -> {it['AvailableStock']:>6}/{new_wks:>3}w  {target}")
             for it in r["input_data"]:
                 it["RiskLevel"] = risk_level_from_weeks(it.get("WksToOOS"))
         with open(path, "w", encoding="utf-8") as f:

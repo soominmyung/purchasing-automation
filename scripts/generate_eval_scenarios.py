@@ -74,18 +74,18 @@ PLAN = [
      "recent stockout). The supplier history is unremarkable. " + CONSISTENT),
     ("high_stock_short_cover", 2,
      dict(supplier_issue="none", item_issue="none", data_issue="none", history_present=True),
-     "Exactly one item has numbers that contradict each other: a high CurrentStock (300 or "
+     "Exactly one item has numbers that contradict each other: a high AvailableStock (300 or "
      "more) together with WksToOOS of 1 or 2, and RiskLevel Low. Other items are consistent. "
      "Both histories are unremarkable and give no explanation for the contradiction."),
     ("missing_values", 2,
      dict(supplier_issue="none", item_issue="none", data_issue="missing_values", history_present=True),
-     "Exactly one item has CurrentStock and WksToOOS given as the string N/A. Other items are "
+     "Exactly one item has AvailableStock and WksToOOS given as the string N/A. Other items are "
      "complete and consistent. Both histories are unremarkable."),
 ]
 
 SYSTEM = """You generate one realistic purchasing scenario for testing a purchasing-analysis AI.
 Inventory schema per item: ItemCode (6-digit string), ItemName, SupplierName, RiskLevel
-(High|Medium|Low), CurrentStock (integer), WksToOOS (integer weeks until out of stock).
+(High|Medium|Low), AvailableStock (integer), WksToOOS (integer weeks until out of stock).
 All items in a scenario come from the same supplier.
 
 Return JSON: {"supplier": str, "input_data": [items], "supplier_history": str, "item_history": str}
@@ -147,12 +147,12 @@ def check(cat, s, banned_sup, banned_items):
     if cat == "clear_item_incident" and not any(it["ItemName"].lower() in ih.lower() for it in inv):
         p.append("item incident does not name an item")
     if cat == "high_stock_short_cover":
-        hit = [it for it in inv if isinstance(it.get("CurrentStock"), (int, float))
-               and it["CurrentStock"] >= 300 and it.get("WksToOOS") in (1, 2)]
+        hit = [it for it in inv if isinstance(it.get("AvailableStock"), (int, float))
+               and it["AvailableStock"] >= 300 and it.get("WksToOOS") in (1, 2)]
         if len(hit) != 1:
             p.append("contradiction pattern")
     if cat == "missing_values":
-        if sum(1 for it in inv if it.get("CurrentStock") == "N/A" and it.get("WksToOOS") == "N/A") != 1:
+        if sum(1 for it in inv if it.get("AvailableStock") == "N/A" and it.get("WksToOOS") == "N/A") != 1:
             p.append("missing-value pattern")
 
     # categories whose supplier / item history must stay clean

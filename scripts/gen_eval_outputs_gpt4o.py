@@ -13,7 +13,6 @@ Full inputs and outputs are saved so the run can be re-scored under a different 
 Run: python scripts/gen_eval_outputs_gpt4o.py
 Out: eval_results/eval_v2_gpt4o_outputs.jsonl
 """
-import hashlib
 import json
 import os
 import sys
@@ -25,7 +24,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.agents import apply_system_notes, run_analysis_agent
 from services.item_grouping import group_by_supplier_and_recommend
-from services.prompts import ANALYSIS_AGENT_SYSTEM
+from services.prompts import PROMPT_VERSION
 from utils.csv_utils import ROW_NUMBER_KEY, SNAPSHOT_DATE_KEY, SNAPSHOT_SOURCE_KEY
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -51,7 +50,7 @@ def preprocess(scenario: dict) -> dict:
         rows.append({
             "ItemCode": it.get("ItemCode"), "ItemName": it.get("ItemName"),
             "SupplierName": it.get("SupplierName") or scenario["supplier"],
-            "CurrentStock": it.get("CurrentStock"), "WksToOOS": it.get("WksToOOS"),
+            "AvailableStock": it.get("AvailableStock"), "WksToOOS": it.get("WksToOOS"),
             SNAPSHOT_DATE_KEY: SNAPSHOT_DATE, SNAPSHOT_SOURCE_KEY: "fixed for evaluation",
             ROW_NUMBER_KEY: n,
         })
@@ -63,7 +62,6 @@ def preprocess(scenario: dict) -> dict:
 
 def main():
     scenarios = load_scenarios()
-    prompt_sha = hashlib.sha256(ANALYSIS_AGENT_SYSTEM.encode("utf-8")).hexdigest()[:12]
     done = set()
     if OUT_FILE.exists():
         done = {json.loads(l)["scenario_id"] for l in open(OUT_FILE, encoding="utf-8") if l.strip()}
@@ -86,7 +84,7 @@ def main():
                 "scenario_id": s["scenario_id"],
                 "model": "gpt-4o",
                 "temperature": 0,
-                "system_prompt_sha256_12": prompt_sha,
+                "prompt_version": PROMPT_VERSION,
                 "generated_at": datetime.now().isoformat(timespec="seconds"),
                 "seconds": seconds,
                 "input": input_json,
