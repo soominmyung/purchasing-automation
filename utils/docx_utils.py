@@ -156,7 +156,7 @@ def markdown_to_docx_bytes(content: str) -> bytes:
     return buffer.read()
 
 
-def save_analysis_docx(snapshot_date: str, supplier: str, markdown_content: str) -> str:
+def save_analysis_docx(snapshot_date: str, supplier: str, markdown_content: str, run_id: str = "") -> str:
     """
     Save to output/analysis/ or output/temp (when use_temp_for_output).
     Returns: saved file path (string).
@@ -165,14 +165,15 @@ def save_analysis_docx(snapshot_date: str, supplier: str, markdown_content: str)
     if getattr(settings, "use_temp_for_output", False):
         cleanup_temp_output()
     safe_supplier = _sanitize_filename(supplier)
-    filename = f"analysis_{snapshot_date}_{safe_supplier}.docx"
+    # the run id keeps a rerun from overwriting an earlier run's file
+    filename = f"analysis_{snapshot_date}_{safe_supplier}" + (f"_{run_id}" if run_id else "") + ".docx"
     dir_ = TEMP_DIR if getattr(settings, "use_temp_for_output", False) else ANALYSIS_DIR
     path = dir_ / filename
     save_markdown_to_docx(path, markdown_content)
     return str(path)
 
 
-def save_pr_docx(snapshot_date: str, supplier: str, markdown_content: str) -> str:
+def save_pr_docx(snapshot_date: str, supplier: str, markdown_content: str, run_id: str = "") -> str:
     """
     Save to output/pr/ or output/temp (when use_temp_for_output).
     Returns: saved file path (string).
@@ -181,14 +182,15 @@ def save_pr_docx(snapshot_date: str, supplier: str, markdown_content: str) -> st
     if getattr(settings, "use_temp_for_output", False):
         cleanup_temp_output()
     safe_supplier = _sanitize_filename(supplier)
-    filename = f"pr_{snapshot_date}_{safe_supplier}.docx"
+    # the run id keeps a rerun from overwriting an earlier run's file
+    filename = f"pr_{snapshot_date}_{safe_supplier}" + (f"_{run_id}" if run_id else "") + ".docx"
     dir_ = TEMP_DIR if getattr(settings, "use_temp_for_output", False) else PR_DIR
     path = dir_ / filename
     save_markdown_to_docx(path, markdown_content)
     return str(path)
 
 
-def save_email_draft_docx(snapshot_date: str, supplier: str, text_content: str) -> str:
+def save_email_draft_docx(snapshot_date: str, supplier: str, text_content: str, run_id: str = "") -> str:
     """
     Save to output/email_draft/ or output/temp (when use_temp_for_output).
     Returns: saved file path (string).
@@ -197,14 +199,15 @@ def save_email_draft_docx(snapshot_date: str, supplier: str, text_content: str) 
     if getattr(settings, "use_temp_for_output", False):
         cleanup_temp_output()
     safe_supplier = _sanitize_filename(supplier)
-    filename = f"email_draft_{snapshot_date}_{safe_supplier}.docx"
+    # the run id keeps a rerun from overwriting an earlier run's file
+    filename = f"email_draft_{snapshot_date}_{safe_supplier}" + (f"_{run_id}" if run_id else "") + ".docx"
     dir_ = TEMP_DIR if getattr(settings, "use_temp_for_output", False) else EMAIL_DRAFT_DIR
     path = dir_ / filename
     save_markdown_to_docx(path, text_content)
     return str(path)
 
 
-def save_evaluation_docx(snapshot_date: str, supplier: str, markdown_content: str) -> str:
+def save_evaluation_docx(snapshot_date: str, supplier: str, markdown_content: str, run_id: str = "") -> str:
     """
     Save to output/evaluation/ or output/temp (when use_temp_for_output).
     Returns: saved file path (string).
@@ -213,7 +216,8 @@ def save_evaluation_docx(snapshot_date: str, supplier: str, markdown_content: st
     if getattr(settings, "use_temp_for_output", False):
         cleanup_temp_output()
     safe_supplier = _sanitize_filename(supplier)
-    filename = f"evaluation_{snapshot_date}_{safe_supplier}.docx"
+    # the run id keeps a rerun from overwriting an earlier run's file
+    filename = f"evaluation_{snapshot_date}_{safe_supplier}" + (f"_{run_id}" if run_id else "") + ".docx"
     dir_ = TEMP_DIR if getattr(settings, "use_temp_for_output", False) else EVALUATION_DIR
     path = dir_ / filename
     save_markdown_to_docx(path, markdown_content)

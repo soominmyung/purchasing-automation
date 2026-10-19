@@ -19,7 +19,7 @@ class ItemRow(BaseModel):
     item_code: str
     item_name: str
     risk_level: str = "N/A"
-    current_stock: Optional[float] = None
+    available_stock: Optional[float] = None
     wks_to_oos: Optional[float] = None
     suggested_quantity: Optional[int] = None
     recommended_latest_po_date: Optional[str] = None
@@ -33,7 +33,7 @@ class AnalysisInputItem(BaseModel):
     item_code: str
     item_name: str
     risk_level: str = "N/A"
-    current_stock: Optional[float] = None
+    available_stock: Optional[float] = None
     wks_to_oos: Optional[float] = None
     suggested_quantity: Optional[int] = None
     recommended_latest_po_date: Optional[str] = None
@@ -61,7 +61,7 @@ class ReplenishmentTimelineItem(BaseModel):
     item_name: str
     supplier: str
     risk_level: str
-    current_stock: Optional[float] = None
+    available_stock: Optional[float] = None
     wks_to_oos: Optional[float] = None
     suggested_quantity: Optional[int] = None
     snapshot_date: str
@@ -92,3 +92,4 @@ class RunPipelineResponse(BaseModel):
     requests: list[dict[str, Any]] = Field(default_factory=list)  # purchase request markdown
     emails: list[dict[str, Any]] = Field(default_factory=list)  # email draft text
     evaluations: list[dict[str, Any]] = Field(default_factory=list)  # AI quality report
+    run_id: Optional[str] = None  # the run record's id (runs/<run_id>.json)

@@ -1,40 +1,28 @@
 """
-문서 수집 API: Supplier/Item History PDF, Analysis/Request/Email 예시 PDF 업로드 → 벡터스토어 저장.
+문서 수집 API: Purchasing History PDF, Analysis/Request/Email 예시 PDF 업로드 → 벡터스토어 저장.
 - 여러 파일(files) 또는 ZIP 하나(zip_file)로 대량 업로드 가능. (ZIP = 폴더 압축 후 한 번에 전송)
 """
 import io
-import re
+
 import tempfile
 import zipfile
 from pathlib import Path
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
+from fastapi import APIRouter, File, Form, UploadFile, HTTPException, Depends
 from services.security import verify_api_key
+from services.history_folder import (
+    fingerprint, folder_documents, remove_folder_document, store_folder_document,
+)
 
 from utils.pdf_utils import extract_text_from_pdf
 from services.vector_store import (
-    ingest_supplier_history,
-    ingest_item_history,
+    ingest_history,
     ingest_analysis_examples,
     ingest_request_examples,
     ingest_email_examples,
 )
 
 router = APIRouter()
-
-
-def _extract_supplier_name(text: str) -> str:
-    """Supplier: ... 헤더에서 이름 추출."""
-    m = re.search(r"Supplier\s*:\s*(.+?)(?:\r?\n|$)", text, re.IGNORECASE | re.DOTALL)
-    if not m:
-        raise ValueError("Missing 'Supplier: ...' header in supplier history document.")
-    return m.group(1).split("\n")[0].strip()
-
-
-def _extract_item_code(text: str) -> str | None:
-    """ItemCode: 100004 패턴 추출."""
-    m = re.search(r"ItemCode\s*[:\-]?\s*(\d+)", text, re.IGNORECASE)
-    return m.group(1) if m else None
 
 
 def _save_upload_to_temp(content: bytes) -> Path:
@@ -53,11 +41,20 @@ def _extract_pdfs_from_zip(zip_content: bytes) -> list[tuple[bytes, str]]:
     return pdfs
 
 
-@router.post("/supplier-history", dependencies=[Depends(verify_api_key)])
-async def ingest_supplier_history_pdf(
-    files: list[UploadFile] = File(..., description="PDF 파일 여러 개 (폴더에서 다 선택 후 업로드 가능)"),
-):
-    """Supplier history PDF 업로드. 여러 파일 한 번에 가능. 각 파일 내 'Supplier: <Name>' 한 줄 필수."""
+def _ingest_history_pdf(content: bytes, filename: str) -> dict:
+    """One history PDF: what its header was read as, or why it was refused."""
+    path = _save_upload_to_temp(content)
+    try:
+        header = ingest_history(extract_text_from_pdf(path), source=filename)
+        return {"filename": filename, "ok": True, "supplier": header["supplier"] or None,
+                "items": header["items"], "item_codes": header["item_codes"], "date": header["date"] or None}
+    except Exception as e:
+        return {"filename": filename, "ok": False, "error": str(e)}
+    finally:
+        path.unlink(missing_ok=True)
+
+
+async def _history_files(files: list[UploadFile]) -> dict:
     if not files:
         raise HTTPException(status_code=400, detail="At least one PDF file required.")
     results = []
@@ -65,96 +62,96 @@ async def ingest_supplier_history_pdf(
         if not file.filename or not file.filename.lower().endswith(".pdf"):
             results.append({"filename": file.filename or "(unknown)", "ok": False, "error": "PDF file required."})
             continue
-        content = await file.read()
-        path = _save_upload_to_temp(content)
-        try:
-            text = extract_text_from_pdf(path)
-            supplier_name = _extract_supplier_name(text)
-            ingest_supplier_history(text, supplier_name, source=file.filename)
-            results.append({"filename": file.filename, "ok": True, "supplier_name": supplier_name})
-        except Exception as e:
-            results.append({"filename": file.filename, "ok": False, "error": str(e)})
-        finally:
-            path.unlink(missing_ok=True)
+        results.append(_ingest_history_pdf(await file.read(), file.filename))
     return {"ok": True, "processed": len(results), "results": results}
 
 
-@router.post("/supplier-history/zip", dependencies=[Depends(verify_api_key)])
-async def ingest_supplier_history_zip(
-    file: UploadFile = File(..., description="ZIP 파일 (폴더 압축, 내부 PDF 전부 처리). 100개면 1번 업로드."),
-):
-    """Supplier history PDF를 ZIP 하나로 업로드. ZIP 안의 모든 .pdf를 읽어서 벡터스토어에 넣음. (스케일링용)"""
+async def _history_zip(file: UploadFile) -> dict:
     if not file.filename or not file.filename.lower().endswith(".zip"):
         raise HTTPException(status_code=400, detail="ZIP file required.")
-    content = await file.read()
-    pdfs = _extract_pdfs_from_zip(content)
+    pdfs = _extract_pdfs_from_zip(await file.read())
     if not pdfs:
         raise HTTPException(status_code=400, detail="No PDF files found inside the ZIP.")
-    results = []
-    for pdf_bytes, name in pdfs:
-        path = _save_upload_to_temp(pdf_bytes)
-        try:
-            text = extract_text_from_pdf(path)
-            supplier_name = _extract_supplier_name(text)
-            ingest_supplier_history(text, supplier_name, source=name)
-            results.append({"filename": name, "ok": True, "supplier_name": supplier_name})
-        except Exception as e:
-            results.append({"filename": name, "ok": False, "error": str(e)})
-        finally:
-            path.unlink(missing_ok=True)
+    results = [_ingest_history_pdf(content, name) for content, name in pdfs]
     return {"ok": True, "processed": len(results), "results": results}
 
 
-@router.post("/item-history", dependencies=[Depends(verify_api_key)])
-async def ingest_item_history_pdf(
-    files: list[UploadFile] = File(..., description="PDF 파일 여러 개 (폴더에서 다 선택 후 업로드 가능)"),
+@router.post("/history", dependencies=[Depends(verify_api_key)])
+async def ingest_history_pdf(
+    files: list[UploadFile] = File(..., description="PDF 파일 여러 개"),
 ):
-    """Item history PDF 업로드. 여러 파일 한 번에 가능. 각 파일 내 'ItemCode: XXXXX' 있으면 메타데이터로 사용."""
-    if not files:
-        raise HTTPException(status_code=400, detail="At least one PDF file required.")
-    results = []
-    for file in files:
-        if not file.filename or not file.filename.lower().endswith(".pdf"):
-            results.append({"filename": file.filename or "(unknown)", "ok": False, "error": "PDF file required."})
-            continue
-        content = await file.read()
-        path = _save_upload_to_temp(content)
-        try:
-            text = extract_text_from_pdf(path)
-            item_code = _extract_item_code(text)
-            ingest_item_history(text, item_code, source=file.filename)
-            results.append({"filename": file.filename, "ok": True, "item_code": item_code})
-        except Exception as e:
-            results.append({"filename": file.filename, "ok": False, "error": str(e)})
-        finally:
-            path.unlink(missing_ok=True)
-    return {"ok": True, "processed": len(results), "results": results}
+    """
+    Purchasing history PDF 업로드. 공급사 이력과 품목 이력을 나누지 않는다.
+    문서 첫머리의 'Supplier:', 'Item:'(여러 개는 쉼표), 'ItemCode:', 'Date:' 줄로 무엇에 관한 문서인지 정한다.
+    공급사만 있으면 공급사 전체, 둘 다 있으면 그 공급사의 그 품목, 품목만 있으면 품목 자체에 관한 문서.
+    결과에 문서별로 읽힌 헤더를 돌려주므로 올린 사람이 확인할 수 있다.
+    """
+    return await _history_files(files)
 
 
-@router.post("/item-history/zip", dependencies=[Depends(verify_api_key)])
-async def ingest_item_history_zip(
-    file: UploadFile = File(..., description="ZIP 파일 (폴더 압축, 내부 PDF 전부 처리). 100개면 1번 업로드."),
+@router.post("/history/zip", dependencies=[Depends(verify_api_key)])
+async def ingest_history_zip(
+    file: UploadFile = File(..., description="ZIP 파일 (내부 PDF 전부 처리)"),
 ):
-    """Item history PDF를 ZIP 하나로 업로드. ZIP 안의 모든 .pdf 처리. (스케일링용)"""
-    if not file.filename or not file.filename.lower().endswith(".zip"):
-        raise HTTPException(status_code=400, detail="ZIP file required.")
+    """History PDF를 ZIP 하나로 업로드. 처리 방식은 /history와 같다."""
+    return await _history_zip(file)
+
+
+# ----- Shared-folder sync (used by scripts/sync_history_folder.py) -----
+# The sync job runs next to the company's network drive, compares the folder with what the
+# store holds, and sends only what changed. Documents are identified by their path in the
+# folder, so a changed file replaces its earlier version and a deleted file is removed.
+
+@router.get("/history/folder", dependencies=[Depends(verify_api_key)])
+async def list_folder_history():
+    """Documents held from the shared folder: path -> fingerprint, supplier, items."""
+    return {"ok": True, "documents": folder_documents()}
+
+
+@router.put("/history/folder", dependencies=[Depends(verify_api_key)])
+async def put_folder_history(
+    file: UploadFile = File(..., description="History PDF"),
+    path: str = Form(..., description="Path of the file inside the shared folder, with / separators"),
+):
+    """Add or replace one document from the shared folder."""
+    if not path.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="PDF file required.")
     content = await file.read()
-    pdfs = _extract_pdfs_from_zip(content)
-    if not pdfs:
-        raise HTTPException(status_code=400, detail="No PDF files found inside the ZIP.")
-    results = []
-    for pdf_bytes, name in pdfs:
-        path = _save_upload_to_temp(pdf_bytes)
-        try:
-            text = extract_text_from_pdf(path)
-            item_code = _extract_item_code(text)
-            ingest_item_history(text, item_code, source=name)
-            results.append({"filename": name, "ok": True, "item_code": item_code})
-        except Exception as e:
-            results.append({"filename": name, "ok": False, "error": str(e)})
-        finally:
-            path.unlink(missing_ok=True)
-    return {"ok": True, "processed": len(results), "results": results}
+    tmp = _save_upload_to_temp(content)
+    try:
+        return store_folder_document(extract_text_from_pdf(tmp), path, fingerprint(content))
+    except ValueError as e:
+        return {"path": path, "ok": False, "error": str(e)}
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
+@router.delete("/history/folder", dependencies=[Depends(verify_api_key)])
+async def delete_folder_history(path: str):
+    """Remove a document that was deleted from the shared folder."""
+    return {"ok": True, "path": path, "chunks_removed": remove_folder_document(path)}
+
+
+# Earlier routes, kept so existing clients keep working. The upload path no longer decides
+# what a document is about; the header does, exactly as for /history.
+@router.post("/supplier-history", dependencies=[Depends(verify_api_key)], deprecated=True)
+async def ingest_supplier_history_pdf(files: list[UploadFile] = File(...)):
+    return await _history_files(files)
+
+
+@router.post("/supplier-history/zip", dependencies=[Depends(verify_api_key)], deprecated=True)
+async def ingest_supplier_history_zip(file: UploadFile = File(...)):
+    return await _history_zip(file)
+
+
+@router.post("/item-history", dependencies=[Depends(verify_api_key)], deprecated=True)
+async def ingest_item_history_pdf(files: list[UploadFile] = File(...)):
+    return await _history_files(files)
+
+
+@router.post("/item-history/zip", dependencies=[Depends(verify_api_key)], deprecated=True)
+async def ingest_item_history_zip(file: UploadFile = File(...)):
+    return await _history_zip(file)
 
 
 @router.post("/analysis-examples", dependencies=[Depends(verify_api_key)])

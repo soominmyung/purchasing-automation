@@ -64,3 +64,6 @@ SESSION_HISTORY.md
 docs/task.md
 docs/implementation_plan.md
 docs/project_overview.md
+
+# Run records hold company data (services/run_record.py); never commit them
+runs/

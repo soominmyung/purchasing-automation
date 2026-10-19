@@ -13,6 +13,7 @@ COPY --chown=appuser main.py config.py schemas.py ./
 COPY --chown=appuser routers ./routers
 COPY --chown=appuser services ./services
 COPY --chown=appuser utils ./utils
+COPY --chown=appuser prompts ./prompts
 
 # Cloud Run: port 8080, Framer frontend calls this API
 EXPOSE 8080

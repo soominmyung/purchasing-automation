@@ -9,14 +9,16 @@ import queue
 from pathlib import Path
 from typing import Any, Callable
 
-from fastapi import APIRouter, File, HTTPException, UploadFile, Depends
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile, Depends
 from fastapi.responses import StreamingResponse
 from langsmith import traceable
 
 from services.security import verify_api_access
 from config import settings
 from schemas import RunPipelineRequest, RunPipelineResponse
-from utils.csv_utils import SnapshotDateError, parse_csv_rows
+from utils.csv_utils import (
+    SNAPSHOT_DATE_KEY, SNAPSHOT_SOURCE_KEY, SNAPSHOT_WARNINGS_KEY, SnapshotDateError, parse_csv_rows,
+)
 from utils.docx_utils import (
     save_analysis_docx,
     save_pr_docx,
@@ -27,9 +29,11 @@ from utils.docx_utils import (
 )
 from services.item_grouping import group_by_supplier_and_recommend, group_risk_level, screen_rows
 from services.agents import (
+    AGENT_MODELS,
     run_purchasing_pipeline_graph,
     purchasing_graph,
 )
+from services.run_record import RunRecord, client_ip
 
 router = APIRouter()
 
@@ -40,6 +44,25 @@ def _run_pipeline(
     csv_filename: str,
     progress_callback: Callable[[str, dict[str, Any]], None] | None = None,
     embed_files: bool = False,
+    ip: str = "unknown",
+) -> RunPipelineResponse:
+    """Run the pipeline and keep a run record (services/run_record.py), also when it fails."""
+    record = RunRecord(csv_content, csv_filename or "", ip, AGENT_MODELS)
+    try:
+        response = _run_pipeline_inner(csv_content, csv_filename, progress_callback, embed_files, record)
+    except Exception as e:
+        record.finish(error=e)
+        raise
+    record.finish()
+    return response
+
+
+def _run_pipeline_inner(
+    csv_content: str,
+    csv_filename: str,
+    progress_callback: Callable[[str, dict[str, Any]], None] | None,
+    embed_files: bool,
+    record: RunRecord,
 ) -> RunPipelineResponse:
     """CSV 내용 + 파일명으로 파이프라인 실행 (공통 로직). progress_callback(step, detail) 호출.
     스트리밍 시(progress_callback 있음): 디스크 저장 없이 메모리에서 .docx → base64만 전달.
@@ -59,8 +82,9 @@ def _run_pipeline(
     if not rows:
         raise HTTPException(
             status_code=400,
-            detail="No valid CSV rows. Ensure columns: SupplierName, ItemCode, ItemName, CurrentStock, WksToOOS (or similar).",
+            detail="No valid CSV rows. Ensure columns: SupplierName, ItemCode, ItemName, AvailableStock, WksToOOS (or similar).",
         )
+    record.set_snapshot(rows, (SNAPSHOT_DATE_KEY, SNAPSHOT_SOURCE_KEY, SNAPSHOT_WARNINGS_KEY))
     progress("item_grouping", {})
     groups = group_by_supplier_and_recommend(rows)
     if not groups:
@@ -80,128 +104,145 @@ def _run_pipeline(
     evaluations = []
 
     for group in groups:
-        snapshot_date = group["snapshot_date"]
-        supplier = group["supplier"]
-        items = group["items"]
-        risk_level = group.get("risk_level") or group_risk_level(items)
-        safe_supplier = _sanitize_filename(supplier)
+        entry = record.start_group(group)
+        final_state: dict[str, Any] = {}
+        files: dict[str, str] = {}
+        try:
+            snapshot_date = group["snapshot_date"]
+            supplier = group["supplier"]
+            items = group["items"]
+            risk_level = group.get("risk_level") or group_risk_level(items)
+            safe_supplier = _sanitize_filename(supplier)
 
-        # --- LangGraph Execution with Progress Streaming ---
-        input_data = {
-            "snapshot_date": snapshot_date,
-            "supplier": supplier,
-            "items": items,
-        }
-        
-        final_state = {}
-        # 그래프 스트리밍을 통해 각 노드 완료 시 진행 상황 알림
-        for event in purchasing_graph.stream(
-            {
+            # --- LangGraph Execution with Progress Streaming ---
+            input_data = {
                 "snapshot_date": snapshot_date,
                 "supplier": supplier,
                 "items": items,
-                "risk_level": risk_level,
-                "data_issue_lines": group.get("data_issue_lines", []),
-                "iteration_count": 0,
-                "is_valid_email": False
-            },
-            config={
-                "run_name": f"Purchasing-Workflow-{supplier}",
-                "metadata": {"supplier": supplier, "env": "production"}
             }
-        ):
-            # event는 { "node_name": { "state_key": value } } 형태
-            node_name = list(event.keys())[0]
-            progress(node_name, {"supplier": supplier})
+        
+            # 그래프 스트리밍을 통해 각 노드 완료 시 진행 상황 알림
+            for event in purchasing_graph.stream(
+                {
+                    "snapshot_date": snapshot_date,
+                    "supplier": supplier,
+                    "items": items,
+                    "risk_level": risk_level,
+                    "data_issue_lines": group.get("data_issue_lines", []),
+                    "iteration_count": 0,
+                    "is_valid_email": False
+                },
+                config=(
+                    {"run_name": "Purchasing-Workflow", "metadata": {"env": "production", "run_id": record.run_id}}
+                    if settings.langsmith_hide_content else
+                    {"run_name": f"Purchasing-Workflow-{supplier}",
+                     "metadata": {"supplier": supplier, "env": "production", "run_id": record.run_id}}
+                )
+            ):
+                # event는 { "node_name": { "state_key": value } } 형태
+                node_name = list(event.keys())[0]
+                progress(node_name, {"supplier": supplier})
             
-            # 마지막 상태를 계속 업데이트
-            for k, v in event[node_name].items():
-                final_state[k] = v
+                # 마지막 상태를 계속 업데이트
+                for k, v in event[node_name].items():
+                    if k == "validation_log":  # one entry per email check; keep them all
+                        final_state.setdefault(k, []).extend(v)
+                    else:
+                        final_state[k] = v
 
-        # --- 결과 추출 및 파일 생성 (기존 로직 유지) ---
-        analysis_output = final_state.get("analysis_output", {})
-        report_md = final_state.get("report_md", "")
-        pr_md = final_state.get("pr_md", "")
-        email_text = final_state.get("email_text", "")
-        evaluation_md = final_state.get("evaluation_md", "")
+            # --- 결과 추출 및 파일 생성 (기존 로직 유지) ---
+            analysis_output = final_state.get("analysis_output", {})
+            report_md = final_state.get("report_md", "")
+            pr_md = final_state.get("pr_md", "")
+            email_text = final_state.get("email_text", "")
+            evaluation_md = final_state.get("evaluation_md", "")
 
-        # 0. Evaluation Report 처리
-        evaluation_filename = f"evaluation_{snapshot_date}_{safe_supplier}.docx"
-        if in_memory:
-            docx_bytes = markdown_to_docx_bytes(evaluation_md)
-            b64 = base64.b64encode(docx_bytes).decode("ascii")
-            evaluations.append({
-                "snapshot_date": snapshot_date, "supplier": supplier, "markdown": evaluation_md,
-                "checks": final_state.get("evaluation_result"),
-                "filename": evaluation_filename, "saved_path": "", "content_base64": b64,
-            })
-            if stream_mode:
-                progress("file_ready", {"filename": evaluation_filename, "content_base64": b64})
-        else:
-            evaluation_saved_path = save_evaluation_docx(snapshot_date, supplier, evaluation_md)
-            evaluations.append({
-                "snapshot_date": snapshot_date, "supplier": supplier, "markdown": evaluation_md,
-                "checks": final_state.get("evaluation_result"),
-                "filename": evaluation_filename, "saved_path": evaluation_saved_path,
-                "content_base64": _read_file_base64(evaluation_saved_path),
-            })
+            # 0. Evaluation Report 처리
+            evaluation_filename = f"evaluation_{snapshot_date}_{safe_supplier}_{record.run_id}.docx"
+            files["evaluation"] = evaluation_filename
+            if in_memory:
+                docx_bytes = markdown_to_docx_bytes(evaluation_md)
+                b64 = base64.b64encode(docx_bytes).decode("ascii")
+                evaluations.append({
+                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": evaluation_md,
+                    "checks": final_state.get("evaluation_result"),
+                    "filename": evaluation_filename, "saved_path": "", "content_base64": b64,
+                })
+                if stream_mode:
+                    progress("file_ready", {"filename": evaluation_filename, "content_base64": b64})
+            else:
+                evaluation_saved_path = save_evaluation_docx(snapshot_date, supplier, evaluation_md, run_id=record.run_id)
+                evaluations.append({
+                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": evaluation_md,
+                    "checks": final_state.get("evaluation_result"),
+                    "filename": evaluation_filename, "saved_path": evaluation_saved_path,
+                    "content_base64": _read_file_base64(evaluation_saved_path),
+                })
 
-        # 1. Report 처리
-        analysis_filename = f"analysis_{snapshot_date}_{safe_supplier}.docx"
-        if in_memory:
-            docx_bytes = markdown_to_docx_bytes(report_md)
-            b64 = base64.b64encode(docx_bytes).decode("ascii")
-            reports.append({
-                "snapshot_date": snapshot_date, "supplier": supplier, "markdown": report_md,
-                "filename": analysis_filename, "saved_path": "", "content_base64": b64,
-            })
-            if stream_mode:
-                progress("file_ready", {"filename": analysis_filename, "content_base64": b64})
-        else:
-            analysis_saved_path = save_analysis_docx(snapshot_date, supplier, report_md)
-            reports.append({
-                "snapshot_date": snapshot_date, "supplier": supplier, "markdown": report_md,
-                "filename": analysis_filename, "saved_path": analysis_saved_path,
-                "content_base64": _read_file_base64(analysis_saved_path),
-            })
+            # 1. Report 처리
+            analysis_filename = f"analysis_{snapshot_date}_{safe_supplier}_{record.run_id}.docx"
+            files["analysis"] = analysis_filename
+            if in_memory:
+                docx_bytes = markdown_to_docx_bytes(report_md)
+                b64 = base64.b64encode(docx_bytes).decode("ascii")
+                reports.append({
+                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": report_md,
+                    "filename": analysis_filename, "saved_path": "", "content_base64": b64,
+                })
+                if stream_mode:
+                    progress("file_ready", {"filename": analysis_filename, "content_base64": b64})
+            else:
+                analysis_saved_path = save_analysis_docx(snapshot_date, supplier, report_md, run_id=record.run_id)
+                reports.append({
+                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": report_md,
+                    "filename": analysis_filename, "saved_path": analysis_saved_path,
+                    "content_base64": _read_file_base64(analysis_saved_path),
+                })
 
-        # 2. PR 처리
-        pr_filename = f"pr_{snapshot_date}_{safe_supplier}.docx"
-        if in_memory:
-            docx_bytes = markdown_to_docx_bytes(pr_md)
-            b64 = base64.b64encode(docx_bytes).decode("ascii")
-            requests_list.append({
-                "snapshot_date": snapshot_date, "supplier": supplier, "markdown": pr_md,
-                "filename": pr_filename, "saved_path": "", "content_base64": b64,
-            })
-            if stream_mode:
-                progress("file_ready", {"filename": pr_filename, "content_base64": b64})
-        else:
-            pr_saved_path = save_pr_docx(snapshot_date, supplier, pr_md)
-            requests_list.append({
-                "snapshot_date": snapshot_date, "supplier": supplier, "markdown": pr_md,
-                "filename": pr_filename, "saved_path": pr_saved_path,
-                "content_base64": _read_file_base64(pr_saved_path),
-            })
+            # 2. PR 처리
+            pr_filename = f"pr_{snapshot_date}_{safe_supplier}_{record.run_id}.docx"
+            files["pr"] = pr_filename
+            if in_memory:
+                docx_bytes = markdown_to_docx_bytes(pr_md)
+                b64 = base64.b64encode(docx_bytes).decode("ascii")
+                requests_list.append({
+                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": pr_md,
+                    "filename": pr_filename, "saved_path": "", "content_base64": b64,
+                })
+                if stream_mode:
+                    progress("file_ready", {"filename": pr_filename, "content_base64": b64})
+            else:
+                pr_saved_path = save_pr_docx(snapshot_date, supplier, pr_md, run_id=record.run_id)
+                requests_list.append({
+                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": pr_md,
+                    "filename": pr_filename, "saved_path": pr_saved_path,
+                    "content_base64": _read_file_base64(pr_saved_path),
+                })
 
-        # 3. Email 처리
-        email_filename = f"email_draft_{snapshot_date}_{safe_supplier}.docx"
-        if in_memory:
-            docx_bytes = markdown_to_docx_bytes(email_text)
-            b64 = base64.b64encode(docx_bytes).decode("ascii")
-            emails.append({
-                "snapshot_date": snapshot_date, "supplier": supplier, "text": email_text,
-                "filename": email_filename, "saved_path": "", "content_base64": b64,
-            })
-            if stream_mode:
-                progress("file_ready", {"filename": email_filename, "content_base64": b64})
-        else:
-            email_saved_path = save_email_draft_docx(snapshot_date, supplier, email_text)
-            emails.append({
-                "snapshot_date": snapshot_date, "supplier": supplier, "text": email_text,
-                "filename": email_filename, "saved_path": email_saved_path,
-                "content_base64": _read_file_base64(email_saved_path),
-            })
+            # 3. Email 처리
+            email_filename = f"email_draft_{snapshot_date}_{safe_supplier}_{record.run_id}.docx"
+            files["email_draft"] = email_filename
+            if in_memory:
+                docx_bytes = markdown_to_docx_bytes(email_text)
+                b64 = base64.b64encode(docx_bytes).decode("ascii")
+                emails.append({
+                    "snapshot_date": snapshot_date, "supplier": supplier, "text": email_text,
+                    "filename": email_filename, "saved_path": "", "content_base64": b64,
+                })
+                if stream_mode:
+                    progress("file_ready", {"filename": email_filename, "content_base64": b64})
+            else:
+                email_saved_path = save_email_draft_docx(snapshot_date, supplier, email_text, run_id=record.run_id)
+                emails.append({
+                    "snapshot_date": snapshot_date, "supplier": supplier, "text": email_text,
+                    "filename": email_filename, "saved_path": email_saved_path,
+                    "content_base64": _read_file_base64(email_saved_path),
+                })
+
+        except Exception as e:
+            record.finish_group(entry, final_state, files, error=e)
+            raise
+        record.finish_group(entry, final_state, files)
 
     response = RunPipelineResponse(
         groups=groups,
@@ -209,6 +250,7 @@ def _run_pipeline(
         requests=requests_list,
         emails=emails,
         evaluations=evaluations,
+        run_id=record.run_id,
     )
     result_dump = response.model_dump()
     if stream_mode:
@@ -228,7 +270,7 @@ def _read_file_base64(path_str: str) -> str | None:
 
 
 @router.post("/run", response_model=RunPipelineResponse, dependencies=[Depends(verify_api_access)])
-async def run_pipeline_upload(file: UploadFile = File(..., description="CSV 파일 (내용은 서버에서 읽음)")):
+async def run_pipeline_upload(request: Request, file: UploadFile = File(..., description="CSV 파일 (내용은 서버에서 읽음)")):
     """
     CSV **파일**만 업로드하면 서버가 내용을 읽어 파이프라인 실행.
     파일명에 DDMMYY(예: 050425)가 있으면 스냅샷 날짜(2025-04-25)로 사용.
@@ -246,11 +288,12 @@ async def run_pipeline_upload(file: UploadFile = File(..., description="CSV 파�
         csv_content = content.decode("cp1252", errors="replace")  # fallback
 
     csv_filename = file.filename or "stock.csv"
-    return _run_pipeline(csv_content, csv_filename, progress_callback=None, embed_files=True)
+    return _run_pipeline(csv_content, csv_filename, progress_callback=None, embed_files=True,
+                         ip=client_ip(request))
 
 
 @router.post("/run/embed", response_model=RunPipelineResponse, dependencies=[Depends(verify_api_access)])
-async def run_pipeline_embed(file: UploadFile = File(..., description="CSV 파일 (디스크 저장 없이 JSON에 base64 포함)")):
+async def run_pipeline_embed(request: Request, file: UploadFile = File(..., description="CSV 파일 (디스크 저장 없이 JSON에 base64 포함)")):
     """
     CSV 업로드 후 파이프라인 실행. **디스크에 저장하지 않고** 생성된 .docx를 base64로 JSON에 담아 반환.
     HF Space 등에서 브라우저가 응답 수신 후 바로 다운로드할 수 있도록 함 (스트리밍/임시 저장 불필요).
@@ -265,10 +308,11 @@ async def run_pipeline_embed(file: UploadFile = File(..., description="CSV 파�
     except UnicodeDecodeError:
         csv_content = content.decode("cp1252", errors="replace")
     csv_filename = file.filename or "stock.csv"
-    return _run_pipeline(csv_content, csv_filename, progress_callback=None, embed_files=True)
+    return _run_pipeline(csv_content, csv_filename, progress_callback=None, embed_files=True,
+                         ip=client_ip(request))
 
 
-async def _stream_pipeline_events(csv_content: str, csv_filename: str):
+async def _stream_pipeline_events(csv_content: str, csv_filename: str, ip: str = "unknown"):
     """파이프라인 진행 이벤트를 SSE로 yield."""
     q: queue.Queue = queue.Queue()
 
@@ -277,7 +321,7 @@ async def _stream_pipeline_events(csv_content: str, csv_filename: str):
 
     def run_sync() -> None:
         try:
-            _run_pipeline(csv_content, csv_filename, progress_callback=progress)
+            _run_pipeline(csv_content, csv_filename, progress_callback=progress, ip=ip)
         except Exception as e:
             q.put({"step": "error", "error": str(e)})
 
@@ -304,7 +348,7 @@ async def _stream_pipeline_events(csv_content: str, csv_filename: str):
 
 
 @router.post("/run/stream", dependencies=[Depends(verify_api_access)])
-async def run_pipeline_stream(file: UploadFile = File(..., description="CSV 파일 (진행 상황 스트리밍)")):
+async def run_pipeline_stream(request: Request, file: UploadFile = File(..., description="CSV 파일 (진행 상황 스트리밍)")):
     """
     CSV 업로드 후 파이프라인 실행. 진행 단계를 Server-Sent Events로 스트리밍.
     step: csv_parsing, item_grouping, item_grouping_done, analysis, report, pr, email, complete
@@ -320,7 +364,7 @@ async def run_pipeline_stream(file: UploadFile = File(..., description="CSV 파�
         csv_content = content.decode("cp1252", errors="replace")
     csv_filename = file.filename or "stock.csv"
     return StreamingResponse(
-        _stream_pipeline_events(csv_content, csv_filename),
+        _stream_pipeline_events(csv_content, csv_filename, client_ip(request)),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -331,7 +375,7 @@ async def run_pipeline_stream(file: UploadFile = File(..., description="CSV 파�
 
 
 @router.post("/run/json", response_model=RunPipelineResponse, dependencies=[Depends(verify_api_access)])
-def run_pipeline_json(req: RunPipelineRequest):
+def run_pipeline_json(req: RunPipelineRequest, request: Request):
     """
     JSON으로 CSV 내용 + 파일명 전달 (API/스크립트용).
     브라우저에서 파일만 올리고 싶으면 POST /api/run (파일 업로드) 사용.
@@ -339,7 +383,7 @@ def run_pipeline_json(req: RunPipelineRequest):
     if not settings.openai_api_key:
         raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
 
-    return _run_pipeline(req.csv_content, req.csv_filename or "")
+    return _run_pipeline(req.csv_content, req.csv_filename or "", ip=client_ip(request))
 
 
 @router.post("/group-only")

@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     # model that writes the analysis (GPT-4o), so the analysis is never judged by its own
     # author or a model of the same family. Needs GEMINI_API_KEY.
     evaluator_model: str = "gemini:gemini-3.7-flash"
+    # Which prompts/<version>/ folder the agents use; recorded with every run.
+    prompt_version: str = "v4"
+    # Run records (services/run_record.py): one JSON file per run on the server.
+    run_records_enabled: bool = True
+    run_records_dir: str = "runs"
+    # True only behind a proxy that sets X-Forwarded-For (the Cloud Run demo). On the
+    # company server the connection address is the requesting PC.
+    trust_forwarded_for: bool = False
 
 
     # Vector store backend: "memory" | "chroma"
@@ -36,6 +44,10 @@ class Settings(BaseSettings):
     langchain_endpoint: str = "https://api.smith.langchain.com"
     langchain_api_key: Optional[str] = None
     langchain_project: str = "purchasing-automation"
+    # True wherever real company data runs: traces then carry structure, timings, token
+    # counts and model names, but no prompt or response text. Error messages are still
+    # sent, so exceptions must not quote data (see docs/observability.md).
+    langsmith_hide_content: bool = False
 
     class Config:
         env_file = ".env"

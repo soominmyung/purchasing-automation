@@ -1,7 +1,10 @@
 """
 Item Grouping, Suggested dates & quantities logic.
 - Groups CSV rows by supplier
-- Validates CurrentStock / WksToOOS: a figure is valid, missing, or invalid, and an
+- AvailableStock = on hand + on order - committed to customers (stock that can be used,
+  not what is physically in the warehouse); WksToOOS = AvailableStock / average weekly
+  sales. Both use the same stock, so AvailableStock / WksToOOS is the weekly sales.
+- Validates AvailableStock / WksToOOS: a figure is valid, missing, or invalid, and an
   invalid one is reported as such rather than coerced to 0 or to a default
 - Calculates per-item recommended_latest_po_date, recommended_latest_delivery_date, timing labels
 - Derives risk_level from WksToOOS (any RiskLevel column in the CSV is ignored)
@@ -86,7 +89,7 @@ def _wks(raw: Any) -> float | None:
 
 
 def _stock(raw: Any) -> float | None:
-    return parse_figure(raw, "CurrentStock", MAX_PLAUSIBLE_STOCK)[0]
+    return parse_figure(raw, "AvailableStock", MAX_PLAUSIBLE_STOCK)[0]
 
 
 def _parse_date(date_str: str) -> datetime:
@@ -162,7 +165,7 @@ def build_recommendations_for_item(snapshot_date_str: str, wks_to_oos_raw: Any) 
         }
     snapshot_date = _parse_date(snapshot_date_str)
 
-    # Last day current stock can sustain = latest required delivery date
+    # Last day available stock can sustain = latest required delivery date
     latest_delivery_date = _add_days(snapshot_date, int(wks * 7))
     # Subtract lead time from that date = PO deadline
     latest_po_date = _add_days(latest_delivery_date, -TOTAL_LEAD_WEEKS * 7)
@@ -182,14 +185,14 @@ def build_recommendations_for_item(snapshot_date_str: str, wks_to_oos_raw: Any) 
 
 
 def compute_suggested_quantity_at_latest_delivery(
-    current_stock_raw: Any,
+    available_stock_raw: Any,
     wks_to_oos_raw: Any,
 ) -> int | None:
     """
     Order quantity to cover 26 weeks after delivery date. Weekly demand is inferred as
     stock / weeks, so it needs both figures valid and above zero; otherwise None.
     """
-    stock, wks = _stock(current_stock_raw), _wks(wks_to_oos_raw)
+    stock, wks = _stock(available_stock_raw), _wks(wks_to_oos_raw)
     if stock is None or wks is None or not (stock > 0 and wks > 0):
         return None
     weekly_demand = stock / wks
@@ -219,9 +222,9 @@ def _system_notes(stock: float | None, wks: float | None, issues: list[dict], ga
 
 
 def build_item(snapshot_date: str, item_code: Any, item_name: Any,
-               current_stock_raw: Any, wks_to_oos_raw: Any) -> dict[str, Any]:
+               available_stock_raw: Any, wks_to_oos_raw: Any) -> dict[str, Any]:
     """One item in the shape the agents receive."""
-    stock, stock_issue = parse_figure(current_stock_raw, "CurrentStock", MAX_PLAUSIBLE_STOCK)
+    stock, stock_issue = parse_figure(available_stock_raw, "AvailableStock", MAX_PLAUSIBLE_STOCK)
     wks, wks_issue = _parse_wks(wks_to_oos_raw)
     issues = [i for i in (stock_issue, wks_issue) if i]
     rec = build_recommendations_for_item(snapshot_date, wks_to_oos_raw)
@@ -230,10 +233,10 @@ def build_item(snapshot_date: str, item_code: Any, item_name: Any,
         "item_code": str(item_code),
         "item_name": str(item_name),
         "risk_level": risk_level_from_weeks(wks_to_oos_raw),
-        "current_stock": stock,
+        "available_stock": stock,
         "wks_to_oos": wks,
         "expected_stockout_weeks": gap,
-        "suggested_quantity": compute_suggested_quantity_at_latest_delivery(current_stock_raw, wks_to_oos_raw),
+        "suggested_quantity": compute_suggested_quantity_at_latest_delivery(available_stock_raw, wks_to_oos_raw),
         **rec,
         "data_issues": issues,
         "system_notes": _system_notes(stock, wks, issues, gap),
@@ -257,9 +260,9 @@ def _identity_issue(raw: Any, field: str) -> str | None:
 
 
 def _read_row(row: dict[str, Any]) -> dict[str, Any]:
-    stock = find_field(row, "currentstock")
-    if stock is None:
-        stock = find_field(row, "current_stock")
+    stock = find_field(row, "availablestock")
+    if stock is None:  # earlier column name, still accepted
+        stock = find_field(row, "currentstock")
     wks = find_field(row, "wkstooos")
     if wks is None:
         wks = find_field(row, "wks_to_oos")
@@ -284,7 +287,7 @@ def screen_rows(csv_rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
       1. SupplierName, ItemCode or ItemName unusable
       2. the same ItemCode more than once for a supplier (all copies go, since it is
          unclear which is right; checked before step 3 so a bad copy cannot hide its twin)
-      3. CurrentStock or WksToOOS missing or invalid (0 is a valid value for both)
+      3. AvailableStock or WksToOOS missing or invalid (0 is a valid value for both)
     Each exclusion carries the sentence shown in the report.
     """
     kept, excluded = [], []
@@ -321,7 +324,7 @@ def screen_rows(csv_rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
 
     analysable = []
     for r in kept:
-        issues = [i for i in (parse_figure(r["stock_raw"], "CurrentStock", MAX_PLAUSIBLE_STOCK)[1],
+        issues = [i for i in (parse_figure(r["stock_raw"], "AvailableStock", MAX_PLAUSIBLE_STOCK)[1],
                               _parse_wks(r["wks_raw"])[1]) if i]
         if not issues:
             analysable.append(r)

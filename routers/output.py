@@ -7,11 +7,11 @@ from services.security import verify_api_access
 from fastapi.responses import FileResponse
 
 from config import settings
-from utils.docx_utils import ANALYSIS_DIR, PR_DIR, EMAIL_DRAFT_DIR, TEMP_DIR, cleanup_temp_output
+from utils.docx_utils import ANALYSIS_DIR, PR_DIR, EMAIL_DRAFT_DIR, EVALUATION_DIR, TEMP_DIR, cleanup_temp_output
 
 router = APIRouter()
 
-_SAFE_FILENAME = re.compile(r"^(analysis_|pr_|email_draft_)[a-zA-Z0-9_\-\.]+\.docx$")
+_SAFE_FILENAME = re.compile(r"^(analysis_|pr_|email_draft_|evaluation_)[a-zA-Z0-9_\-\.]+\.docx$")
 _USE_TEMP = getattr(settings, "use_temp_for_output", False)
 
 
@@ -24,7 +24,7 @@ def _resolve_path(filename: str) -> Path | None:
         if path.is_file():
             return path
         return None
-    for directory in (ANALYSIS_DIR, PR_DIR, EMAIL_DRAFT_DIR):
+    for directory in (ANALYSIS_DIR, PR_DIR, EMAIL_DRAFT_DIR, EVALUATION_DIR):
         path = directory / filename
         if path.is_file():
             return path

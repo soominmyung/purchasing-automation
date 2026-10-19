@@ -14,8 +14,7 @@ from langchain_openai import ChatOpenAI
 from config import settings
 from services.item_grouping import data_issue_lines, group_risk_level, insert_data_issues_section
 from services.vector_store import (
-    search_supplier_history,
-    search_item_history,
+    search_history,
     search_analysis_examples,
     search_request_examples,
     search_email_examples,
@@ -26,8 +25,26 @@ from services.prompts import (
     PR_DRAFT_AGENT_SYSTEM,
     PR_DOC_AGENT_SYSTEM,
     EMAIL_DRAFT_AGENT_SYSTEM,
+    EMAIL_REVISION_REQUEST_TEMPLATE,
+    EMAIL_REVISION_SYSTEM_SUFFIX,
+    EMAIL_VALIDATOR_SYSTEM,
+    EMAIL_VALIDATOR_TEMPLATE,
 )
 from services.quality_checks import evaluate_analysis, evaluation_markdown, has_history
+from services.run_record import instrument
+
+
+# Model per agent, recorded with every run (services/run_record.py).
+AGENT_MODELS = {
+    "analysis": "gpt-4o",
+    "report": "gpt-4o",
+    "pr_draft": "gpt-4o",
+    "pr_doc": "gpt-4o",
+    "email_draft": "gpt-4o-mini",
+    "email_rewrite": "gpt-4o",
+    "email_validator": "gpt-4o-mini",
+    "judge": settings.evaluator_model,
+}
 
 
 def _llm(model: str = "gpt-4o") -> ChatOpenAI:
@@ -39,30 +56,41 @@ def _llm(model: str = "gpt-4o") -> ChatOpenAI:
 
 
 # ----- History retrieval for the Analysis Agent -----
-# Retrieval is a metadata filter (supplier name, item codes) ranked by document date, done
-# in code before the model is called. The model never writes a search query: it would not
-# change what is retrieved, and leaving the lookup to the model meant it could be skipped.
-NO_SUPPLIER_HISTORY = "No supplier history found."
-NO_ITEM_HISTORY = "No item history found."
-HISTORY_DOCS_PER_LOOKUP = 5
+# One retrieval, in code, before the model is called: every history document about this
+# supplier or about any of these items, most recent first. Each document keeps the supplier
+# and items named in its header, so the model is told what it applies to rather than
+# guessing it. The model never writes a search query.
+HISTORY_DOCS_PER_ANALYSIS = 10
 
 
-def retrieve_supplier_history(supplier: str) -> list:
-    """The most recent documents for this supplier only; none if the supplier is unnamed."""
-    if not supplier:
-        return []
-    return search_supplier_history(k=HISTORY_DOCS_PER_LOOKUP, filter={"supplier_name": supplier})
+def retrieve_history(supplier: str, items: list[dict]) -> list[dict[str, Any]]:
+    pairs = [(str(i.get("item_code") or ""), str(i.get("item_name") or "")) for i in items]
+    return search_history(supplier, pairs, k=HISTORY_DOCS_PER_ANALYSIS)
 
 
-def retrieve_item_history(item_codes: list[str]) -> list:
-    """The most recent documents for these item codes only; none if there are no codes."""
-    if not item_codes:
-        return []
-    return search_item_history(k=HISTORY_DOCS_PER_LOOKUP, filter={"item_code": {"$in": item_codes}})
+def history_for_model(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """What the model sees of each document: its header fields and its text."""
+    return [{"supplier": d.get("supplier") or "", "items": d.get("items") or [],
+             "item_codes": d.get("item_codes") or [], "date": d.get("date") or "", "text": d.get("text") or ""}
+            for d in docs]
 
 
-def _history_text(docs: list, none_text: str) -> str:
-    return "\n\n".join(d.page_content for d in docs) if docs else none_text
+def legacy_history_docs(supplier: str, items: list[dict], supplier_text: str | None,
+                        item_text: str | None) -> list[dict[str, Any]]:
+    """
+    History given as the earlier two free-text fields (training data generated before the
+    split was removed). The supplier text becomes a supplier-wide document; the item text
+    names no item in its header, so it is attached to every item in the input.
+    """
+    docs = []
+    if has_history(supplier_text):
+        docs.append({"supplier": supplier, "items": [], "item_codes": [], "date": "",
+                     "source": "history supplied with the request", "text": supplier_text})
+    if has_history(item_text):
+        docs.append({"supplier": "", "items": [str(i.get("item_name")) for i in items],
+                     "item_codes": [str(i.get("item_code")) for i in items], "date": "",
+                     "source": "history supplied with the request", "text": item_text})
+    return docs
 
 
 def _extract_json_from_text(text: str) -> dict | list:
@@ -82,41 +110,28 @@ def _extract_json_from_text(text: str) -> dict | list:
 REFERENCES_HEADING = "## Referenced Documents"
 
 
-def _doc_references(history: str, docs: list) -> list[dict[str, str]]:
-    """One entry per source document retrieved (chunks of one file are merged)."""
-    refs, seen = [], set()
-    for d in docs:
-        meta = d.metadata or {}
-        source = meta.get("source") or "(file name not recorded)"
-        applies_to = meta.get("supplier_name") if history == "supplier" else meta.get("item_code")
-        date = meta.get("event_date") or (meta.get("ingested_at") or "")[:10]
-        key = (source, applies_to, date)
-        if key in seen:
-            continue
-        seen.add(key)
-        refs.append({"history": history, "source": source, "applies_to": applies_to or "", "date": date})
-    return refs
-
-
-def _supplied_reference(history: str, text: str) -> list[dict[str, str]]:
-    """History passed in directly (evaluation, training) rather than retrieved from the store."""
-    if has_history(text):
-        return [{"history": history, "source": "history supplied with the request", "applies_to": "", "date": ""}]
-    return []
+def document_references(docs: list[dict[str, Any]]) -> list[dict[str, str]]:
+    """One row per history document the analysis was given."""
+    return [{"source": d.get("source") or "(file name not recorded)",
+             "supplier": d.get("supplier") or "",
+             "items": ", ".join(d.get("items") or d.get("item_codes") or []),
+             "date": d.get("date") or ""} for d in docs]
 
 
 def references_markdown(references: dict[str, Any] | None) -> str:
     """The report's closing section: which history documents the analysis was based on."""
     refs = (references or {}).get("documents") or []
     lines = [REFERENCES_HEADING, ""]
-    if refs:
-        lines += ["| History | Document | Applies to | Date |", "| --- | --- | --- | --- |"]
-        lines += [f"| {r['history']} | {r['source']} | {r['applies_to'] or '-'} | {r['date'] or '-'} |" for r in refs]
-        lines.append("")
-    for history in ("supplier", "item"):
-        if not any(r["history"] == history for r in refs):
-            lines.append(f"- No {history} history was found.")
-    return "\n".join(lines).rstrip() + "\n"
+    if not refs:
+        return "\n".join(lines + ["No history was found for this supplier or these items."]) + "\n"
+    lines += ["| Document | Supplier | Items | Date |", "| --- | --- | --- | --- |"]
+    for r in refs:
+        if r["supplier"]:
+            items = r["items"] or "all items (supplier-wide)"
+        else:
+            items = r["items"] or "-"
+        lines.append(f"| {r['source']} | {r['supplier'] or '-'} | {items} | {r['date'] or '-'} |")
+    return "\n".join(lines) + "\n"
 
 
 def append_references_section(markdown: str, references: dict[str, Any] | None) -> str:
@@ -127,40 +142,28 @@ def append_references_section(markdown: str, references: dict[str, Any] | None) 
 
 def run_analysis_agent(
     input_json: dict[str, Any],
-    supplier_history_override: str = None,
-    item_history_override: str = None
-) -> dict[str, Any]:
+    history_override: list[dict[str, Any]] | None = None,
+    supplier_history_override: str | None = None,
+    item_history_override: str | None = None,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """
     Analysis Agent: input = { snapshot_date, supplier, items[] }.
-    The supplier and item histories are retrieved in code (or supplied as overrides for
-    evaluation and training) and passed to the model with the items, in one call.
-    Returns: (analysis_dict, used_supplier_history, used_item_history) — the history
-    texts are exactly what the model was given, for the evaluation node.
+    History is retrieved in code (or supplied for evaluation and training: history_override
+    as documents, or the two earlier free-text fields) and passed with the items in one call.
+    Returns (analysis, history_docs): the documents exactly as the model was given them,
+    for the evaluation node.
     """
-    documents: list[dict[str, str]] = []  # for the report's "Referenced Documents" section
-
-    if supplier_history_override:
-        used_supplier_history = supplier_history_override
-        documents += _supplied_reference("supplier", supplier_history_override)
+    supplier = str(input_json.get("supplier") or "")
+    items = input_json.get("items", [])
+    if history_override is not None:
+        docs = history_override
+    elif supplier_history_override or item_history_override:
+        docs = legacy_history_docs(supplier, items, supplier_history_override, item_history_override)
     else:
-        docs = retrieve_supplier_history(str(input_json.get("supplier") or ""))
-        used_supplier_history = _history_text(docs, NO_SUPPLIER_HISTORY)
-        documents += _doc_references("supplier", docs)
+        docs = retrieve_history(supplier, items)
 
-    if item_history_override:
-        used_item_history = item_history_override
-        documents += _supplied_reference("item", item_history_override)
-    else:
-        item_codes = [str(i.get("item_code")) for i in input_json.get("items", []) if i.get("item_code")]
-        docs = retrieve_item_history(item_codes)
-        used_item_history = _history_text(docs, NO_ITEM_HISTORY)
-        documents += _doc_references("item", docs)
-
-    user_text = json.dumps(
-        {**input_json, "supplier_history": used_supplier_history, "item_history": used_item_history},
-        ensure_ascii=False,
-    )
-    final_response = _llm().invoke([
+    user_text = json.dumps({**input_json, "history": history_for_model(docs)}, ensure_ascii=False)
+    final_response = _llm(AGENT_MODELS["analysis"]).invoke([
         SystemMessage(content=ANALYSIS_AGENT_SYSTEM),
         HumanMessage(content=user_text),
     ])
@@ -175,15 +178,15 @@ def run_analysis_agent(
             "replenishment_timeline": input_json.get("items", []),
         }
     if isinstance(analysis, dict):
-        analysis["references"] = {"documents": documents}
-    return analysis, used_supplier_history, used_item_history
+        analysis["references"] = {"documents": document_references(docs)}
+    return analysis, docs
 
 
 def run_report_doc_agent(analysis_result: dict[str, Any]) -> str:
     """Report Doc Agent: analysis_result → Markdown report. Optional: retrieve analysis_examples."""
     examples = search_analysis_examples(k=2)
     examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
-    llm = _llm()
+    llm = _llm(AGENT_MODELS["report"])
     user = json.dumps(analysis_result, ensure_ascii=False)
     if examples_text:
         user = "Reference (tone/structure only):\n" + examples_text + "\n\nInput:\n" + user
@@ -203,7 +206,7 @@ def run_pr_draft_agent(
     """PR Draft Agent: analysis_output → structured JSON for PR Doc Agent."""
     examples = search_request_examples(k=2)
     examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
-    llm = _llm()
+    llm = _llm(AGENT_MODELS["pr_draft"])
     payload = {
         "snapshot_date": snapshot_date,
         "supplier": supplier,
@@ -228,7 +231,7 @@ def run_pr_doc_agent(request_output: dict[str, Any]) -> str:
     """PR Doc Agent: request_output (from PR Draft) → Markdown purchase request."""
     examples = search_request_examples(k=2)
     examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
-    llm = _llm()
+    llm = _llm(AGENT_MODELS["pr_doc"])
     user = json.dumps(request_output, ensure_ascii=False)
     if examples_text:
         user = "Reference (format only):\n" + examples_text + "\n\nInput:\n" + user
@@ -249,7 +252,7 @@ def run_email_draft_agent(
     """Email Draft Agent: items + analysis_output → plain text supplier email."""
     examples = search_email_examples(k=2)
     examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
-    llm = _llm(model="gpt-4o-mini")
+    llm = _llm(AGENT_MODELS["email_draft"])
     payload = {
         "snapshot_date": snapshot_date,
         "supplier": supplier,
@@ -271,15 +274,14 @@ def run_evaluation_agent(
     supplier: str,
     items: list[dict],
     analysis_output: dict[str, Any],
-    supplier_history: str = None,
-    item_history: str = None,
+    history_docs: list[dict[str, Any]] | None = None,
 ) -> tuple[str, dict[str, Any]]:
     """
     Check the analysis against the rubric in services/quality_checks.py: deterministic
     checks in code, judgement checks by a model other than the one that wrote it.
     Returns (report markdown, structured result).
     """
-    result = evaluate_analysis(supplier, items, analysis_output, supplier_history, item_history,
+    result = evaluate_analysis(supplier, items, analysis_output, history_docs or [],
                                judge=settings.evaluator_model)
     return evaluation_markdown(supplier, result), result
 # ----- LangGraph Implementation -----
@@ -307,15 +309,17 @@ class PurchasingState(TypedDict):
     iteration_count: int
     correction_feedback: str
     is_valid_email: bool
+    # Every email check, for the run record only (the rewrite receives correction_feedback)
+    validation_log: Annotated[list[dict], operator.add]
     
-    # Synthetic history override for training (Optional)
+    # History supplied instead of retrieved, for evaluation and training (optional):
+    # history_override as documents, or the two earlier free-text fields
+    history_override: list[dict]
     supplier_history_override: str
     item_history_override: str
 
-    # History actually used by the Analysis Agent (tool output or override),
-    # passed to the Evaluation Agent to verify grounding.
-    retrieved_supplier_history: str
-    retrieved_item_history: str
+    # History documents the Analysis Agent was given, passed to the evaluation node
+    history_docs: list[dict]
 
 def apply_system_notes(analysis: Any, items: list[dict]) -> Any:
     """
@@ -342,17 +346,14 @@ def analysis_node(state: PurchasingState):
         "supplier": state["supplier"],
         "items": state["items"],
     }
-    out, used_supplier_history, used_item_history = run_analysis_agent(
+    out, history_docs = run_analysis_agent(
         input_json,
+        history_override=state.get("history_override"),
         supplier_history_override=state.get("supplier_history_override"),
-        item_history_override=state.get("item_history_override")
+        item_history_override=state.get("item_history_override"),
     )
     out = apply_system_notes(out, state["items"])
-    return {
-        "analysis_output": out,
-        "retrieved_supplier_history": used_supplier_history,
-        "retrieved_item_history": used_item_history,
-    }
+    return {"analysis_output": out, "history_docs": history_docs}
 
 def evaluation_node(state: PurchasingState):
     """Node that evaluates the quality of analysis output."""
@@ -360,8 +361,7 @@ def evaluation_node(state: PurchasingState):
         state["supplier"],
         state["items"],
         state["analysis_output"],
-        supplier_history=state.get("retrieved_supplier_history") or state.get("supplier_history_override"),
-        item_history=state.get("retrieved_item_history") or state.get("item_history_override"),
+        history_docs=state.get("history_docs") or [],
     )
     report, result = out
     return {"evaluation_md": report, "evaluation_result": result}
@@ -401,8 +401,8 @@ def email_draft_node(state: PurchasingState):
     
     if state.get("correction_feedback") and state["iteration_count"] > 0:
         # Feedback present: invoke agent directly for self-correction (prompt augmentation)
-        llm = _llm(model="gpt-4o")  # Use stronger model for revision
-        feedback_prompt = f"\n\n[REVISION REQUEST]\nYour previous draft was rejected for the following reason: {state['correction_feedback']}\nPlease rewrite the email while strictly avoiding those issues."
+        llm = _llm(model=AGENT_MODELS["email_rewrite"])  # stronger model for the rewrite
+        feedback_prompt = EMAIL_REVISION_REQUEST_TEMPLATE.replace("{feedback}", state["correction_feedback"])
         
         payload = {
             "snapshot_date": state["snapshot_date"],
@@ -414,7 +414,7 @@ def email_draft_node(state: PurchasingState):
         user = json.dumps(payload, ensure_ascii=False) + feedback_prompt
         
         out = llm.invoke([
-            SystemMessage(content=EMAIL_DRAFT_AGENT_SYSTEM + "\nSTRICT: Ensure no internal analysis terminology or stock levels are leaked."),
+            SystemMessage(content=EMAIL_DRAFT_AGENT_SYSTEM + EMAIL_REVISION_SYSTEM_SUFFIX),
             HumanMessage(content=user),
         ])
         email_text = out.content if hasattr(out, "content") else str(out)
@@ -438,37 +438,33 @@ def validator_node(state: PurchasingState):
     leaks = [k for k in leak_keywords if k in email.lower()]
     
     if leaks:
+        feedback = f"Found internal terminology: {', '.join(leaks)}"
         return {
-            "is_valid_email": False, 
-            "correction_feedback": f"Found internal terminology: {', '.join(leaks)}"
+            "is_valid_email": False,
+            "correction_feedback": feedback,
+            "validation_log": [{"attempt": state.get("iteration_count", 0), "check": "keywords",
+                                "passed": False, "feedback": feedback}],
         }
     
     # 2. LLM-based precision check
-    llm = _llm(model="gpt-4o-mini")
-    check_prompt = f"""Analyze the following email draft to a supplier. 
-Does it contain ANY internal-only information such as:
-- Internal stock quantities
-- "Weeks to Out of Stock" (WksToOOS)
-- Internal risk assessments (High/Medium/Low risk)
-- Mentions of internal analysis logic or tools
-
-Email Draft:
----
-{email}
----
-If it contains any internal leaks, respond with 'FAIL: <reason>'. 
-If it is safe for external communication, respond with 'PASS'."""
+    llm = _llm(model=AGENT_MODELS["email_validator"])
+    check_prompt = EMAIL_VALIDATOR_TEMPLATE.replace("{email}", email)
 
     out = llm.invoke([
-        SystemMessage(content="You are a strict data loss prevention (DLP) auditor."),
+        SystemMessage(content=EMAIL_VALIDATOR_SYSTEM),
         HumanMessage(content=check_prompt)
     ])
     result = out.content.strip()
     
     if result.startswith("PASS"):
-        return {"is_valid_email": True, "correction_feedback": ""}
+        return {"is_valid_email": True, "correction_feedback": "",
+                "validation_log": [{"attempt": state.get("iteration_count", 0), "check": "llm",
+                                    "passed": True, "feedback": ""}]}
     else:
-        return {"is_valid_email": False, "correction_feedback": result.replace("FAIL:", "").strip()}
+        feedback = result.replace("FAIL:", "").strip()
+        return {"is_valid_email": False, "correction_feedback": feedback,
+                "validation_log": [{"attempt": state.get("iteration_count", 0), "check": "llm",
+                                    "passed": False, "feedback": feedback}]}
 
 def should_continue(state: PurchasingState):
     if state.get("is_valid_email") or state.get("iteration_count", 0) >= 3:
@@ -478,13 +474,13 @@ def should_continue(state: PurchasingState):
 # Build the graph
 workflow = StateGraph(PurchasingState)
 
-workflow.add_node("analysis", analysis_node)
-workflow.add_node("evaluation", evaluation_node)
-workflow.add_node("report", report_node)
-workflow.add_node("pr_draft", pr_draft_node)
-workflow.add_node("pr_doc", pr_doc_node)
-workflow.add_node("email_draft", email_draft_node)
-workflow.add_node("validator", validator_node)
+workflow.add_node("analysis", instrument("analysis", analysis_node))
+workflow.add_node("evaluation", instrument("evaluation", evaluation_node))
+workflow.add_node("report", instrument("report", report_node))
+workflow.add_node("pr_draft", instrument("pr_draft", pr_draft_node))
+workflow.add_node("pr_doc", instrument("pr_doc", pr_doc_node))
+workflow.add_node("email_draft", instrument("email_draft", email_draft_node))
+workflow.add_node("validator", instrument("validator", validator_node))
 
 workflow.set_entry_point("analysis")
 workflow.add_edge("analysis", "evaluation")
@@ -515,8 +511,9 @@ def run_purchasing_pipeline_graph(input_data: dict[str, Any]) -> dict[str, Any]:
         "iteration_count": 0,
         "correction_feedback": "",
         "is_valid_email": False,
+        "history_override": input_data.get("history_override"),
         "supplier_history_override": input_data.get("supplier_history_override"),
-        "item_history_override": input_data.get("item_history_override")
+        "item_history_override": input_data.get("item_history_override"),
     }
     
     # Execute graph

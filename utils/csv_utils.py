@@ -6,7 +6,7 @@ the inventory table.
 
     SnapshotDate,2025-04-05
 
-    ItemCode,ItemName,SupplierName,CurrentStock,WksToOOS
+    ItemCode,ItemName,SupplierName,AvailableStock,WksToOOS
     100000,ItemA,SupplierA,100,25
 
 The snapshot date is taken from that reference cell first. If the cell is absent or not

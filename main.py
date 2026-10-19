@@ -23,6 +23,9 @@ if settings.langchain_tracing_v2:
     os.environ["LANGCHAIN_ENDPOINT"] = settings.langchain_endpoint
     os.environ["LANGCHAIN_API_KEY"] = clean_key
     os.environ["LANGCHAIN_PROJECT"] = settings.langchain_project
+    if settings.langsmith_hide_content:
+        os.environ["LANGSMITH_HIDE_INPUTS"] = "true"
+        os.environ["LANGSMITH_HIDE_OUTPUTS"] = "true"
 
 import langsmith as ls
 

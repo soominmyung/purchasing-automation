@@ -1,5 +1,5 @@
 """
-Vector stores: supplier_history, item_history, analysis_examples, request_examples, email_examples.
+Vector stores: history, analysis_examples, request_examples, email_examples.
 Corresponds to n8n Vector Store In-Memory + OpenAI Embeddings.
 """
 import re
@@ -47,8 +47,8 @@ def _get_or_create_store(collection_name: str) -> Chroma:
 
 
 def get_vector_stores() -> dict[str, Chroma]:
-    """supplier_history, item_history, analysis_examples, request_examples, email_examples."""
-    for name in ("supplier_history", "item_history", "analysis_examples", "request_examples", "email_examples"):
+    """history, analysis_examples, request_examples, email_examples."""
+    for name in (HISTORY_COLLECTION, "analysis_examples", "request_examples", "email_examples"):
         _get_or_create_store(name)
     return _stores
 
@@ -103,32 +103,146 @@ def _most_recent(collection_name: str, k: int, filter: dict[str, Any] | None = N
     return [Document(page_content=text, metadata=meta) for text, meta in pairs[:k]]
 
 
-def ingest_supplier_history(text: str, supplier_name: str, source: str = "") -> None:
-    """Ingest supplier history text with supplier_name metadata. source: the uploaded file name, shown in the report's referenced documents."""
-    _add_docs(
-        "supplier_history",
-        [Document(page_content=text, metadata={
-            "supplier_name": supplier_name,
-            "source": source,
-            "doc_type": "supplier_history",
-            "ingested_at": _now_iso(),
-            "event_date": _extract_event_date(text),
-        })],
-    )
+# ----------------------------------------------------------------------------- history
+# One collection for all purchasing history. Whether a document is about a supplier, an
+# item, or an item from a supplier is read from its header, not from where it was uploaded:
+#   Supplier: <name>          (absent for an item-only document, e.g. a demand spike)
+#   Item: <name>[, <name>]    (absent for a supplier-wide document, e.g. a strike)
+#   ItemCode: <code>[, ...]   (optional)
+#   Date: <date>
+HISTORY_COLLECTION = "history"
+HEADER_LINES = 15
+_HEADER_RE = {
+    "supplier": re.compile(r"^\s*Supplier\s*:\s*(.+?)\s*$", re.IGNORECASE),
+    "items": re.compile(r"^\s*Items?\s*:\s*(.+?)\s*$", re.IGNORECASE),
+    "item_codes": re.compile(r"^\s*Item\s*Codes?\s*[:\-]\s*(.+?)\s*$", re.IGNORECASE),
+}
 
 
-def ingest_item_history(text: str, item_code: str | None, source: str = "") -> None:
-    """Ingest item history text with item_code metadata. source: the uploaded file name, shown in the report's referenced documents."""
-    _add_docs(
-        "item_history",
-        [Document(page_content=text, metadata={
-            "item_code": item_code or "",
-            "source": source,
-            "doc_type": "item_history",
-            "ingested_at": _now_iso(),
-            "event_date": _extract_event_date(text),
-        })],
-    )
+def history_key(value: str) -> str:
+    """Case, spacing and punctuation do not matter when matching names and codes."""
+    return re.sub(r"[\W_]+", "", str(value or "").lower())
+
+
+def _split_list(value: str) -> list[str]:
+    return [v.strip() for v in re.split(r"[,;/]", value) if v.strip()]
+
+
+def parse_history_header(text: str) -> dict[str, Any]:
+    """Supplier, items, item codes and date from the first lines of a history document."""
+    header = {"supplier": "", "items": [], "item_codes": []}
+    for line in (text or "").splitlines()[:HEADER_LINES]:
+        for field, rx in _HEADER_RE.items():
+            m = rx.match(line)
+            if not m:
+                continue
+            if field == "supplier":
+                header["supplier"] = header["supplier"] or m.group(1)
+            else:
+                header[field] += _split_list(m.group(1))
+            break
+    header["date"] = _extract_event_date(text)
+    return header
+
+
+def history_metadata(header: dict[str, Any], source: str = "", origin: str = "upload",
+                     fingerprint: str = "") -> dict[str, Any]:
+    """Chroma metadata for one history document. Lists cannot be filtered in Chroma, so each
+    supplier, item name and item code also gets its own key for the retrieval filter.
+    origin + source identify the document: "folder" with its path in the shared folder, or
+    "upload" with its file name."""
+    meta: dict[str, Any] = {
+        "doc_type": "history",
+        "supplier_name": header.get("supplier") or "",
+        "items": ", ".join(header.get("items") or []),
+        "item_codes": ", ".join(header.get("item_codes") or []),
+        "event_date": header.get("date") or "",
+        "ingested_at": _now_iso(),
+        "source": source or "",
+        "origin": origin,
+        "source_id": f"{origin}:{source}",
+        "fingerprint": fingerprint or "",
+    }
+    if meta["supplier_name"]:
+        meta[f"s:{history_key(meta['supplier_name'])}"] = True
+    for value in (header.get("items") or []) + (header.get("item_codes") or []):
+        meta[f"i:{history_key(value)}"] = True
+    return meta
+
+
+def ingest_history(text: str, source: str = "", origin: str = "upload", fingerprint: str = "") -> dict[str, Any]:
+    """Store one history document, replacing any earlier version with the same origin and
+    source, so a file sent twice is held once. Returns what its header was read as, so the
+    uploader can check it. A document that names neither a supplier nor an item is refused."""
+    header = parse_history_header(text)
+    if not header["supplier"] and not header["items"] and not header["item_codes"]:
+        raise ValueError("The header names no supplier and no item (expected 'Supplier:' and/or 'Item:' lines).")
+    if source:
+        delete_history_source(origin, source)
+    _add_docs(HISTORY_COLLECTION, [Document(page_content=text,
+                                            metadata=history_metadata(header, source, origin, fingerprint))])
+    return header
+
+
+def delete_history_source(origin: str, source: str) -> int:
+    """Remove every chunk of one document. Returns how many chunks were removed."""
+    store = _get_or_create_store(HISTORY_COLLECTION)
+    ids = store._collection.get(where={"source_id": f"{origin}:{source}"})["ids"]
+    if ids:
+        store._collection.delete(ids=ids)
+    return len(ids)
+
+
+def history_sources(origin: str) -> dict[str, dict[str, str]]:
+    """Documents held from one origin: {source: {fingerprint, supplier, items}}."""
+    store = _get_or_create_store(HISTORY_COLLECTION)
+    raw = store._collection.get(where={"origin": origin}, include=["metadatas"])
+    out: dict[str, dict[str, str]] = {}
+    for m in raw.get("metadatas") or []:
+        out[m.get("source") or ""] = {"fingerprint": m.get("fingerprint") or "",
+                                      "supplier": m.get("supplier_name") or "", "items": m.get("items") or ""}
+    return out
+
+
+def known_suppliers() -> set[str]:
+    """Normalised names of every supplier named in a history header."""
+    raw = _get_or_create_store(HISTORY_COLLECTION)._collection.get(include=["metadatas"])
+    return {history_key(m.get("supplier_name")) for m in raw.get("metadatas") or [] if m.get("supplier_name")}
+
+
+def search_history(supplier: str, items: list[tuple[str, str]], k: int = 10) -> list[dict[str, Any]]:
+    """
+    The k most recent documents about this supplier or about any of these items, by the
+    document's own date. items: (item_code, item_name) pairs; a document matches an item by
+    either. Chunks of one document are joined back together.
+    """
+    keys = [f"s:{history_key(supplier)}"] if history_key(supplier) else []
+    for code, name in items:
+        keys += [f"i:{history_key(v)}" for v in (code, name) if history_key(v)]
+    keys = list(dict.fromkeys(keys))
+    if not keys:
+        return []
+    where = {keys[0]: True} if len(keys) == 1 else {"$or": [{k_: True} for k_ in keys]}
+    chunks = _most_recent(HISTORY_COLLECTION, k=10_000, filter=where)
+    docs: dict[tuple, dict[str, Any]] = {}
+    for c in chunks:
+        m = c.metadata or {}
+        doc_key = (m.get("source"), m.get("supplier_name"), m.get("items"), m.get("item_codes"),
+                   m.get("event_date"), m.get("ingested_at"))
+        if doc_key not in docs:
+            if len(docs) == k:
+                continue
+            docs[doc_key] = {
+                "supplier": m.get("supplier_name") or "",
+                "items": _split_list(m.get("items") or ""),
+                "item_codes": _split_list(m.get("item_codes") or ""),
+                "date": m.get("event_date") or "",  # undated: shown as such, still ranked by upload time
+                "source": m.get("source") or "",
+                "text": c.page_content,
+            }
+        else:
+            docs[doc_key]["text"] += "\n" + c.page_content
+    return list(docs.values())
 
 
 def ingest_analysis_examples(text: str) -> None:
@@ -165,16 +279,6 @@ def ingest_email_examples(text: str) -> None:
             "event_date": _extract_event_date(text),
         })],
     )
-
-
-def search_supplier_history(k: int = 5, filter: dict[str, Any] | None = None) -> list[Document]:
-    """Most recent supplier-history chunks for the filtered supplier, ranked by the document's own event date (fact retrieval, not similarity)."""
-    return _most_recent("supplier_history", k, filter=filter)
-
-
-def search_item_history(k: int = 5, filter: dict[str, Any] | None = None) -> list[Document]:
-    """Most recent item-history chunks for the filtered item(s), ranked by the document's own event date (fact retrieval, not similarity)."""
-    return _most_recent("item_history", k, filter=filter)
 
 
 def search_analysis_examples(k: int = 3) -> list[Document]:
