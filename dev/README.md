@@ -40,5 +40,5 @@ holds the prompts.
 | 06 | Email agent alone, steps 5–16 (models, input names, rule wording, quoted text, item placement) |
 | 07 | gpt-5.4-mini email, item lines placed by code, time limits; judge 504 and 429 |
 | 2026-10-23 013618 (`kestrel_components`) | Arrows in the text, C9, J7 for changed figures: the analysis proposed five order-date changes and one quantity change; C5 caught an order date moved before the snapshot date; the text mentioned no changed figure, so the arrow rule was not exercised; the judge returned 503 and 429 |
-| 2026-10-23 0146-0211 (`kestrel_components`, email agent alone) | Email steps 19-24 in `prompts/CHANGES.md`: where the list goes, three JSON parts, numbered order, purpose and closing in code, "refer to the list above" |
+| 2026-10-23 0146-0215 (`kestrel_components`, email agent alone) | Email steps 19-25 in `prompts/CHANGES.md`: where the list goes, three JSON parts, numbered order, purpose and closing in code, "refer to the list above" |
 | 195840 | Check of `scripts/run_dev_case.py` (email agent alone, once); the first run with its prompts recorded by the script |

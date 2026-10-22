@@ -139,6 +139,7 @@ step on the analysis of its first run:
 | 22 | The parts numbered in assembly order (the user's wording): "3) comes between 2) and 4): so in 4), the items are already listed above" | No wrong "below"; "the attached requirements" (nothing is attached) in one; a request inside the purpose and "we are reviewing our replenishment needs" in another |
 | 23 | Purpose and closing written by code; the agent writes only the requests | Purpose problems gone; the requests repeated the list's quantities and dates in four ("by the dates below: BearingCap 1,300 units by 2025-06-28, …") |
 | 24 | "Unless a request adds something the list does not say, refer to the items, quantities and dates as those in the list above" | All five clean: no repeated figures, no wrong "below", no item outside the email, no past problem; the list referred to as "the listed items", "the dates shown". Two asked about the schedule twice in different words |
+| 25 | The rule for when there are no points (ask whether the quantities can be delivered by the requested dates) removed: asking for availability and lead time already covers it, and it was being added beside the points | The schedule asked about once in four, with a light repeat in the fifth; "the items below" once again |
 
 What step 18-24 showed: each time the model had to place text around a part it does not write, it
 guessed (a placeholder, a position, "attached", "below"); the fix that held was to take the fixed

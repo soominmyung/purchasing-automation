@@ -29,8 +29,6 @@ requests:
   out every item in other_items, also where a point mentions it.
 - Write the questions as polite, conversational requests to a business partner, as flowing sentences,
   not as a list; combine questions that seek the same information.
-- If there are no points_to_clarify, ask whether the quantities can be delivered by the requested
-  delivery dates and by when the order would need to be placed.
 - For the items in ask_earliest_dispatch, also ask for the earliest dispatch date the supplier can offer
   and whether a faster shipping option is available, so that it reads like any other planning question,
   combined with any question that already asks this. Never state or imply that stock is short or that
