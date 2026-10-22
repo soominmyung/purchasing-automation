@@ -10,6 +10,8 @@ import time
 from pathlib import Path
 
 from docx import Document
+from docx.enum.text import WD_COLOR_INDEX
+from docx.shared import RGBColor
 
 from config import settings
 
@@ -75,6 +77,40 @@ def _parse_table_row(line: str) -> list[str]:
     return [p.strip() for p in parts]
 
 
+# Inline marks, in paragraphs, headings and table cells: **bold**, *italic*, ==highlight==
+# (yellow) and [[red]]...[[/red]]. Each mark toggles; they can be combined.
+_INLINE = re.compile(r"(\*\*|\*|==|\[\[red\]\]|\[\[/red\]\])")
+RED = RGBColor(0xC0, 0x00, 0x00)
+
+
+def _add_runs(paragraph, text: str, bold: bool = False) -> None:
+    """Write text into a paragraph as runs, applying the inline marks."""
+    state = {"**": bold, "*": False, "==": False, "red": False}
+    for part in _INLINE.split(text):
+        if part in ("**", "*", "=="):
+            state[part] = not state[part]
+            continue
+        if part in ("[[red]]", "[[/red]]"):
+            state["red"] = part == "[[red]]"
+            continue
+        if not part:
+            continue
+        run = paragraph.add_run(part)
+        run.bold = state["**"] or None
+        run.italic = state["*"] or None
+        if state["=="]:
+            run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+        if state["red"]:
+            run.font.color.rgb = RED
+
+
+def markdown_for_web(text: str) -> str:
+    """Markdown for the web page: red and highlight are docx-only, so they are dropped and
+    the highlighted values shown in bold."""
+    text = re.sub(r"\[\[/?red\]\]", "", text or "")
+    return re.sub(r"==(.+?)==", r"**\1**", text)
+
+
 def _add_table_to_doc(doc: Document, rows: list[list[str]]) -> None:
     """Add a Word table with the given rows. First row is header (bold)."""
     if not rows:
@@ -88,13 +124,8 @@ def _add_table_to_doc(doc: Document, rows: list[list[str]]) -> None:
     for i, row_cells in enumerate(rows):
         for j, cell_text in enumerate(row_cells):
             if j < num_cols:
-                cell = table.rows[i].cells[j]
-                cell.text = cell_text
-                if i == 0:
-                    # Bold header row
-                    for p in cell.paragraphs:
-                        for r in p.runs:
-                            r.bold = True
+                paragraph = table.rows[i].cells[j].paragraphs[0]
+                _add_runs(paragraph, cell_text, bold=(i == 0))  # bold header row
     doc.add_paragraph()
 
 
@@ -109,16 +140,13 @@ def _content_to_docx_paragraphs(doc: Document, content: str) -> None:
             doc.add_paragraph()
             i += 1
             continue
-        if stripped.startswith("# "):
-            doc.add_heading(stripped[2:].strip(), level=0)
+        heading = re.match(r"^(#{1,3}) (.*)$", stripped)
+        if heading:
+            _add_runs(doc.add_heading("", level=len(heading.group(1)) - 1), heading.group(2).strip())
             i += 1
             continue
-        if stripped.startswith("## "):
-            doc.add_heading(stripped[3:].strip(), level=1)
-            i += 1
-            continue
-        if stripped.startswith("### "):
-            doc.add_heading(stripped[4:].strip(), level=2)
+        if stripped.startswith("- "):
+            _add_runs(doc.add_paragraph(style="List Bullet"), stripped[2:])
             i += 1
             continue
         if _is_table_row(stripped):
@@ -133,7 +161,8 @@ def _content_to_docx_paragraphs(doc: Document, content: str) -> None:
             if table_rows:
                 _add_table_to_doc(doc, table_rows)
             continue
-        doc.add_paragraph(stripped)
+        # indented lines keep their indent (continuations of a numbered entry)
+        _add_runs(doc.add_paragraph(), line.rstrip() if line.startswith(" ") else stripped)
         i += 1
 
 

@@ -15,12 +15,13 @@ from fastapi.responses import StreamingResponse
 from langsmith import traceable
 
 from services.security import verify_api_access
-from config import settings
+from config import run_date, settings
 from schemas import RunPipelineRequest, RunPipelineResponse
 from utils.csv_utils import (
     SNAPSHOT_DATE_KEY, SNAPSHOT_SOURCE_KEY, SNAPSHOT_WARNINGS_KEY, SnapshotDateError, parse_csv_rows,
 )
 from utils.docx_utils import (
+    markdown_for_web,
     save_analysis_docx,
     save_pr_docx,
     save_email_draft_docx,
@@ -131,6 +132,7 @@ def _run_pipeline_inner(
                     "items": items,
                     "risk_level": risk_level,
                     "data_issue_lines": group.get("data_issue_lines", []),
+                    "run_id": record.run_id,
                     "iteration_count": 0,
                     "is_valid_email": False
                 },
@@ -147,7 +149,7 @@ def _run_pipeline_inner(
             
                 # 마지막 상태를 계속 업데이트
                 for k, v in event[node_name].items():
-                    if k == "validation_log":  # one entry per email check; keep them all
+                    if k in ("validation_log", "document_issues"):  # accumulated; keep them all
                         final_state.setdefault(k, []).extend(v)
                     else:
                         final_state[k] = v
@@ -156,7 +158,7 @@ def _run_pipeline_inner(
             analysis_output = final_state.get("analysis_output", {})
             report_md = final_state.get("report_md", "")
             pr_md = final_state.get("pr_md", "")
-            email_text = final_state.get("email_text", "")
+            email_text = final_state.get("email_md", "")
             evaluation_md = final_state.get("evaluation_md", "")
 
             # 0. Evaluation Report 처리
@@ -188,7 +190,7 @@ def _run_pipeline_inner(
                 docx_bytes = markdown_to_docx_bytes(report_md)
                 b64 = base64.b64encode(docx_bytes).decode("ascii")
                 reports.append({
-                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": report_md,
+                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": markdown_for_web(report_md),
                     "filename": analysis_filename, "saved_path": "", "content_base64": b64,
                 })
                 if stream_mode:
@@ -196,7 +198,7 @@ def _run_pipeline_inner(
             else:
                 analysis_saved_path = save_analysis_docx(snapshot_date, supplier, report_md, run_id=record.run_id)
                 reports.append({
-                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": report_md,
+                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": markdown_for_web(report_md),
                     "filename": analysis_filename, "saved_path": analysis_saved_path,
                     "content_base64": _read_file_base64(analysis_saved_path),
                 })
@@ -208,7 +210,7 @@ def _run_pipeline_inner(
                 docx_bytes = markdown_to_docx_bytes(pr_md)
                 b64 = base64.b64encode(docx_bytes).decode("ascii")
                 requests_list.append({
-                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": pr_md,
+                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": markdown_for_web(pr_md),
                     "filename": pr_filename, "saved_path": "", "content_base64": b64,
                 })
                 if stream_mode:
@@ -216,7 +218,7 @@ def _run_pipeline_inner(
             else:
                 pr_saved_path = save_pr_docx(snapshot_date, supplier, pr_md, run_id=record.run_id)
                 requests_list.append({
-                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": pr_md,
+                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": markdown_for_web(pr_md),
                     "filename": pr_filename, "saved_path": pr_saved_path,
                     "content_base64": _read_file_base64(pr_saved_path),
                 })
@@ -228,7 +230,7 @@ def _run_pipeline_inner(
                 docx_bytes = markdown_to_docx_bytes(email_text)
                 b64 = base64.b64encode(docx_bytes).decode("ascii")
                 emails.append({
-                    "snapshot_date": snapshot_date, "supplier": supplier, "text": email_text,
+                    "snapshot_date": snapshot_date, "supplier": supplier, "text": markdown_for_web(email_text),
                     "filename": email_filename, "saved_path": "", "content_base64": b64,
                 })
                 if stream_mode:
@@ -236,7 +238,7 @@ def _run_pipeline_inner(
             else:
                 email_saved_path = save_email_draft_docx(snapshot_date, supplier, email_text, run_id=record.run_id)
                 emails.append({
-                    "snapshot_date": snapshot_date, "supplier": supplier, "text": email_text,
+                    "snapshot_date": snapshot_date, "supplier": supplier, "text": markdown_for_web(email_text),
                     "filename": email_filename, "saved_path": email_saved_path,
                     "content_base64": _read_file_base64(email_saved_path),
                 })
@@ -265,10 +267,9 @@ def _require_fresh_snapshot(snapshot_date: str) -> None:
     date, and an older snapshot no longer describes the stock."""
     if not settings.require_fresh_snapshot:
         return
-    # settings.run_date is fixed for runs on past sample data; in production it is unset and
-    # the age is measured against the actual date of the run.
-    today = date.fromisoformat(settings.run_date) if settings.run_date else date.today()
-    age = (today - date.fromisoformat(snapshot_date)).days
+    # run_date() is fixed for runs on past sample data; in production it is the actual date
+    # of the run.
+    age = (run_date() - date.fromisoformat(snapshot_date)).days
     if age > settings.max_snapshot_age_days:
         raise HTTPException(
             status_code=400,

@@ -144,12 +144,17 @@ class RunRecord:
             "outputs": {
                 "analysis": final_state.get("analysis_output"),
                 "report_md": final_state.get("report_md"),
-                "pr_draft": final_state.get("pr_draft"),
+                "approval": final_state.get("approval"),
                 "pr_md": final_state.get("pr_md"),
                 "email_text": final_state.get("email_text"),
+                "email_md": final_state.get("email_md"),
                 "files": files,
             },
+            # the summary's limit is "about 100 words"; kept to see how often it is passed
+            "summary_words": len(str((final_state.get("analysis_output") or {}).get("summary") or "").split()),
+            "document_issues": final_state.get("document_issues") or [],
             "evaluation": final_state.get("evaluation_result"),
+            "approval_check": final_state.get("approval_check"),
             "email_validation": {
                 "attempts": final_state.get("iteration_count", 0),
                 "passed": bool(final_state.get("is_valid_email")),

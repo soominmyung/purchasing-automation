@@ -25,9 +25,8 @@ def load_prompt(name: str, version: str = PROMPT_VERSION) -> str:
 
 
 ANALYSIS_AGENT_SYSTEM = load_prompt("analysis")
-REPORT_DOC_AGENT_SYSTEM = load_prompt("report_doc")
-PR_DRAFT_AGENT_SYSTEM = load_prompt("pr_draft")
-PR_DOC_AGENT_SYSTEM = load_prompt("pr_doc")
+# From v5 the reports are assembled in code; one agent writes the purchase request's narrative.
+APPROVAL_AGENT_SYSTEM = load_prompt("approval_request")
 EMAIL_DRAFT_AGENT_SYSTEM = load_prompt("email_draft")
 # Email check and rewrite: {email} and {feedback} are filled in by services/agents.py.
 EMAIL_VALIDATOR_SYSTEM = load_prompt("email_validator_system")

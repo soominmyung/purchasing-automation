@@ -1,6 +1,8 @@
 """
-Agents: Analysis, Report Doc, PR Draft, PR Doc, Email Draft.
-Implements agent workflows using OpenAI + LangChain + LangGraph.
+Agents and the pipeline graph (prompt v5): Analysis, Approval (the purchase request's
+narrative), Email Draft with its validator, and the evaluation node's judge. The analysis
+report, the rest of the purchase request and the email's item lines are assembled in code
+(services/documents.py).
 """
 import json
 import re
@@ -12,47 +14,46 @@ from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 
 from config import settings
-from services.item_grouping import data_issue_lines, group_risk_level, insert_data_issues_section
+from services import documents
+from services.item_grouping import data_issue_lines, group_risk_level
 from services.vector_store import (
     search_history,
-    search_analysis_examples,
     search_request_examples,
     search_email_examples,
 )
 from services.prompts import (
     ANALYSIS_AGENT_SYSTEM,
-    REPORT_DOC_AGENT_SYSTEM,
-    PR_DRAFT_AGENT_SYSTEM,
-    PR_DOC_AGENT_SYSTEM,
+    APPROVAL_AGENT_SYSTEM,
     EMAIL_DRAFT_AGENT_SYSTEM,
     EMAIL_REVISION_REQUEST_TEMPLATE,
     EMAIL_REVISION_SYSTEM_SUFFIX,
     EMAIL_VALIDATOR_SYSTEM,
     EMAIL_VALIDATOR_TEMPLATE,
 )
-from services.quality_checks import evaluate_analysis, evaluation_markdown, has_history
+from services.quality_checks import (
+    approval_checks, approval_markdown, evaluate_analysis, evaluation_markdown, has_history,
+)
 from services.run_record import instrument
 
 
 # Model per agent, recorded with every run (services/run_record.py).
 AGENT_MODELS = {
     "analysis": "gpt-4o",
-    "report": "gpt-4o",
-    "pr_draft": "gpt-4o",
-    "pr_doc": "gpt-4o",
-    "email_draft": "gpt-4o-mini",
-    "email_rewrite": "gpt-4o",
+    "approval": "gpt-4o",
+    # gpt-4o-mini and gpt-4o both carried the analyst's wording into the email, naming the
+    # supplier's past problem; gpt-5.4-mini followed the rules (prompts/CHANGES.md, v5)
+    "email_draft": "gpt-5.4-mini",
+    "email_rewrite": "gpt-5.4-mini",
     "email_validator": "gpt-4o-mini",
     "judge": settings.evaluator_model,
 }
 
 
 def _llm(model: str = "gpt-4o") -> ChatOpenAI:
-    return ChatOpenAI(
-        model=model,
-        api_key=settings.openai_api_key,
-        temperature=0,
-    )
+    # gpt-5 models take only their default temperature
+    kwargs = {} if model.startswith("gpt-5") else {"temperature": 0}
+    return ChatOpenAI(model=model, api_key=settings.openai_api_key,
+                      timeout=settings.llm_timeout_seconds, max_retries=settings.llm_retries, **kwargs)
 
 
 # ----- History retrieval for the Analysis Agent -----
@@ -106,46 +107,12 @@ def _extract_json_from_text(text: str) -> dict | list:
 
 
 # ----- Referenced documents (recorded by code, not by the model) -----
-REFERENCES_HEADING = "## Referenced Documents"
-
-
 def document_references(docs: list[dict[str, Any]]) -> list[dict[str, str]]:
     """One row per history document the analysis was given."""
     return [{"source": d.get("source") or "(file name not recorded)",
              "supplier": d.get("supplier") or "",
              "items": ", ".join(d.get("items") or d.get("item_codes") or []),
              "date": d.get("date") or ""} for d in docs]
-
-
-def references_markdown(references: dict[str, Any] | None) -> str:
-    """The report's closing section: which history documents the analysis was based on."""
-    refs = (references or {}).get("documents") or []
-    window = (references or {}).get("window")
-    lines = [REFERENCES_HEADING, ""]
-    if window:
-        rule = (f"History searched: documents dated {window['from']} to {window['to']} "
-                f"(last {window['window_months']} months), at most "
-                f"{window['per_scope']} per supplier and per item.")
-        if window["left_out"]:
-            rule += (f" {window['in_window']} documents fell in that period; the "
-                     f"{window['left_out']} oldest beyond that limit are not included.")
-        lines += [rule, ""]
-    if not refs:
-        return "\n".join(lines + ["No history was found for this supplier or these items."]) + "\n"
-    lines += ["| Document | Supplier | Items | Date |", "| --- | --- | --- | --- |"]
-    for r in refs:
-        if r["supplier"]:
-            items = r["items"] or "all items (supplier-wide)"
-        else:
-            items = r["items"] or "-"
-        lines.append(f"| {r['source']} | {r['supplier'] or '-'} | {items} | {r['date'] or '-'} |")
-    return "\n".join(lines) + "\n"
-
-
-def append_references_section(markdown: str, references: dict[str, Any] | None) -> str:
-    if references is None:
-        return markdown
-    return (markdown or "").rstrip() + "\n\n" + references_markdown(references)
 
 
 def run_analysis_agent(
@@ -181,94 +148,38 @@ def run_analysis_agent(
     try:
         analysis = _extract_json_from_text(final_text)
     except Exception:
-        analysis = {
-            "purchasing_report_markdown": final_text,
-            "critical_questions": [],
-            "replenishment_timeline": input_json.get("items", []),
-        }
+        # not JSON: kept for the run record; the format check (C1) fails it
+        analysis = {"unparsed_output": final_text}
     if isinstance(analysis, dict):
         analysis["references"] = {"documents": document_references(docs), "window": window}
     return analysis, docs
 
 
-def run_report_doc_agent(analysis_result: dict[str, Any]) -> str:
-    """Report Doc Agent: analysis_result → Markdown report. Optional: retrieve analysis_examples."""
-    examples = search_analysis_examples(k=2)
-    examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
-    llm = _llm(AGENT_MODELS["report"])
-    user = json.dumps(analysis_result, ensure_ascii=False)
-    if examples_text:
-        user = "Reference (tone/structure only):\n" + examples_text + "\n\nInput:\n" + user
-    out = llm.invoke([
-        SystemMessage(content=REPORT_DOC_AGENT_SYSTEM),
-        HumanMessage(content=user),
-    ])
-    return out.content if hasattr(out, "content") else str(out)
-
-
-def run_pr_draft_agent(
-    snapshot_date: str,
-    supplier: str,
-    risk_level: str,
-    analysis_output: dict[str, Any],
-) -> dict[str, Any]:
-    """PR Draft Agent: analysis_output → structured JSON for PR Doc Agent."""
+def run_approval_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    """Approval Agent: the purchase request's Purpose and Justification, for the approvers.
+    payload comes from documents.approval_input."""
     examples = search_request_examples(k=2)
     examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
-    llm = _llm(AGENT_MODELS["pr_draft"])
-    payload = {
-        "snapshot_date": snapshot_date,
-        "supplier": supplier,
-        "risk_level": risk_level,
-        "analysis_output": analysis_output,
-    }
     user = json.dumps(payload, ensure_ascii=False)
     if examples_text:
-        user = "Reference (structure only):\n" + examples_text + "\n\nInput:\n" + user
-    out = llm.invoke([
-        SystemMessage(content=PR_DRAFT_AGENT_SYSTEM),
+        user = "Reference (tone only):\n" + examples_text + "\n\nInput:\n" + user
+    out = _llm(AGENT_MODELS["approval"]).invoke([
+        SystemMessage(content=APPROVAL_AGENT_SYSTEM),
         HumanMessage(content=user),
     ])
     text = out.content if hasattr(out, "content") else str(out)
     try:
-        return _extract_json_from_text(text)
-    except json.JSONDecodeError:
-        return {"document_type": "purchase_request", "supplier": supplier, "snapshot_date": snapshot_date, "purchase_requests": []}
+        result = _extract_json_from_text(text)
+        return result if isinstance(result, dict) else {"unparsed_output": text}
+    except Exception:
+        return {"unparsed_output": text}
 
 
-def run_pr_doc_agent(request_output: dict[str, Any]) -> str:
-    """PR Doc Agent: request_output (from PR Draft) → Markdown purchase request."""
-    examples = search_request_examples(k=2)
-    examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
-    llm = _llm(AGENT_MODELS["pr_doc"])
-    user = json.dumps(request_output, ensure_ascii=False)
-    if examples_text:
-        user = "Reference (format only):\n" + examples_text + "\n\nInput:\n" + user
-    out = llm.invoke([
-        SystemMessage(content=PR_DOC_AGENT_SYSTEM),
-        HumanMessage(content=user),
-    ])
-    return out.content if hasattr(out, "content") else str(out)
-
-
-def run_email_draft_agent(
-    snapshot_date: str,
-    supplier: str,
-    risk_level: str,
-    items: list[dict],
-    analysis_output: dict[str, Any],
-) -> str:
-    """Email Draft Agent: items + analysis_output → plain text supplier email."""
+def run_email_draft_agent(payload: dict[str, Any]) -> str:
+    """Email Draft Agent: plain-text supplier email. payload comes from documents.email_input."""
     examples = search_email_examples(k=2)
     examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
     llm = _llm(AGENT_MODELS["email_draft"])
-    payload = {
-        "snapshot_date": snapshot_date,
-        "supplier": supplier,
-        "risk_level": risk_level,
-        "items": items,
-        "analysis_output": analysis_output,
-    }
     user = json.dumps(payload, ensure_ascii=False)
     if examples_text:
         user = "Reference (tone only):\n" + examples_text + "\n\nInput:\n" + user
@@ -284,6 +195,7 @@ def run_evaluation_agent(
     items: list[dict],
     analysis_output: dict[str, Any],
     history_docs: list[dict[str, Any]] | None = None,
+    snapshot_date: str | None = None,
 ) -> tuple[str, dict[str, Any]]:
     """
     Check the analysis against the rubric in services/quality_checks.py: deterministic
@@ -291,7 +203,8 @@ def run_evaluation_agent(
     Returns (report markdown, structured result).
     """
     result = evaluate_analysis(supplier, items, analysis_output, history_docs or [],
-                               judge=settings.evaluator_model)
+                               judge=settings.evaluator_model, snapshot_date=snapshot_date,
+                               retries=settings.judge_retries)
     return evaluation_markdown(supplier, result), result
 # ----- LangGraph Implementation -----
 
@@ -308,9 +221,16 @@ class PurchasingState(TypedDict):
     # Inter-agent result passing
     analysis_output: dict[str, Any]
     report_md: str
-    pr_draft: dict[str, Any]
+    approval: dict[str, Any]          # the approval agent's Purpose and Justification
+    approval_input: dict[str, Any]    # what the approval agent was given, for its check
+    approval_check: dict[str, Any]    # checks on its text (P1-P3)
     pr_md: str
-    email_text: str
+    email_text: str                   # the email agent's text, as checked by the validator
+    email_md: str                     # the email draft with its item lines and note
+    # Problems found while assembling the documents (bad citations, missing placeholder)
+    document_issues: Annotated[list[str], operator.add]
+    # The run id, shown at the foot of the report and in the purchase request
+    run_id: str
     evaluation_md: str
     evaluation_result: dict[str, Any]
     
@@ -332,6 +252,7 @@ class PurchasingState(TypedDict):
 
 def apply_system_notes(analysis: Any, items: list[dict]) -> Any:
     """
+    (Prompt v4 and earlier: v5 has no per-item notes.)
     Put the pipeline's fixed sentences (data gaps, invalid figures, Critical stockout
     gaps) at the start of each item's notes. They are computed in code, so they must
     reach the report whether or not the model repeated them.
@@ -361,7 +282,6 @@ def analysis_node(state: PurchasingState):
         supplier_history_override=state.get("supplier_history_override"),
         item_history_override=state.get("item_history_override"),
     )
-    out = apply_system_notes(out, state["items"])
     return {"analysis_output": out, "history_docs": history_docs}
 
 def evaluation_node(state: PurchasingState):
@@ -371,71 +291,69 @@ def evaluation_node(state: PurchasingState):
         state["items"],
         state["analysis_output"],
         history_docs=state.get("history_docs") or [],
+        snapshot_date=state["snapshot_date"],
     )
     report, result = out
     return {"evaluation_md": report, "evaluation_result": result}
 
 def report_node(state: PurchasingState):
-    analysis_result = {
-        "snapshot_date": state["snapshot_date"],
-        "supplier": state["supplier"],
-        "purchasing_report_markdown": state["analysis_output"].get("purchasing_report_markdown", ""),
-        "critical_questions": state["analysis_output"].get("critical_questions", []),
-        "replenishment_timeline": state["analysis_output"].get("replenishment_timeline", state["items"]),
-    }
-    out = run_report_doc_agent(analysis_result)
+    """The analysis report, assembled in code."""
+    analysis = state["analysis_output"]
     lines = state.get("data_issue_lines")
     if lines is None:
         lines = data_issue_lines(state["items"])
-    out = insert_data_issues_section(out, lines)
-    return {"report_md": append_references_section(out, state["analysis_output"].get("references"))}
+    md = documents.render_analysis_report(
+        state["supplier"], state["snapshot_date"], state["items"], analysis,
+        state.get("history_docs") or [], (analysis.get("references") or {}).get("window"),
+        lines, state.get("run_id") or "")
+    return {"report_md": md}
 
-def pr_draft_node(state: PurchasingState):
-    out = run_pr_draft_agent(
-        state["snapshot_date"], 
-        state["supplier"], 
-        state["risk_level"], 
-        state["analysis_output"]
-    )
-    return {"pr_draft": out}
+def approval_node(state: PurchasingState):
+    """The purchase request: the approval agent writes Purpose and Justification, code the rest.
+    No agent call when no item is due for a request (every item Low)."""
+    analysis, items, docs = state["analysis_output"], state["items"], state.get("history_docs") or []
+    approval, payload = None, {}
+    if documents.requested_items(items):
+        payload = documents.approval_input(state["supplier"], items, analysis, docs)
+        approval = run_approval_agent(payload)
+    md, problems = documents.render_purchase_request(
+        state["supplier"], state["snapshot_date"], items, analysis, docs, approval, state.get("run_id") or "")
+    return {"approval": approval or {}, "approval_input": payload, "pr_md": md,
+            "document_issues": [f"purchase request: {p}" for p in problems]}
 
-def pr_doc_node(state: PurchasingState):
-    out = run_pr_doc_agent(state["pr_draft"])
-    return {"pr_md": out}
+def approval_check_node(state: PurchasingState):
+    """Checks on the purchase request's text, added to the quality-check document. Runs beside
+    the email steps, since nothing waits for it."""
+    if not state.get("approval"):
+        return {}
+    problems = [p.removeprefix("purchase request: ") for p in state.get("document_issues") or []
+                if p.startswith("purchase request: ")]
+    result = approval_checks(state.get("approval_input") or {}, state["approval"], problems,
+                             judge=settings.evaluator_model, retries=settings.judge_retries)
+    return {"approval_check": result}
+
+def finish_node(state: PurchasingState):
+    """Runs once the evaluation and both document branches are done: the quality-check
+    document gets the purchase request's checks."""
+    if not state.get("approval_check"):
+        return {}
+    return {"evaluation_md": (state.get("evaluation_md") or "") + approval_markdown(state["approval_check"])}
 
 def email_draft_node(state: PurchasingState):
-    # If feedback exists, augment the prompt or override system message.
-    # Currently run_email_draft_agent uses a fixed prompt,
-    # so we only apply revision logic when correction_feedback is present.
-    
+    """The email agent's text. After a failed check, rewritten by a stronger model with the
+    validator's feedback."""
+    payload = documents.email_input(state["snapshot_date"], state["supplier"], state["items"],
+                                    state["analysis_output"])
     if state.get("correction_feedback") and state["iteration_count"] > 0:
-        # Feedback present: invoke agent directly for self-correction (prompt augmentation)
         llm = _llm(model=AGENT_MODELS["email_rewrite"])  # stronger model for the rewrite
         feedback_prompt = EMAIL_REVISION_REQUEST_TEMPLATE.replace("{feedback}", state["correction_feedback"])
-        
-        payload = {
-            "snapshot_date": state["snapshot_date"],
-            "supplier": state["supplier"],
-            "risk_level": state["risk_level"],
-            "items": state["items"],
-            "analysis_output": state["analysis_output"],
-        }
-        user = json.dumps(payload, ensure_ascii=False) + feedback_prompt
-        
         out = llm.invoke([
             SystemMessage(content=EMAIL_DRAFT_AGENT_SYSTEM + EMAIL_REVISION_SYSTEM_SUFFIX),
-            HumanMessage(content=user),
+            HumanMessage(content=json.dumps(payload, ensure_ascii=False) + feedback_prompt),
         ])
         email_text = out.content if hasattr(out, "content") else str(out)
     else:
-        email_text = run_email_draft_agent(
-            state["snapshot_date"],
-            state["supplier"],
-            state["risk_level"],
-            state["items"],
-            state["analysis_output"]
-        )
-    
+        email_text = run_email_draft_agent(payload)
     return {"email_text": email_text, "iteration_count": state.get("iteration_count", 0) + 1}
 
 def validator_node(state: PurchasingState):
@@ -477,36 +395,69 @@ def validator_node(state: PurchasingState):
 
 def should_continue(state: PurchasingState):
     if state.get("is_valid_email") or state.get("iteration_count", 0) >= 3:
-        return END
+        return "email_doc"
     return "email_draft"
 
-# Build the graph
-workflow = StateGraph(PurchasingState)
+def email_doc_node(state: PurchasingState):
+    """The email draft: the checked text with the item lines (written in code, so the
+    validator never sees the quantities) and the draft note."""
+    md, problems = documents.render_email(state.get("email_text") or "", state["items"], state["analysis_output"])
+    return {"email_md": md, "document_issues": [f"email: {p}" for p in problems]}
 
-workflow.add_node("analysis", instrument("analysis", analysis_node))
-workflow.add_node("evaluation", instrument("evaluation", evaluation_node))
-workflow.add_node("report", instrument("report", report_node))
-workflow.add_node("pr_draft", instrument("pr_draft", pr_draft_node))
-workflow.add_node("pr_doc", instrument("pr_doc", pr_doc_node))
-workflow.add_node("email_draft", instrument("email_draft", email_draft_node))
-workflow.add_node("validator", instrument("validator", validator_node))
+# Build the graph.
+# LangGraph moves in steps: a step ends only when every node in it has finished. So the
+# documents are one node of the main graph, a graph of their own inside it, and run beside
+# the evaluation (nothing in the documents uses its result) instead of waiting for it.
 
-workflow.set_entry_point("analysis")
-workflow.add_edge("analysis", "evaluation")
-workflow.add_edge("evaluation", "report")
-workflow.add_edge("report", "pr_draft")
-workflow.add_edge("pr_draft", "pr_doc")
-workflow.add_edge("pr_doc", "email_draft")
-workflow.add_edge("email_draft", "validator")
-
-workflow.add_conditional_edges(
+# The documents: report, then the purchase request, then its check beside the email steps.
+documents_flow = StateGraph(PurchasingState)
+documents_flow.add_node("report", instrument("report", report_node))
+documents_flow.add_node("approval", instrument("approval", approval_node))
+documents_flow.add_node("approval_check", instrument("approval_check", approval_check_node))
+documents_flow.add_node("email_draft", instrument("email_draft", email_draft_node))
+documents_flow.add_node("validator", instrument("validator", validator_node))
+documents_flow.add_node("email_doc", instrument("email_doc", email_doc_node))
+documents_flow.set_entry_point("report")
+documents_flow.add_edge("report", "approval")
+documents_flow.add_edge("approval", "email_draft")
+documents_flow.add_edge("approval", "approval_check")
+documents_flow.add_edge("email_draft", "validator")
+documents_flow.add_conditional_edges(
     "validator",
     should_continue,
     {
         "email_draft": "email_draft",
-        END: END
+        "email_doc": "email_doc",
     }
 )
+documents_flow.add_edge("email_doc", END)
+documents_flow.add_edge("approval_check", END)
+documents_graph = documents_flow.compile()
+
+# What the documents step hands back to the main graph
+DOCUMENT_KEYS = ("report_md", "approval", "approval_input", "approval_check", "pr_md",
+                 "email_text", "email_md", "iteration_count", "correction_feedback", "is_valid_email")
+
+
+def documents_node(state: PurchasingState):
+    out = documents_graph.invoke(state)
+    update = {k: out[k] for k in DOCUMENT_KEYS if k in out}
+    # lists the main graph accumulates: only what the documents added
+    update["validation_log"] = out.get("validation_log") or []
+    update["document_issues"] = out.get("document_issues") or []
+    return update
+
+
+workflow = StateGraph(PurchasingState)
+workflow.add_node("analysis", instrument("analysis", analysis_node))
+workflow.add_node("evaluation", instrument("evaluation", evaluation_node))
+workflow.add_node("documents", documents_node)
+workflow.add_node("finish", finish_node)
+workflow.set_entry_point("analysis")
+workflow.add_edge("analysis", "evaluation")
+workflow.add_edge("analysis", "documents")
+workflow.add_edge(["evaluation", "documents"], "finish")
+workflow.add_edge("finish", END)
 
 purchasing_graph = workflow.compile()
 
@@ -523,6 +474,8 @@ def run_purchasing_pipeline_graph(input_data: dict[str, Any]) -> dict[str, Any]:
         "history_override": input_data.get("history_override"),
         "supplier_history_override": input_data.get("supplier_history_override"),
         "item_history_override": input_data.get("item_history_override"),
+        "data_issue_lines": input_data.get("data_issue_lines", []),
+        "run_id": input_data.get("run_id", ""),
     }
     
     # Execute graph

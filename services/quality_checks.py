@@ -10,20 +10,26 @@ decided from the inputs alone in production; offline, scenario labels decide it 
 so a scenario designed to contain a supplier problem is always checked for one.
 """
 import json
+import math
 import os
 import re
 import time
+from datetime import date, timedelta
 from typing import Any
 
 from langsmith import traceable
 
-REQUIRED_FIELDS = ("purchasing_report_markdown", "critical_questions", "replenishment_timeline")
+REQUIRED_FIELDS = {"summary": str, "findings": list, "critical_questions": list,
+                   "po_date_changes": list, "quantity_changes": list, "recommended_actions": list}
 NO_HISTORY_SENTENCE = "No historical supplier or item data available"
 
 CHECK_NAMES = {
     "C1": "Output format",
     "C2": "Items match the input",
     "C3": "Figures match the input",
+    "C4": "Every judgement cites findings that apply",
+    "C5": "Proposed changes add up",
+    "C6": "Each Critical item has an action on its stock position",
     "J1": "No invented or distorted history",
     "J1b": "No false 'no history' statement",
     "J2a": "Supplier problem raised as a question",
@@ -100,47 +106,134 @@ def _num(v: Any) -> float | None:
 
 # ----------------------------------------------------------------------------- code checks
 
-def code_checks(items: list[dict[str, Any]], analysis: Any) -> dict[str, dict[str, Any]]:
-    """C1-C3 against the structured output. Each entry: {"pass": bool, "detail": str}."""
-    obj = _as_obj(analysis)
+def _entries(obj: dict, field: str) -> list[dict]:
+    return [e for e in (obj.get(field) or []) if isinstance(e, dict)] if isinstance(obj.get(field), list) else []
+
+
+def _result(problems: list[str], ok: str) -> dict[str, Any]:
+    return {"pass": not problems, "detail": "; ".join(problems) or ok}
+
+
+def _doc_applies(doc: dict, codes: list[str], items: list[dict]) -> bool:
+    """A document can support a finding about these items (or, with no items, about the
+    supplier): it is supplier-wide, or it names one of the items."""
+    if not codes:
+        return bool(doc.get("supplier"))
+    if doc.get("supplier") and not (doc.get("items") or doc.get("item_codes")):
+        return True
+    named = {_norm(v) for v in (doc.get("items") or []) + (doc.get("item_codes") or [])}
+    return any(_norm(c) in named or _norm(it.get("item_name")) in named
+               for c in codes for it in items if str(it.get("item_code")) == c)
+
+
+def _norm(v: Any) -> str:
+    return re.sub(r"[\W_]+", "", str(v or "").lower())
+
+
+def code_checks(items: list[dict[str, Any]], analysis: Any,
+                history_docs: list[dict[str, Any]] | None = None,
+                snapshot_date: str | None = None) -> dict[str, dict[str, Any]]:
+    """C1-C6 against the structured output (prompt v5). Each entry: {"pass": bool, "detail": str}."""
+    obj = _as_obj(analysis) or {}
+    docs = history_docs or []
     out: dict[str, dict[str, Any]] = {}
-
-    missing = [f for f in REQUIRED_FIELDS if not obj or f not in obj]
-    bad_types = [f for f in ("critical_questions", "replenishment_timeline")
-                 if obj and f in obj and not isinstance(obj[f], list)]
-    out["C1"] = {"pass": not missing and not bad_types,
-                 "detail": "; ".join(filter(None, [
-                     f"missing {', '.join(missing)}" if missing else "",
-                     f"not a list: {', '.join(bad_types)}" if bad_types else ""])) or "all required fields present"}
-
-    timeline = obj.get("replenishment_timeline") if obj and isinstance(obj.get("replenishment_timeline"), list) else []
     expected = {str(it.get("item_code")): it for it in items}
-    seen: dict[str, int] = {}
-    for entry in timeline:
-        code = str(entry.get("item_code")) if isinstance(entry, dict) else None
-        seen[code] = seen.get(code, 0) + 1
-    extra = sorted(c for c in seen if c not in expected)
-    absent = sorted(c for c in expected if c not in seen)
-    repeated = sorted(c for c, n in seen.items() if n > 1 and c in expected)
-    out["C2"] = {"pass": not (extra or absent or repeated),
-                 "detail": "; ".join(filter(None, [
-                     f"not in input: {', '.join(extra)}" if extra else "",
-                     f"left out: {', '.join(absent)}" if absent else "",
-                     f"listed twice: {', '.join(repeated)}" if repeated else ""])) or "one entry per input item"}
 
-    if not timeline:
-        out["C3"] = {"pass": False, "detail": "no replenishment_timeline to compare against the input"}
-        return out
+    # C1 the fields are there, with the right types
+    out["C1"] = _result([f"{f} missing or not a {t.__name__}" for f, t in REQUIRED_FIELDS.items()
+                         if not isinstance(obj.get(f), t)], "all required fields present")
+
+    findings = _entries(obj, "findings")
+    questions = _entries(obj, "critical_questions")
+    actions = _entries(obj, "recommended_actions")
+    po_changes, qty_changes = _entries(obj, "po_date_changes"), _entries(obj, "quantity_changes")
+    judgements = ([("question", q, [str(c) for c in q.get("items") or []]) for q in questions]
+                  + [("action", a, [str(c) for c in a.get("items") or []]) for a in actions]
+                  + [("order-date change", c, [str(c.get("item_code"))]) for c in po_changes]
+                  + [("quantity change", c, [str(c.get("item_code"))]) for c in qty_changes])
+
+    # C2 every item named is in the input
+    named = [str(c) for f in findings for c in (f.get("items") or [])] + [c for _, _, codes in judgements for c in codes]
+    out["C2"] = _result([f"not in input: {c}" for c in sorted(set(named)) if c not in expected],
+                        "every item named is in the input")
+
+    # C3 the changes start from the pipeline's figures
     wrong = []
-    for entry in timeline:
-        if not isinstance(entry, dict) or str(entry.get("item_code")) not in expected:
+    for c in po_changes:
+        src = expected.get(str(c.get("item_code")), {})
+        if src and c.get("original_po_date") != src.get("recommended_latest_po_date"):
+            wrong.append(f"{c.get('item_code')} original order date {c.get('original_po_date')}, "
+                         f"pipeline {src.get('recommended_latest_po_date')}")
+    for c in qty_changes:
+        src = expected.get(str(c.get("item_code")), {})
+        if src and _num(c.get("original_quantity")) != _num(src.get("suggested_quantity")):
+            wrong.append(f"{c.get('item_code')} original quantity {c.get('original_quantity')}, "
+                         f"pipeline {src.get('suggested_quantity')}")
+    out["C3"] = _result(wrong, "changes start from the pipeline's figures")
+
+    # C4 citations: findings rest on documents that apply or on the stock position; every
+    # question, change and action cites findings that exist and concern its items
+    by_id = {f.get("id"): f for f in findings}
+    problems = []
+    for f in findings:
+        basis = f.get("basis") if isinstance(f.get("basis"), dict) else {}
+        doc_ids = basis.get("documents") or []
+        codes = [str(c) for c in f.get("items") or []]
+        if not doc_ids and not basis.get("stock"):
+            problems.append(f"finding {f.get('id')} has no basis")
+        for d in doc_ids:
+            if not isinstance(d, int) or not 1 <= d <= len(docs):
+                problems.append(f"finding {f.get('id')} cites document {d}, which was not given")
+            elif not _doc_applies(docs[d - 1], codes, items):
+                problems.append(f"finding {f.get('id')} cites document {d}, which does not apply to "
+                                f"{', '.join(codes) or 'the supplier'}")
+    for kind, e, codes in judgements:
+        cited = e.get("findings") or []
+        if not cited:
+            problems.append(f"{kind} cites no finding: {str(e.get('question') or e.get('action') or e.get('item_code'))[:60]}")
+        for i in cited:
+            f = by_id.get(i)
+            if f is None:
+                problems.append(f"{kind} cites finding {i}, which does not exist")
+            elif f.get("items") and codes and not set(map(str, f["items"])) & set(codes):
+                problems.append(f"{kind} about {', '.join(codes)} cites finding {i}, which is about "
+                                f"{', '.join(map(str, f['items']))}")
+    out["C4"] = _result(problems, "every judgement cites findings that apply")
+
+    # C5 arithmetic of the proposed changes, and no proposed order date already passed
+    problems = []
+    for c in po_changes:
+        try:
+            orig, shift = date.fromisoformat(c["original_po_date"]), float(c["shift_weeks"])
+            want = (orig + timedelta(days=round(shift * 7))).isoformat()
+            if c.get("proposed_po_date") != want:
+                problems.append(f"{c.get('item_code')} order date {c.get('original_po_date')} moved by {c.get('shift_weeks')} "
+                                f"weeks is {want}, not {c.get('proposed_po_date')}")
+            elif snapshot_date and want < snapshot_date:
+                problems.append(f"{c.get('item_code')} proposed order date {want} is before the snapshot date")
+        except (KeyError, TypeError, ValueError):
+            problems.append(f"{c.get('item_code')} order-date change is incomplete")
+    for c in qty_changes:
+        orig, factor = _num(c.get("original_quantity")), _num(c.get("factor"))
+        if orig is None or factor is None:
+            problems.append(f"{c.get('item_code')} quantity change is incomplete")
             continue
-        src = expected[str(entry.get("item_code"))]
-        for field in ("available_stock", "wks_to_oos"):
-            given, said = _num(src.get(field)), _num(entry.get(field))
-            if given != said and not (given is not None and said is not None and abs(given - said) < 1e-6):
-                wrong.append(f"{entry.get('item_code')} {field}: input {src.get(field)}, output {entry.get(field)}")
-    out["C3"] = {"pass": not wrong, "detail": "; ".join(wrong) or "all figures match"}
+        want = math.ceil(round(orig * factor, 6))
+        if _num(c.get("proposed_quantity")) != want:
+            problems.append(f"{c.get('item_code')} quantity {c.get('original_quantity')} × {c.get('factor')} rounded up "
+                            f"is {want}, not {c.get('proposed_quantity')}")
+    out["C5"] = _result(problems, "the changes add up" if po_changes or qty_changes else "no changes proposed")
+
+    # C6 every Critical item has an action that cites a stock finding about it
+    missing = []
+    for it in critical_items(items):
+        code = str(it.get("item_code"))
+        stock_ids = {f.get("id") for f in findings
+                     if isinstance(f.get("basis"), dict) and f["basis"].get("stock") and code in map(str, f.get("items") or [])}
+        if not any(code in map(str, a.get("items") or []) and set(a.get("findings") or []) & stock_ids for a in actions):
+            missing.append(f"{it.get('item_name')} ({code})")
+    out["C6"] = _result([f"no action on the stock position of {m}" for m in missing],
+                        "each Critical item has one" if critical_items(items) else "no Critical items")
     return out
 
 
@@ -241,6 +334,15 @@ def _key(*names: str) -> str | None:
 # Each provider call returns (text, token usage). The usage is in LangSmith's format so the
 # judge's cost shows on its trace next to the analysis agent's.
 
+def _judge_timeout() -> float:
+    """Seconds one judge request may take (config.judge_timeout_seconds); run_judge retries."""
+    try:
+        from config import settings
+        return float(settings.judge_timeout_seconds)
+    except Exception:
+        return 90.0
+
+
 def _usage(input_tokens: int | None, output_tokens: int | None) -> dict[str, int]:
     i, o = int(input_tokens or 0), int(output_tokens or 0)
     return {"input_tokens": i, "output_tokens": o, "total_tokens": i + o}
@@ -249,7 +351,8 @@ def _usage(input_tokens: int | None, output_tokens: int | None) -> dict[str, int
 def _call_openai(model: str, system: str, user: str) -> tuple[str, dict[str, int]]:
     from openai import OpenAI
     from config import settings
-    client = OpenAI(api_key=settings.openai_api_key or _key("OPENAI_API_KEY"))
+    client = OpenAI(api_key=settings.openai_api_key or _key("OPENAI_API_KEY"),
+                    timeout=_judge_timeout(), max_retries=0)
     resp = client.chat.completions.create(
         model=model, response_format={"type": "json_object"},
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}])
@@ -259,7 +362,8 @@ def _call_openai(model: str, system: str, user: str) -> tuple[str, dict[str, int
 
 def _call_anthropic(model: str, system: str, user: str) -> tuple[str, dict[str, int]]:
     import anthropic
-    client = anthropic.Anthropic(api_key=_key("ANTHROPIC_API_KEY", "CLAUDE_API_KEY"))
+    client = anthropic.Anthropic(api_key=_key("ANTHROPIC_API_KEY", "CLAUDE_API_KEY"),
+                                 timeout=_judge_timeout(), max_retries=0)
     resp = client.messages.create(model=model, max_tokens=2000, system=system,
                                   messages=[{"role": "user", "content": user}])
     text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
@@ -268,7 +372,8 @@ def _call_anthropic(model: str, system: str, user: str) -> tuple[str, dict[str, 
 
 def _call_gemini(model: str, system: str, user: str) -> tuple[str, dict[str, int]]:
     from google import genai
-    client = genai.Client(api_key=_key("GEMINI_API_KEY", "GOOGLE_API_KEY"))
+    client = genai.Client(api_key=_key("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+                          http_options={"timeout": int(_judge_timeout() * 1000)})  # milliseconds
     resp = client.models.generate_content(
         model=model, contents=user,
         config={"system_instruction": system, "response_mime_type": "application/json"})
@@ -314,18 +419,72 @@ def run_judge(spec: str, prompt: str, checks: list[str], retries: int = 2) -> di
             time.sleep(2 * (attempt + 1))
 
 
+# ----------------------------------------------------------------------------- purchase request text
+
+APPROVAL_CHECK_NAMES = {
+    "P1": "Purchase request adds nothing to its input",
+    "P2": "Purchase request paragraphs within length",
+    "P3": "Purchase request cites only documents given",
+}
+_P1_TEXT = ("Every fact in purpose and justification is supported by the input: no fact, risk or "
+            "assessment is added that the input does not give, figures are quoted exactly with no word "
+            "that judges them (for example calling a stated duration quick or slow), and a word used in "
+            "place of the input's does not change the meaning. Saying why an action from the input "
+            "matters passes when the findings behind it support it, and so does writing a check to be "
+            "done before ordering as a condition the request rests on.")
+
+
+def _sentences(text: str) -> int:
+    return len([s for s in re.split(r"(?<=[.!?])\s+(?=[A-Z])", (text or "").strip()) if s.strip()])
+
+
+def approval_checks(payload: dict[str, Any], approval: dict[str, Any], citation_problems: list[str],
+                    judge: str, retries: int = 2) -> dict[str, Any]:
+    """Checks on the approval agent's text: P1 by the judge against the agent's input, P2 and P3
+    in code. Same verdict rule as the analysis checks."""
+    purpose, justification = str(approval.get("purpose") or ""), str(approval.get("justification") or "")
+    p, j = _sentences(purpose), _sentences(justification)
+    length = [m for m in (f"purpose has {p} sentences (1-2)" if not 1 <= p <= 2 else "",
+                          f"justification has {j} sentences (2-4)" if not 2 <= j <= 4 else "") if m]
+    results = {"P2": {"pass": not length, "detail": "; ".join(length) or "within length"},
+               "P3": {"pass": not citation_problems, "detail": "; ".join(citation_problems) or "all cited documents given"}}
+    prompt = ("INPUT GIVEN TO THE WRITER\n" + json.dumps(payload, ensure_ascii=False, indent=2) + "\n\n"
+              "TEXT WRITTEN\n" + json.dumps({"purpose": purpose, "justification": justification}, ensure_ascii=False, indent=2)
+              + "\n\nCHECKS\n- P1: " + _P1_TEXT + "\n\n"
+              'Return JSON only: {"P1": {"pass": true|false, "evidence": "<short quote or reason>"}}')
+    judged = run_judge(judge, prompt, ["P1"], retries=retries)
+    results = {"P1": {"pass": judged["P1"]["pass"], "detail": judged["P1"]["evidence"]}, **results}
+    failed = [k for k, v in results.items() if v["pass"] is not True]
+    return {"verdict": "ready" if not failed else "needs_review", "failed": failed, "checks": results, "judge": judge}
+
+
+def approval_markdown(result: dict[str, Any]) -> str:
+    rows = []
+    for cid, v in result["checks"].items():
+        mark = "Pass" if v["pass"] is True else ("Fail" if v["pass"] is False else "Not checked")
+        detail = str(v["detail"] or "").replace("|", "/").replace("\n", " ")
+        rows.append(f"| {APPROVAL_CHECK_NAMES.get(cid, cid)} ({cid}) | {mark} | {detail} |")
+    failed = result["failed"]
+    verdict = (f"all {len(result['checks'])} checks passed." if not failed
+               else f"{len(failed)} of {len(result['checks'])} checks did not pass.")
+    return ("\n## Purchase Request Text\n\n"
+            f"**Result:** {verdict}\n\n"
+            "| Check | Result | Detail |\n| --- | --- | --- |\n" + "\n".join(rows) + "\n")
+
+
 # ----------------------------------------------------------------------------- production entry point
 
 def evaluate_analysis(supplier: str, items: list[dict[str, Any]], analysis: Any,
-                      history_docs: list[dict[str, Any]], judge: str) -> dict[str, Any]:
+                      history_docs: list[dict[str, Any]], judge: str,
+                      snapshot_date: str | None = None, retries: int = 2) -> dict[str, Any]:
     """
     All applicable checks for one analysis. The verdict is decided in code: the analysis is
     ready only if every check passed, and a check the judge could not answer counts as failed.
     """
-    code = code_checks(items, analysis)
+    code = code_checks(items, analysis, history_docs, snapshot_date)
     checks = applicable_judge_checks(items, history_docs)
     judged = run_judge(judge, judge_prompt(supplier, items, history_docs,
-                                           analysis, checks, labelled=False), checks)
+                                           analysis, checks, labelled=False), checks, retries=retries)
     results = {**{k: {"pass": v["pass"], "detail": v["detail"]} for k, v in code.items()},
                **{k: {"pass": v["pass"], "detail": v["evidence"]} for k, v in judged.items()}}
     failed = [k for k, v in results.items() if v["pass"] is not True]

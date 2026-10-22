@@ -1,4 +1,5 @@
 """Configuration: environment variable based."""
+from datetime import date
 from typing import Optional
 from pydantic_settings import BaseSettings
 
@@ -16,6 +17,13 @@ class Settings(BaseSettings):
     # model that writes the analysis (GPT-4o), so the analysis is never judged by its own
     # author or a model of the same family. Needs GEMINI_API_KEY.
     evaluator_model: str = "gemini:gemini-3.7-flash"
+    # Time limits on every model call, so one call that never answers cannot hold up a run.
+    # A judge call that runs out is retried once and then recorded as "Not checked"; the
+    # documents do not wait for the judge (services/agents.py).
+    llm_timeout_seconds: int = 60
+    llm_retries: int = 1
+    judge_timeout_seconds: int = 90
+    judge_retries: int = 1
     # History given to the analysis agent (agreed with the purchasing team): documents from the
     # last 12 months before the snapshot date, at most 5 per supplier and 5 per item.
     history_window_months: int = 12
@@ -31,7 +39,7 @@ class Settings(BaseSettings):
     # run is made.
     run_date: Optional[str] = "2025-04-06"
     # Which prompts/<version>/ folder the agents use; recorded with every run.
-    prompt_version: str = "v4"
+    prompt_version: str = "v5"
     # Run records (services/run_record.py): one JSON file per run on the server.
     run_records_enabled: bool = True
     run_records_dir: str = "runs"
@@ -69,3 +77,9 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def run_date() -> date:
+    """The date of the run: settings.run_date while runs use fixed past data; in production
+    run_date is unset and this is the actual date the run is made."""
+    return date.fromisoformat(settings.run_date) if settings.run_date else date.today()
