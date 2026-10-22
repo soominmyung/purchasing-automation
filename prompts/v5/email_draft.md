@@ -19,7 +19,7 @@ Return ONLY this JSON:
 }
 
 requests:
-- Ask for current availability, lead time and commercial terms.
+- Ask for current availability, lead time and commercial terms for the items listed above.
 - Unless a request adds something the list does not say, refer to the items, quantities and dates as
   those in the list above rather than writing them out again.
 - For each of points_to_clarify, write one question of your own that gets that information from the
@@ -33,6 +33,8 @@ requests:
   and whether a faster shipping option is available, so that it reads like any other planning question,
   combined with any question that already asks this. Never state or imply that stock is short or that
   the order is urgent.
+- Before you finish, double-check that no question is asked more than once, also in different words;
+  combine any that are.
 
 STRICT: Reveal no internal management information and no internal judgement, including that an internal
 review or analysis took place. Do not promise a PO. Polite, concise, cooperative, professional.
