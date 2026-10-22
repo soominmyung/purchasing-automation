@@ -503,6 +503,11 @@ English or Korean).
   having returned 504 (deadline exceeded) twice and 429 (quota exhausted) once. The offline
   scripts keep two judge retries.
 - `gpt-5` models take only their default temperature, so no temperature is passed to them.
+- **Judge switched to `claude-haiku-5-5` for now (2026-10-23)**, until judge validation chooses
+  one. `gemini-3.7-flash` took 30-109 s per call on 2026-10-22, then returned 504 (deadline),
+  503 (unavailable: high demand) and 429 (quota). Claude is from a different provider than the
+  analysis and approval agents (OpenAI), as the rule requires; a first call answered in 3.9 s.
+  The deploy workflow passes `CLAUDE_API_KEY`, which needs a GitHub secret.
 - **Development runs are kept** (`dev/`): development cases, separate from the evaluation set so
   prompts are not tuned on the scenarios used to measure them, and one folder per run with the
   exact prompt text used, since prompts are edited in place while a version is written
@@ -542,6 +547,14 @@ to be written after testing in Claude Desktop.
   production judge and the offline panel.
 - Refactor `scripts/eval_v2_score.py` onto `services/quality_checks.py`.
 - Analysis-model benchmark (GPT-4o against 7 others on quality, cost, latency).
+- **Limits on proposed changes (decided 2026-10-23, not yet in the prompt).** A proposed order
+  date is never earlier than the snapshot date, and a proposed quantity is never below zero (the
+  factor is above 0). Seen in `dev/runs/2026-10-23_013618_arrows-in-the-text-c9-j7-for-changed-figures`: for a supplier-wide
+  lead time four weeks longer, the analysis moved every item's order date four weeks earlier,
+  including BearingCap, whose order date was already the snapshot date (overdue), giving
+  2025-03-08, a date already past. C5 caught it (blocking). To do: state both limits in the
+  analysis prompt's rules for `po_date_changes` and `quantity_changes`, and add the quantity
+  limit to C5, which checks only the date today.
 - **SFT retraining:** the fine-tuned model was trained on raw CSV rows, source risk levels
   with no Critical, and GPT-4o outputs from the old prompt. Regenerate the teacher data with
   the current pipeline and retrain before comparing it with GPT-4o. Keep only teacher outputs

@@ -1,0 +1,40 @@
+{
+  "name": "kestrel_components",
+  "purpose": "Written so that changes are clearly warranted: a supplier-wide notice of lead times four weeks longer (a reason to order earlier) and a lasting 50% rise in one item's demand under a contract (a reason to order more). One item at each risk level and one more High item; weekly sales differ by item. The Critical item's order date has already passed, so it cannot be moved earlier. Written for v5 development on 2026-10-23; not part of the evaluation set.",
+  "known_limits": [],
+  "csv": "SnapshotDate,2025-04-05\n\nItemCode,ItemName,SupplierName,AvailableStock,WksToOOS\n520001,BearingCap,KestrelComponents,600,12\n520002,ValveSeat,KestrelComponents,2200,22\n520003,GasketKit,KestrelComponents,4800,24\n520004,PistonRing,KestrelComponents,1500,30\n520005,OilSeal,KestrelComponents,3500,50\n",
+  "history": [
+    {
+      "supplier": "KestrelComponents",
+      "items": [],
+      "item_codes": [],
+      "date": "2025-03-10",
+      "source": "kestrel_lead_time_notice_2025-03.docx",
+      "text": "KestrelComponents announced that from 1 April 2025 lead times for all products are four weeks longer while production moves to its new plant in Gdansk. The supplier expects the longer lead times to last until the end of 2025."
+    },
+    {
+      "supplier": "",
+      "items": [
+        "GasketKit"
+      ],
+      "item_codes": [
+        "520003"
+      ],
+      "date": "2025-02-20",
+      "source": "gasketkit_contract_2025-02.docx",
+      "text": "GasketKit demand has been 50% higher since January 2025, after a fleet operator signed a contract for monthly deliveries that runs until December 2027."
+    },
+    {
+      "supplier": "",
+      "items": [
+        "OilSeal"
+      ],
+      "item_codes": [
+        "520005"
+      ],
+      "date": "2024-12-15",
+      "source": "oilseal_review_2024.docx",
+      "text": "OilSeal demand has been steady over the past year."
+    }
+  ]
+}

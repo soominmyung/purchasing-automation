@@ -167,11 +167,23 @@ What was hard:
   say the order date had passed.
 - **The judge is not consistent.** The same "60%" for "about 60%" failed P1 once and passed once.
 
+**Changed figures in the text (2026-10-23).** The text writes an order date or quantity that a
+change proposes as "<pipeline value> → <proposed value>", as the tables do (the rule had kept
+proposed values out of the text). Code checks that every arrow in the text is one of the
+proposed changes (C9, blocking) and highlights it; the judge checks that a changed figure is not
+written as only one of the two (J7). First run (`kestrel_components`, `2026-10-23_013618_arrows-in-the-text-c9-j7-for-changed-figures`):
+five order-date changes and one quantity change were proposed, but the text mentioned no changed
+figure ("requiring a reassessment of order quantities"), so the rule was not exercised; one order
+date was moved before the snapshot date, caught by C5.
+
 **Known faults** (not yet changed)
 - Approval agent: "about" dropped from a figure; a pre-order check written as "it is crucial to
   confirm …" rather than as a condition.
 - Email agent: worry-tinged wording in some runs ("to avoid any delay", "now in order"); the
-  no-questions fallback added in some runs although there were questions.
+  no-questions fallback added in some runs although there were questions; "the items below" in
+  the first question although code puts the list above it, also after the prompt said so.
+- Analysis agent: an order date moved earlier than the snapshot date for an item already overdue
+  (limits on changes decided 2026-10-23, not yet in the prompt).
 - J5 expects the mitigation in the summary; to be revised with the evaluation criteria.
 - A supplier-side quality incident (a defective batch) gave a finding but no question or
   action, and a 60% demand rise gave an action to review the quantity rather than a proposed
