@@ -125,6 +125,7 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 | J2a | At least one critical question addresses the supplier's problem | `supplier_issue = material` | Warning |
 | J2b | At least one critical question addresses an item's problem | `item_issue = material` | Warning |
 | J2c | No critical question presumes a supplier or item problem that the inputs do not show. Neutral questions that assume no problem pass | All | Warning |
+| J7 | Every figure from the stock data quoted anywhere in the output (available stock, weeks to stockout, the gap, suggested quantity, recommended dates) matches the input for that item; figures from the history documents are J1's | All | Blocking |
 
 ### Checks on the purchase request text (production)
 
@@ -143,7 +144,6 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 | Each question and action follows from the findings it cites | Warning | |
 | No document that describes a problem for this order is left unused by every finding and judgement (code lists the unused documents; the judge reads only those) | Warning | To replace J2a and J2b |
 | Findings state facts only, with no judgement | Warning | |
-| Figures quoted in the summary and the findings match the pipeline's | Blocking | Would widen C3 to the text; undecided |
 
 ### Checks dropped for v5
 
@@ -228,7 +228,7 @@ the same way.
 
 | Date | Change |
 |---|---|
-| 2026-10-23 | No score: checks are blocking or warnings; the production verdict follows the blocking checks; models are compared in stages (blocking, warnings, cost and latency); the same checks filter fine-tuning data. Checks revised for prompt v5: C1 and C3 changed; C4-C8 and P1-P3 added; J1b, J3 and J5 dropped (J5 split into C6 and C7); each check given a severity (C4 and P3 blocking, P1 and J2c warnings); five judge checks and a wider C3 planned. |
+| 2026-10-23 | No score: checks are blocking or warnings; the production verdict follows the blocking checks; models are compared in stages (blocking, warnings, cost and latency); the same checks filter fine-tuning data. Checks revised for prompt v5: C1 and C3 changed; J7 added (stock figures quoted in the text, judged; C3 covers only the changes' starting values); C4-C8 and P1-P3 added; J1b, J3 and J5 dropped (J5 split into C6 and C7); each check given a severity (C4 and P3 blocking, P1 and J2c warnings); five judge checks and a wider C3 planned. |
 | 2026-10-19 | History given as documents scoped by their headers (prompt v4). J1 also fails attribution to a supplier or item a document does not name. `CurrentStock` renamed `AvailableStock`. |
 | 2026-10-18 | Weeks to stockout reset for 29 items to spread the set across all four risk levels (previously 50 of 53 items were Critical). Holdout scenarios included, so their figures no longer match the teacher dataset. |
 | 2026-10-18 | Production evaluation node rewritten to use these checks (it previously scored four 1–10 criteria with GPT-4o judging its own analysis, one of them about email leaks it had no email to judge). Production judge set to `gemini-3.7-flash`. |

@@ -36,6 +36,7 @@ CHECK_NAMES = {
     "J2a": "Supplier problem raised as a question",
     "J2b": "Item problem raised as a question",
     "J2c": "No question presumes a problem the data does not show",
+    "J7": "Stock figures quoted match the input",
 }
 
 # Blocking: the analysis must not be used as it is if this fails; the verdict follows these
@@ -47,11 +48,16 @@ SEVERITY = {
     "J1": BLOCKING,
     "J2a": WARNING, "J2b": WARNING,  # until replaced by the check on documents left unused
     "J2c": WARNING,
+    "J7": BLOCKING,
     "P1": WARNING, "P2": WARNING, "P3": BLOCKING,
 }
 SUMMARY_WORDS = 100
 
 _JUDGE_TEXT = {
+    "J7": "Every figure from the stock data that the analysis quotes anywhere (summary, findings, "
+          "questions, actions, reasons) matches the input for that item exactly: available stock, weeks "
+          "to stockout, expected stockout weeks (the gap), suggested quantity, recommended order and "
+          "delivery dates. Figures that come from the history documents are not judged here.",
     "J1": "Every statement the analysis makes about supplier or item history (incidents, trends, "
           "reliability) is supported by the history documents given, none of them is distorted (for "
           "example, 'high demand' reported as 'medium demand'), and none is attributed to a supplier or "
@@ -262,7 +268,7 @@ def applicable_judge_checks(items: list[dict[str, Any]], history_docs: list[dict
     docs = history_docs or []
     hs = any(d.get("supplier") for d in docs)
     hi = any(d.get("items") or d.get("item_codes") for d in docs)
-    checks = ["J1", "J2c"]
+    checks = ["J1", "J2c", "J7"]
     if labels is not None:
         if labels.get("supplier_issue") == "material":
             checks.append("J2a")
