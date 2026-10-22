@@ -598,6 +598,10 @@ to be written after testing in Claude Desktop.
   node's redesign and the judge model decide whether the target is met. Suppliers are processed
   one after another, so a CSV with many suppliers also needs them run side by side (within the
   API rate limits).
+- README, for anyone running the sample: runs refuse stock data more than 3 days older than the
+  run date, which is fixed for now at 2025-04-06 (`run_date` in `config.py`), so the sample CSV
+  (snapshot 2025-04-05) runs and a CSV with another date is refused unless `run_date` is changed
+  or `REQUIRE_FRESH_SNAPSHOT=false` is set.
 - Re-ingest history PDFs so file names appear in Referenced Documents.
 - Demo: load sample history PDFs at startup when the store is empty, so a restarted
   Cloud Run container still shows history-based questions.
