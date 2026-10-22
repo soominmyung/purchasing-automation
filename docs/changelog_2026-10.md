@@ -637,6 +637,15 @@ to be written after testing in Claude Desktop.
     | Stock data no older than 3 days | `routers/pipeline.py`, `_require_fresh_snapshot`; `config.py`, `run_date` |
     | Time limits on every model call | `services/agents.py`, `_llm`; `services/quality_checks.py`, `_judge_timeout` and the provider calls; `config.py` |
     | Documents beside the evaluation | `services/agents.py`, `documents_graph`, `documents_node`, `purchasing_graph` |
+  - **The supplier email as an example** (worth its own paragraph in the README and portfolio):
+    code assembles the whole email — the draft note, greeting, a fixed purpose sentence, the item
+    lines (quantities after any proposed change, highlighted), a fixed closing and the signature —
+    and the email agent writes only the requests: it turns the analyst's questions marked for the
+    supplier into polite questions to a business partner, without naming past problems or items
+    outside the email. Its input is only what that needs (`documents.email_input`); its output is
+    one JSON field; the validator reads only that field. The way there, and why every fixed part
+    was taken away from the model, is in `prompts/CHANGES.md`, v5, steps 1-24. Where:
+    `services/documents.py`, `EMAIL_PURPOSE`, `EMAIL_CLOSING`, `email_parts`, `render_email`.
   - What stayed with LLMs, and why: findings, judgements and the summary (analysis); the
     approvers' Purpose and Justification; the supplier email's wording; and the judge, for what
     needs reading: whether findings are faithful to their documents (J1); whether each

@@ -127,6 +127,24 @@ the same analysis output was used from step 5 on. The outputs of every step are 
 | 16 | No placeholder: code puts the item lines after the purpose paragraph — five runs | List placed right in all five; "the items below" once, the no-questions fallback added twice, worry-tinged wording ("avoid any delay", "no impact", "complications") in three or four |
 | 17 | The agent told the list follows the purpose paragraph and its questions come after | Full run: clean email |
 
+Continued on 2026-10-23 with a new case, `kestrel_components` (`dev/runs/2026-10-23_*`), five runs per
+step on the analysis of its first run:
+
+| Step | Change | Result |
+|---|---|---|
+| 18 | (first full run of the case) | "for the items below" in the requests, though the list is above them |
+| 19 | "The list is added directly after the purpose paragraph; everything after it comes after the list" | Requests right in five; the purpose paragraph said "the items listed above" in one, before the list |
+| 20 | The order of the parts spelled out (greeting, purpose, list, requests, closing) | Worse: the model wrote the item names as a list itself in two, and a request inside the purpose in one |
+| 21 | The agent returns three parts as JSON (purpose, requests, closing); code assembles the email | No stray list, greeting and signature right; "below" in the requests in two; a request inside the purpose in one |
+| 22 | The parts numbered in assembly order (the user's wording): "3) comes between 2) and 4): so in 4), the items are already listed above" | No wrong "below"; "the attached requirements" (nothing is attached) in one; a request inside the purpose and "we are reviewing our replenishment needs" in another |
+| 23 | Purpose and closing written by code; the agent writes only the requests | Purpose problems gone; the requests repeated the list's quantities and dates in four ("by the dates below: BearingCap 1,300 units by 2025-06-28, …") |
+| 24 | "Unless a request adds something the list does not say, refer to the items, quantities and dates as those in the list above" | All five clean: no repeated figures, no wrong "below", no item outside the email, no past problem; the list referred to as "the listed items", "the dates shown". Two asked about the schedule twice in different words |
+
+What step 18-24 showed: each time the model had to place text around a part it does not write, it
+guessed (a placeholder, a position, "attached", "below"); the fix that held was to take the fixed
+parts away from it altogether. The email agent now writes one thing: the questions for the
+supplier, turned from the analyst's notes into polite questions to a business partner.
+
 What was hard:
 - **The input's wording outweighed the rules.** The analyst's supplier question is already a
   complete, polite question that names the past problem and every item. Asked to "write a
