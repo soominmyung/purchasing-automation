@@ -100,25 +100,58 @@ before any model sees them, exactly as the pipeline does in use:
 
 ## Checks
 
+For prompt v5 (2026-10-23). The output has a summary, numbered findings (facts with their
+sources) and judgements that cite them (critical questions, proposed changes, actions); the
+checks follow that split. Severity: see "Severity, verdicts and comparison" below.
+
 ### Code checks — deterministic, every scenario
 
-| ID | Passes when |
-|---|---|
-| C1 | The output parses and has `purchasing_report_markdown`, `critical_questions` (may be empty) and `replenishment_timeline` |
-| C2 | It names no item code and no supplier that is absent from the input |
-| C3 | Every AvailableStock and WksToOOS figure it quotes next to an item code matches the input |
+| ID | Passes when | Severity |
+|---|---|---|
+| C1 | The output parses and has `summary`, `findings`, `critical_questions`, `po_date_changes`, `quantity_changes` and `recommended_actions` with the right types | Blocking |
+| C2 | Every item code it names is in the input | Blocking |
+| C3 | Each proposed change starts from the pipeline's figure (the item's recommended order date, or its suggested quantity) | Blocking |
+| C4 | Every finding rests on documents that were given and apply to what it is about, or on the stock position; every question, change and action cites at least one finding that exists and concerns its items or the supplier as a whole | Blocking |
+| C5 | Each change adds up (the date moved by the stated weeks; the quantity times the factor, rounded up), and no proposed order date is before the snapshot date | Blocking |
+| C6 | Each Critical item has an action that cites a stock finding about it | Blocking |
+| C7 | The summary's first sentence names every Critical item | Warning |
+| C8 | The summary is within about 100 words | Warning |
 
 ### Judge checks — yes or no
 
-| ID | Passes when | Applies to |
+| ID | Passes when | Applies to | Severity |
+|---|---|---|---|
+| J1 | It invents no incident or trend that the history documents do not contain, does not distort what they say (for example, turning "high demand" into "medium demand"), and does not attribute a document to a supplier or item it does not name | All | Blocking |
+| J2a | At least one critical question addresses the supplier's problem | `supplier_issue = material` | Warning |
+| J2b | At least one critical question addresses an item's problem | `item_issue = material` | Warning |
+| J2c | No critical question presumes a supplier or item problem that the inputs do not show. Neutral questions that assume no problem pass | All | Warning |
+
+### Checks on the purchase request text (production)
+
+| ID | Passes when | By | Severity |
+|---|---|---|---|
+| P1 | Purpose and Justification add no fact, risk or assessment their input does not give, quote figures exactly with no word that judges them, and change no meaning; saying why an input action matters passes when its findings support it | Judge | Warning |
+| P2 | Purpose has 1-2 sentences, Justification 2-4 | Code | Warning |
+| P3 | Every cited document number was given | Code | Blocking |
+
+### Checks to be added (decided 2026-10-23, not yet implemented)
+
+| Check | Severity | Note |
 |---|---|---|
-| J1 | It invents no incident or trend that the history documents do not contain, does not distort what they say (for example, turning "high demand" into "medium demand"), and does not attribute a document to a supplier or item it does not name (for example, a supplier-wide quality note presented as one item's problem) | All |
-| J1b | It does not attach the fixed "No historical supplier or item data available" sentence to an item that a history document applies to | `history_present = true` |
-| J2a | At least one critical question addresses the supplier's problem | `supplier_issue = material` |
-| J2b | At least one critical question addresses an item's problem | `item_issue = material` |
-| J2c | No critical question presumes a supplier or item problem that the inputs do not show. Neutral questions that assume no problem, such as asking about upcoming changes, pass | All |
-| J3 | It states that no supplier and/or item history is available and invents none | `history_present = false` |
-| J5 | The summary names every Critical item with its `expected_stockout_weeks`, using the figure given, and recommends at least one mitigation such as expedited shipping or an alternative source | Any item is Critical |
+| A proposed change, and its size, follow from the findings it cites, and items the same reason applies to are not left out | Blocking | J6 in the v5 design |
+| A question for the supplier reveals nothing internal (stock levels, urgency, budget, the analysis) | Blocking | |
+| Each question and action follows from the findings it cites | Warning | |
+| No document that describes a problem for this order is left unused by every finding and judgement (code lists the unused documents; the judge reads only those) | Warning | To replace J2a and J2b |
+| Findings state facts only, with no judgement | Warning | |
+| Figures quoted in the summary and the findings match the pipeline's | Blocking | Would widen C3 to the text; undecided |
+
+### Checks dropped for v5
+
+| ID | Check | Why |
+|---|---|---|
+| J1b | Does not attach the fixed "no history" sentence to an item a document applies to | Code now writes the "no documents" findings; the model never writes that sentence. Claiming that history is absent when it is not is a distortion, under J1 |
+| J3 | States that no history is available when there is none | Written by code, as above |
+| J5 | The summary names each Critical item with its gap and recommends a mitigation | The v5 summary leaves actions to their own section. Split into C7 (Critical items named first) and C6 (an action on each Critical item's stock position) |
 
 The judge sees the scenario's inputs and the candidate output. It is never told which
 model produced the output.
@@ -153,8 +186,8 @@ average (9.5/10), and readers asked what the number measured. A weighted score w
 same question about its weights, and adding checks up hides what failed: an invented incident
 and a long summary would differ by the same few points. Results are reported check by check.
 
-**Each check is either blocking or a warning** (the assignment of each check is still to be
-made, with the revised checks for v5):
+**Each check is either blocking or a warning** (assigned 2026-10-23; see the tables under
+"Checks"):
 - *Blocking*: the analysis must not be used as it is if this fails (for example invented or
   distorted history, a wrong figure, an item not in the input, internal information in a
   question for the supplier).
@@ -195,7 +228,7 @@ the same way.
 
 | Date | Change |
 |---|---|
-| 2026-10-23 | No score: checks are blocking or warnings; the production verdict follows the blocking checks; models are compared in stages (blocking, warnings, cost and latency); the same checks filter fine-tuning data. The check list itself is to be revised for prompt v5 (C1 and C3 changed, C4-C6 and P1-P3 added in code; J1b, J3 and J5 to be reconsidered). |
+| 2026-10-23 | No score: checks are blocking or warnings; the production verdict follows the blocking checks; models are compared in stages (blocking, warnings, cost and latency); the same checks filter fine-tuning data. Checks revised for prompt v5: C1 and C3 changed; C4-C8 and P1-P3 added; J1b, J3 and J5 dropped (J5 split into C6 and C7); each check given a severity (C4 and P3 blocking, P1 and J2c warnings); five judge checks and a wider C3 planned. |
 | 2026-10-19 | History given as documents scoped by their headers (prompt v4). J1 also fails attribution to a supplier or item a document does not name. `CurrentStock` renamed `AvailableStock`. |
 | 2026-10-18 | Weeks to stockout reset for 29 items to spread the set across all four risk levels (previously 50 of 53 items were Critical). Holdout scenarios included, so their figures no longer match the teacher dataset. |
 | 2026-10-18 | Production evaluation node rewritten to use these checks (it previously scored four 1–10 criteria with GPT-4o judging its own analysis, one of them about email leaks it had no email to judge). Production judge set to `gemini-3.7-flash`. |

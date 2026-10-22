@@ -30,14 +30,26 @@ CHECK_NAMES = {
     "C4": "Every judgement cites findings that apply",
     "C5": "Proposed changes add up",
     "C6": "Each Critical item has an action on its stock position",
+    "C7": "Summary names every Critical item first",
+    "C8": "Summary within about 100 words",
     "J1": "No invented or distorted history",
-    "J1b": "No false 'no history' statement",
     "J2a": "Supplier problem raised as a question",
     "J2b": "Item problem raised as a question",
     "J2c": "No question presumes a problem the data does not show",
-    "J3": "Absence of history stated",
-    "J5": "Critical items handled in the summary",
 }
+
+# Blocking: the analysis must not be used as it is if this fails; the verdict follows these
+# alone. Warning: usable, but a person should look. (docs/eval_rubric.md, decided 2026-10-23)
+BLOCKING, WARNING = "blocking", "warning"
+SEVERITY = {
+    "C1": BLOCKING, "C2": BLOCKING, "C3": BLOCKING, "C4": BLOCKING, "C5": BLOCKING, "C6": BLOCKING,
+    "C7": WARNING, "C8": WARNING,
+    "J1": BLOCKING,
+    "J2a": WARNING, "J2b": WARNING,  # until replaced by the check on documents left unused
+    "J2c": WARNING,
+    "P1": WARNING, "P2": WARNING, "P3": BLOCKING,
+}
+SUMMARY_WORDS = 100
 
 _JUDGE_TEXT = {
     "J1": "Every statement the analysis makes about supplier or item history (incidents, trends, "
@@ -45,17 +57,9 @@ _JUDGE_TEXT = {
           "example, 'high demand' reported as 'medium demand'), and none is attributed to a supplier or "
           "item its document does not name (for example, a supplier-wide quality note presented as a "
           "problem of one particular item).",
-    "J1b": f"The analysis never says that no history is available (for example with the sentence "
-           f"'{NO_HISTORY_SENTENCE}') for an item that some given document applies to. A document "
-           "naming this supplier and no item applies to every item; a document naming items applies "
-           "to those items.",
     "J2c": "No critical question presumes a supplier or item problem that the inputs do not show. "
            "Neutral questions that assume no problem, such as asking whether anything is about to "
            "change, pass. Questions about problems the inputs do show also pass.",
-    "J3": "The analysis states that no history is available and invents none.",
-    "J5": "For each Critical item ({critical}), the report summary names the item together with its "
-          "expected stockout figure as given, and recommends at least one mitigation such as "
-          "expedited shipping or an alternative source.",
 }
 # J2a / J2b: offline the label guarantees a problem exists; in production the judge decides.
 _J2_LABELLED = {
@@ -234,6 +238,16 @@ def code_checks(items: list[dict[str, Any]], analysis: Any,
             missing.append(f"{it.get('item_name')} ({code})")
     out["C6"] = _result([f"no action on the stock position of {m}" for m in missing],
                         "each Critical item has one" if critical_items(items) else "no Critical items")
+
+    # C7 the summary's first sentence names every Critical item; C8 its length
+    summary = str(obj.get("summary") or "").strip()
+    first = re.split(r"(?<=[.!?])\s+", summary, maxsplit=1)[0] if summary else ""
+    unnamed = [f"{it.get('item_name')} ({it.get('item_code')})" for it in critical_items(items)
+               if _norm(it.get("item_name")) not in _norm(first)]
+    out["C7"] = _result([f"first sentence does not name {u}" for u in unnamed],
+                        "names every Critical item" if critical_items(items) else "no Critical items")
+    words = len(summary.split())
+    out["C8"] = _result([f"{words} words"] if words > SUMMARY_WORDS else [], f"{words} words")
     return out
 
 
@@ -250,8 +264,6 @@ def applicable_judge_checks(items: list[dict[str, Any]], history_docs: list[dict
     hs = any(d.get("supplier") for d in docs)
     hi = any(d.get("items") or d.get("item_codes") for d in docs)
     checks = ["J1", "J2c"]
-    if docs:
-        checks.append("J1b")
     if labels is not None:
         if labels.get("supplier_issue") == "material":
             checks.append("J2a")
@@ -262,10 +274,6 @@ def applicable_judge_checks(items: list[dict[str, Any]], history_docs: list[dict
             checks.append("J2a")
         if hi:
             checks.append("J2b")
-    if not docs:
-        checks.append("J3")
-    if critical_items(items):
-        checks.append("J5")
     return checks
 
 
@@ -454,22 +462,12 @@ def approval_checks(payload: dict[str, Any], approval: dict[str, Any], citation_
               'Return JSON only: {"P1": {"pass": true|false, "evidence": "<short quote or reason>"}}')
     judged = run_judge(judge, prompt, ["P1"], retries=retries)
     results = {"P1": {"pass": judged["P1"]["pass"], "detail": judged["P1"]["evidence"]}, **results}
-    failed = [k for k, v in results.items() if v["pass"] is not True]
-    return {"verdict": "ready" if not failed else "needs_review", "failed": failed, "checks": results, "judge": judge}
+    return {**verdict(results), "checks": results, "judge": judge}
 
 
 def approval_markdown(result: dict[str, Any]) -> str:
-    rows = []
-    for cid, v in result["checks"].items():
-        mark = "Pass" if v["pass"] is True else ("Fail" if v["pass"] is False else "Not checked")
-        detail = str(v["detail"] or "").replace("|", "/").replace("\n", " ")
-        rows.append(f"| {APPROVAL_CHECK_NAMES.get(cid, cid)} ({cid}) | {mark} | {detail} |")
-    failed = result["failed"]
-    verdict = (f"all {len(result['checks'])} checks passed." if not failed
-               else f"{len(failed)} of {len(result['checks'])} checks did not pass.")
     return ("\n## Purchase Request Text\n\n"
-            f"**Result:** {verdict}\n\n"
-            "| Check | Result | Detail |\n| --- | --- | --- |\n" + "\n".join(rows) + "\n")
+            f"**Result:** {verdict_sentence(result)}\n\n" + checks_table(result, APPROVAL_CHECK_NAMES))
 
 
 # ----------------------------------------------------------------------------- production entry point
@@ -487,26 +485,43 @@ def evaluate_analysis(supplier: str, items: list[dict[str, Any]], analysis: Any,
                                            analysis, checks, labelled=False), checks, retries=retries)
     results = {**{k: {"pass": v["pass"], "detail": v["detail"]} for k, v in code.items()},
                **{k: {"pass": v["pass"], "detail": v["evidence"]} for k, v in judged.items()}}
-    failed = [k for k, v in results.items() if v["pass"] is not True]
+    return {**verdict(results), "checks": results, "judge": judge}
+
+
+def verdict(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Ready only if every blocking check passed; a check the judge could not answer counts as
+    not passed. Each result gets its severity; warnings are listed but do not decide."""
+    for cid, v in results.items():
+        v["severity"] = SEVERITY.get(cid, BLOCKING)
+    not_passed = [k for k, v in results.items() if v["pass"] is not True]
+    failed = [k for k in not_passed if results[k]["severity"] == BLOCKING]
     return {"verdict": "ready" if not failed else "needs_review", "failed": failed,
-            "checks": results, "judge": judge}
+            "warnings": [k for k in not_passed if k not in failed]}
 
 
-def evaluation_markdown(supplier: str, result: dict[str, Any]) -> str:
-    total, failed = len(result["checks"]), result["failed"]
-    if not failed:
-        verdict = f"Ready for procurement review: all {total} checks passed."
-    else:
-        verdict = f"Needs human review: {len(failed)} of {total} checks did not pass."
+def verdict_sentence(result: dict[str, Any]) -> str:
+    blocking = [k for k, v in result["checks"].items() if v.get("severity") == BLOCKING]
+    warnings = result.get("warnings") or []
+    note = f"; {len(warnings)} warning{'s' if len(warnings) != 1 else ''}" if warnings else "; no warnings"
+    if not result["failed"]:
+        return f"Ready: all {len(blocking)} blocking checks passed{note}."
+    return f"Needs review: {len(result['failed'])} of {len(blocking)} blocking checks did not pass{note}."
+
+
+def checks_table(result: dict[str, Any], names: dict[str, str]) -> str:
     rows = []
     for cid, v in result["checks"].items():
         mark = "Pass" if v["pass"] is True else ("Fail" if v["pass"] is False else "Not checked")
         detail = str(v["detail"] or "").replace("|", "/").replace("\n", " ")
-        rows.append(f"| {CHECK_NAMES.get(cid, cid)} ({cid}) | {mark} | {detail} |")
+        rows.append(f"| {names.get(cid, cid)} ({cid}) | {v.get('severity', '')} | {mark} | {detail} |")
+    return "| Check | Severity | Result | Detail |\n| --- | --- | --- | --- |\n" + "\n".join(rows) + "\n"
+
+
+def evaluation_markdown(supplier: str, result: dict[str, Any]) -> str:
     return (
         "# Analysis Quality Check\n\n"
         f"**Supplier:** {supplier}  \n"
-        f"**Result:** {verdict}  \n"
+        f"**Result:** {verdict_sentence(result)}  \n"
         f"**Checked by:** code, and `{result['judge']}` for the judgement checks\n\n"
-        "| Check | Result | Detail |\n| --- | --- | --- |\n" + "\n".join(rows) + "\n"
+        + checks_table(result, CHECK_NAMES)
     )
