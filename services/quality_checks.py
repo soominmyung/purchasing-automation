@@ -57,7 +57,9 @@ _JUDGE_TEXT = {
     "J7": "Every figure from the stock data that the analysis quotes anywhere (summary, findings, "
           "questions, actions, reasons) matches the input for that item exactly: available stock, weeks "
           "to stockout, expected stockout weeks (the gap), suggested quantity, recommended order and "
-          "delivery dates. Figures that come from the history documents are not judged here.",
+          "delivery dates. A figure that equals a value the analysis proposes in po_date_changes or "
+          "quantity_changes for that item also passes (those are checked in code), and figures that "
+          "come from the history documents are not judged here.",
     "J1": "Every statement the analysis makes about supplier or item history (incidents, trends, "
           "reliability) is supported by the history documents given, none of them is distorted (for "
           "example, 'high demand' reported as 'medium demand'), and none is attributed to a supplier or "

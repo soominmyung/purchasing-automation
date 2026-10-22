@@ -125,7 +125,7 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 | J2a | At least one critical question addresses the supplier's problem | `supplier_issue = material` | Warning |
 | J2b | At least one critical question addresses an item's problem | `item_issue = material` | Warning |
 | J2c | No critical question presumes a supplier or item problem that the inputs do not show. Neutral questions that assume no problem pass | All | Warning |
-| J7 | Every figure from the stock data quoted anywhere in the output (available stock, weeks to stockout, the gap, suggested quantity, recommended dates) matches the input for that item; figures from the history documents are J1's | All | Blocking |
+| J7 | Every figure from the stock data quoted anywhere in the output (available stock, weeks to stockout, the gap, suggested quantity, recommended dates) matches the input for that item. A figure equal to a value proposed in that item's change fields passes (C3 and C5 check those); figures from the history documents are J1's | All | Blocking |
 
 ### Checks on the purchase request text (production)
 
