@@ -613,8 +613,14 @@ to be written after testing in Claude Desktop.
     | Time limits on every model call | `services/agents.py`, `_llm`; `services/quality_checks.py`, `_judge_timeout` and the provider calls; `config.py` |
     | Documents beside the evaluation | `services/agents.py`, `documents_graph`, `documents_node`, `purchasing_graph` |
   - What stayed with LLMs, and why: findings, judgements and the summary (analysis); the
-    approvers' Purpose and Justification; the supplier email's wording; the judge for what
-    needs reading (J and P1 checks).
+    approvers' Purpose and Justification; the supplier email's wording; and the judge, for what
+    needs reading: whether findings are faithful to their documents (J1); whether each
+    question, proposed change and action follows from the findings it cites, whether a
+    change's size (weeks, factor) fits its basis, and whether items the same reason applies to
+    were left out (planned, J6 in item 16; not yet implemented); and the purchase request text
+    (P1). Code checks only that a proposal's arithmetic is right, that it starts from the
+    pipeline's figure and that its findings exist (C3-C5); whether its logic holds needs the
+    judge.
   - The effect: v4's report was written twice by LLMs with figures passing through both; v5
     removed three agents (about 10-14 s per supplier) and every figure is now exact by
     construction (`prompts/CHANGES.md`, v5).
