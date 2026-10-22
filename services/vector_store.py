@@ -53,8 +53,13 @@ def get_vector_stores() -> dict[str, Chroma]:
     return _stores
 
 
-def _add_docs(collection_name: str, documents: list[Document]) -> None:
+def _add_docs(collection_name: str, documents: list[Document], split: bool = True) -> None:
+    """split=False stores each document whole (history documents: at most two pages, retrieved
+    by metadata, never by similarity, so there is nothing to gain from chunks)."""
     store = _get_or_create_store(collection_name)
+    if not split:
+        store.add_documents(documents)
+        return
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     splits = splitter.split_documents(documents)
     if splits:
@@ -180,7 +185,8 @@ def ingest_history(text: str, source: str = "", origin: str = "upload", fingerpr
     if source:
         delete_history_source(origin, source)
     _add_docs(HISTORY_COLLECTION, [Document(page_content=text,
-                                            metadata=history_metadata(header, source, origin, fingerprint))])
+                                            metadata=history_metadata(header, source, origin, fingerprint))],
+              split=False)
     return header
 
 
@@ -210,39 +216,78 @@ def known_suppliers() -> set[str]:
     return {history_key(m.get("supplier_name")) for m in raw.get("metadatas") or [] if m.get("supplier_name")}
 
 
-def search_history(supplier: str, items: list[tuple[str, str]], k: int = 10) -> list[dict[str, Any]]:
+# Retrieval rule agreed with the purchasing team: documents from the 12 months before the
+# snapshot date, and within that the 5 most recent about the supplier as a whole and the 5 most
+# recent about each item. Set in config.py (history_window_months, history_docs_per_scope).
+def _doc_date(meta: dict[str, Any]) -> str:
+    """The document's own date, or its upload date when the document is undated."""
+    return meta.get("event_date") or (meta.get("ingested_at") or "")[:10]
+
+
+def _months_before(day: str, months: int) -> str:
+    y, m, d = (int(x) for x in day[:10].split("-"))
+    m -= months
+    while m <= 0:
+        m += 12
+        y -= 1
+    return f"{y:04d}-{m:02d}-{min(d, 28):02d}"
+
+
+def search_history(supplier: str, items: list[tuple[str, str]], as_of: str,
+                   months: int, per_scope: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """
-    The k most recent documents about this supplier or about any of these items, by the
-    document's own date. items: (item_code, item_name) pairs; a document matches an item by
-    either. Chunks of one document are joined back together.
+    History documents for one analysis. A document qualifies when it names this supplier or any
+    of these items (by code or name) and is dated within `months` before `as_of`. Within that,
+    the `per_scope` most recent documents are kept for the supplier (supplier-wide documents and
+    documents about its other items) and for each item; a document in several scopes is kept
+    once. Returns (documents, counts) where counts says how many qualified and how many were
+    left out, for the report.
     """
     keys = [f"s:{history_key(supplier)}"] if history_key(supplier) else []
     for code, name in items:
         keys += [f"i:{history_key(v)}" for v in (code, name) if history_key(v)]
     keys = list(dict.fromkeys(keys))
+    counts = {"window_months": months, "from": _months_before(as_of, months), "to": as_of[:10],
+              "per_scope": per_scope, "matched": 0, "in_window": 0, "included": 0, "left_out": 0}
     if not keys:
-        return []
+        return [], counts
     where = {keys[0]: True} if len(keys) == 1 else {"$or": [{k_: True} for k_ in keys]}
-    chunks = _most_recent(HISTORY_COLLECTION, k=10_000, filter=where)
+    store = _get_or_create_store(HISTORY_COLLECTION)
+    raw = store._collection.get(where=where, include=["metadatas", "documents"])
+
+    # one entry per document (documents stored before 2026-10-19 may still be in chunks)
     docs: dict[tuple, dict[str, Any]] = {}
-    for c in chunks:
-        m = c.metadata or {}
-        doc_key = (m.get("source"), m.get("supplier_name"), m.get("items"), m.get("item_codes"),
-                   m.get("event_date"), m.get("ingested_at"))
-        if doc_key not in docs:
-            if len(docs) == k:
-                continue
-            docs[doc_key] = {
-                "supplier": m.get("supplier_name") or "",
-                "items": _split_list(m.get("items") or ""),
-                "item_codes": _split_list(m.get("item_codes") or ""),
-                "date": m.get("event_date") or "",  # undated: shown as such, still ranked by upload time
-                "source": m.get("source") or "",
-                "text": c.page_content,
-            }
-        else:
-            docs[doc_key]["text"] += "\n" + c.page_content
-    return list(docs.values())
+    for text, m in zip(raw.get("documents") or [], raw.get("metadatas") or []):
+        key = (m.get("source_id") or m.get("source"), m.get("supplier_name"), m.get("items"),
+               m.get("item_codes"), m.get("event_date"), m.get("ingested_at"))
+        if key in docs:
+            docs[key]["text"] += "\n" + text
+            continue
+        docs[key] = {"supplier": m.get("supplier_name") or "",
+                     "items": _split_list(m.get("items") or ""),
+                     "item_codes": _split_list(m.get("item_codes") or ""),
+                     "date": m.get("event_date") or "", "source": m.get("source") or "",
+                     "_sort": _doc_date(m), "_keys": {k_ for k_ in m if k_.startswith("i:")},
+                     "text": text}
+    counts["matched"] = len(docs)
+    start, end = counts["from"], counts["to"]
+    pool = sorted((d for d in docs.values() if start < d["_sort"] <= end), key=lambda d: d["_sort"], reverse=True)
+    counts["in_window"] = len(pool)
+
+    item_keys = [{f"i:{history_key(v)}" for v in (code, name) if history_key(v)} for code, name in items]
+    scopes = [[d for d in pool if not (d["_keys"] & set().union(*item_keys)) and history_key(d["supplier"]) == history_key(supplier)]]
+    scopes += [[d for d in pool if d["_keys"] & ik] for ik in item_keys]
+    chosen: list[dict[str, Any]] = []
+    for scope in scopes:
+        for d in scope[:per_scope]:
+            if not any(d is c for c in chosen):
+                chosen.append(d)
+    chosen.sort(key=lambda d: d["_sort"], reverse=True)
+    counts["included"] = len(chosen)
+    counts["left_out"] = counts["in_window"] - len(chosen)
+    for d in chosen:
+        d.pop("_sort"), d.pop("_keys")
+    return chosen, counts
 
 
 def ingest_analysis_examples(text: str) -> None:

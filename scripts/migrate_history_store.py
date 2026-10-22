@@ -17,6 +17,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from langchain_core.documents import Document
 
+from scripts.unchunk_history_store import join
 from services.vector_store import (
     HISTORY_COLLECTION, _add_docs, _get_or_create_store, history_metadata, parse_history_header,
 )
@@ -34,13 +35,14 @@ def main():
         for text, meta in zip(raw["documents"], raw["metadatas"]):
             groups.setdefault(meta.get(key) or "", []).append(text)
         for filed_under, chunks in groups.items():
-            text = "\n".join(chunks)
+            text = join(chunks)  # the earlier chunks overlap; join without repeating the overlaps
             header = parse_history_header(text)
             if collection == "supplier_history" and filed_under and not header["supplier"]:
                 header["supplier"] = filed_under
             if collection == "item_history" and filed_under and filed_under not in header["item_codes"]:
                 header["item_codes"].append(filed_under)
-            _add_docs(HISTORY_COLLECTION, [Document(page_content=text, metadata=history_metadata(header, MIGRATED))])
+            _add_docs(HISTORY_COLLECTION, [Document(page_content=text, metadata=history_metadata(header, MIGRATED))],
+                      split=False)
             print(f"  {collection:<17} {filed_under:<10} -> supplier={header['supplier'] or '-'} "
                   f"items={header['items'] or '-'} codes={header['item_codes'] or '-'} date={header['date'] or '-'}")
 

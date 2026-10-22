@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     # model that writes the analysis (GPT-4o), so the analysis is never judged by its own
     # author or a model of the same family. Needs GEMINI_API_KEY.
     evaluator_model: str = "gemini:gemini-3.7-flash"
+    # History given to the analysis agent (agreed with the purchasing team): documents from the
+    # last 12 months before the snapshot date, at most 5 per supplier and 5 per item.
+    history_window_months: int = 12
+    history_docs_per_scope: int = 5
     # Which prompts/<version>/ folder the agents use; recorded with every run.
     prompt_version: str = "v4"
     # Run records (services/run_record.py): one JSON file per run on the server.

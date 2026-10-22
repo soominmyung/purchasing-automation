@@ -56,23 +56,22 @@ def _llm(model: str = "gpt-4o") -> ChatOpenAI:
 
 
 # ----- History retrieval for the Analysis Agent -----
-# One retrieval, in code, before the model is called: every history document about this
-# supplier or about any of these items, most recent first. Each document keeps the supplier
-# and items named in its header, so the model is told what it applies to rather than
-# guessing it. The model never writes a search query.
-HISTORY_DOCS_PER_ANALYSIS = 10
-
-
-def retrieve_history(supplier: str, items: list[dict]) -> list[dict[str, Any]]:
+# One retrieval, in code, before the model is called: the documents about this supplier or
+# these items from the window before the snapshot date, a few per scope (see search_history).
+# Each document keeps the supplier and items named in its header, so the model is told what
+# it applies to rather than guessing it. The model never writes a search query.
+def retrieve_history(supplier: str, items: list[dict], as_of: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     pairs = [(str(i.get("item_code") or ""), str(i.get("item_name") or "")) for i in items]
-    return search_history(supplier, pairs, k=HISTORY_DOCS_PER_ANALYSIS)
+    return search_history(supplier, pairs, as_of=as_of, months=settings.history_window_months,
+                          per_scope=settings.history_docs_per_scope)
 
 
 def history_for_model(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """What the model sees of each document: its header fields and its text."""
-    return [{"supplier": d.get("supplier") or "", "items": d.get("items") or [],
+    """What the model sees of each document: a number (cited by proposed changes, resolved back
+    to the file name by code), its header fields and its text."""
+    return [{"id": n, "supplier": d.get("supplier") or "", "items": d.get("items") or [],
              "item_codes": d.get("item_codes") or [], "date": d.get("date") or "", "text": d.get("text") or ""}
-            for d in docs]
+            for n, d in enumerate(docs, 1)]
 
 
 def legacy_history_docs(supplier: str, items: list[dict], supplier_text: str | None,
@@ -121,7 +120,16 @@ def document_references(docs: list[dict[str, Any]]) -> list[dict[str, str]]:
 def references_markdown(references: dict[str, Any] | None) -> str:
     """The report's closing section: which history documents the analysis was based on."""
     refs = (references or {}).get("documents") or []
+    window = (references or {}).get("window")
     lines = [REFERENCES_HEADING, ""]
+    if window:
+        rule = (f"History searched: documents dated {window['from']} to {window['to']} "
+                f"(last {window['window_months']} months), at most "
+                f"{window['per_scope']} per supplier and per item.")
+        if window["left_out"]:
+            rule += (f" {window['in_window']} documents fell in that period; the "
+                     f"{window['left_out']} oldest beyond that limit are not included.")
+        lines += [rule, ""]
     if not refs:
         return "\n".join(lines + ["No history was found for this supplier or these items."]) + "\n"
     lines += ["| Document | Supplier | Items | Date |", "| --- | --- | --- | --- |"]
@@ -155,12 +163,13 @@ def run_analysis_agent(
     """
     supplier = str(input_json.get("supplier") or "")
     items = input_json.get("items", [])
+    window = None
     if history_override is not None:
         docs = history_override
     elif supplier_history_override or item_history_override:
         docs = legacy_history_docs(supplier, items, supplier_history_override, item_history_override)
     else:
-        docs = retrieve_history(supplier, items)
+        docs, window = retrieve_history(supplier, items, str(input_json.get("snapshot_date") or ""))
 
     user_text = json.dumps({**input_json, "history": history_for_model(docs)}, ensure_ascii=False)
     final_response = _llm(AGENT_MODELS["analysis"]).invoke([
@@ -178,7 +187,7 @@ def run_analysis_agent(
             "replenishment_timeline": input_json.get("items", []),
         }
     if isinstance(analysis, dict):
-        analysis["references"] = {"documents": document_references(docs)}
+        analysis["references"] = {"documents": document_references(docs), "window": window}
     return analysis, docs
 
 
