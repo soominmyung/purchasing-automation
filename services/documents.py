@@ -137,6 +137,7 @@ def number_findings(analysis: dict, items: list[dict], history_docs: list[dict],
         source = "".join(f"[{d}]" for d in e["documents"])
         if e["stock"]:
             source = (source + " " if source else "") + "(stock position)"
+        text = _highlight_changes(text, analysis)
         e["subject"], e["body"] = subject, text
         e["line"] = f"{subject} — {text}" + (f" {source}" if source else "")
         del e["_group"], e["_n"]
@@ -145,6 +146,22 @@ def number_findings(analysis: dict, items: list[dict], history_docs: list[dict],
 
 def _labels(numbered: list[dict]) -> dict[Any, str]:
     return {e["id"]: e["label"] for e in numbered if e["id"] is not None}
+
+
+def _highlight_changes(text: str, analysis: dict) -> str:
+    """Highlight each "pipeline value → proposed value" in the model's text that is one of its
+    proposed changes, as the tables do (an arrow that is not a change is left as written; the
+    quality check C9 reports it)."""
+    from services.quality_checks import ARROW, _figure, change_pairs
+    pairs = change_pairs(analysis)
+    def mark(m: re.Match) -> str:
+        if (_figure(m.group(1)), _figure(m.group(2))) not in pairs:
+            return m.group(0)
+        start, end = m.start(), m.end()
+        if text[max(0, start - 2):start] == "==" and text[end:end + 2] == "==":
+            return m.group(0)
+        return f"=={m.group(1)} → {m.group(2)}=="  # one arrow form, as in the tables
+    return ARROW.sub(mark, text or "")
 
 
 def _cites(entry: dict, labels: dict[Any, str]) -> str:
@@ -165,14 +182,15 @@ def _questions_lines(analysis: dict, supplier: str, labels: dict, keep=None, cit
         lines.append(title)
         for q in group:
             n += 1
-            lines.append(f"{n}. {q['question'].strip()}" + (_cites(q, labels) if cite else ""))
+            lines.append(f"{n}. {_highlight_changes(q['question'].strip(), analysis)}" + (_cites(q, labels) if cite else ""))
     return lines
 
 
 def _actions_lines(analysis: dict, labels: dict, keep=None, cite: bool = True) -> list[str]:
     acts = [a for a in _list(analysis.get("recommended_actions"))
             if isinstance(a, dict) and str(a.get("action") or "").strip() and (keep is None or keep(a))]
-    return [f"{n}. {a['action'].strip()}" + (_cites(a, labels) if cite else "") for n, a in enumerate(acts, 1)]
+    return [f"{n}. {_highlight_changes(a['action'].strip(), analysis)}" + (_cites(a, labels) if cite else "")
+            for n, a in enumerate(acts, 1)]
 
 
 def _proposal_lines(items: list[dict], analysis: dict, labels: dict) -> list[str]:
@@ -187,14 +205,14 @@ def _proposal_lines(items: list[dict], analysis: dict, labels: dict) -> list[str
             weeks = f"{abs(shift):g} week{'s' if abs(shift) != 1 else ''} {way}" if way else "shift not given"
             n += 1
             lines.append(f"{n}. {name} order date {_changed(c.get('original_po_date'), c.get('proposed_po_date'))} "
-                         f"({weeks}): {str(c.get('reason') or '').strip()}{_cites(c, labels)}")
+                         f"({weeks}): {_highlight_changes(str(c.get('reason') or '').strip(), analysis)}{_cites(c, labels)}")
         if ch.get("qty"):
             c = ch["qty"]
             factor = c.get("factor")
             times = f" (×{factor:g})" if isinstance(factor, (int, float)) else ""
             n += 1
             lines.append(f"{n}. {name} quantity {_changed(c.get('original_quantity'), c.get('proposed_quantity'))}"
-                         f"{times}: {str(c.get('reason') or '').strip()}{_cites(c, labels)}")
+                         f"{times}: {_highlight_changes(str(c.get('reason') or '').strip(), analysis)}{_cites(c, labels)}")
     return lines
 
 
@@ -247,7 +265,8 @@ def render_analysis_report(supplier: str, snapshot_date: str, items: list[dict],
     out = [f"# Purchasing Analysis — {supplier}", "", *_date_header(snapshot_date), ""]
     if data_issue_lines:
         out += [DATA_ISSUES_HEADING, *[f"- {ln}" for ln in data_issue_lines], ""]
-    out += ["## Summary", "", str(analysis.get("summary") or "(no summary was returned)").strip(), ""]
+    out += ["## Summary", "", _highlight_changes(str(analysis.get("summary") or "(no summary was returned)").strip(),
+                                                 analysis), ""]
 
     out += ["## Items", "", "| Item | Risk | Weeks to stockout | Order by | Quantity |", "| --- | --- | --- | --- | --- |"]
     for it in ordered_items(items):

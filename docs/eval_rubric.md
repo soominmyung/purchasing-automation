@@ -116,6 +116,7 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 | C6 | Each Critical item has an action that cites a stock finding about it | Blocking |
 | C7 | The summary names every Critical item | Warning |
 | C8 | The summary is within about 100 words | Warning |
+| C9 | Every "<pipeline value> → <proposed value>" written in the text is one of the proposed changes | Blocking |
 
 ### Judge checks — yes or no
 
@@ -125,7 +126,7 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 | J2a | At least one critical question addresses the supplier's problem | `supplier_issue = material` | Warning |
 | J2b | At least one critical question addresses an item's problem | `item_issue = material` | Warning |
 | J2c | No critical question presumes a supplier or item problem that the inputs do not show. Neutral questions that assume no problem pass | All | Warning |
-| J7 | Every figure from the stock data quoted anywhere in the output (available stock, weeks to stockout, the gap, suggested quantity, recommended dates) matches the input for that item. A figure equal to a value proposed in that item's change fields passes (C3 and C5 check those); figures from the history documents are J1's | All | Blocking |
+| J7 | Every figure from the stock data quoted anywhere in the output (available stock, weeks to stockout, the gap, suggested quantity, recommended dates) matches the input for that item. A figure that a change proposes is written as "<pipeline value> → <proposed value>"; writing only one of the two fails. Figures from the history documents are J1's | All | Blocking |
 
 ### Checks on the purchase request text (production)
 
@@ -166,8 +167,9 @@ Offline:
 | Anthropic | `claude-sonnet-5-5` |
 | Google | `gemini-3.7-flash` (version `3.7-flash-08-2026`) |
 
-Production: `gemini-3.7-flash`, a different provider from the GPT-4o analysis agent so the
-analysis is never judged by a model of its own family.
+Production: `claude-haiku-5-5` for now (2026-10-23; `gemini-3.7-flash` until then, which became
+slow and then unavailable), a different provider from the GPT-4o analysis agent so the analysis
+is never judged by a model of its own family.
 
 Pinned versions only, so a rerun gives comparable results. GPT-4o is not a judge because it
 is one of the systems under evaluation.

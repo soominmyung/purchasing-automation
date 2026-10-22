@@ -92,7 +92,8 @@ Rules:
   least one; the findings must concern its items or the supplier as a whole.
 - Figures: the pipeline's figures (available stock, weeks to stockout, expected stockout weeks,
   suggested quantity, recommended dates) are quoted exactly as given. A different order date or
-  quantity is proposed only in po_date_changes or quantity_changes, never in the text.
+  quantity is proposed in po_date_changes or quantity_changes; where the text mentions an order
+  date or quantity that a change proposes, it writes "<pipeline value> → <proposed value>".
 - po_date_changes: when a finding gives a reason to order earlier or later (for example a
   delivery delay, or a shorter lead time the supplier announced). original_po_date is the item's
   recommended_latest_po_date as given; shift_weeks is the change in weeks, negative for earlier and

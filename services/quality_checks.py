@@ -32,6 +32,7 @@ CHECK_NAMES = {
     "C6": "Each Critical item has an action on its stock position",
     "C7": "Summary names every Critical item",
     "C8": "Summary within about 100 words",
+    "C9": "Arrows in the text match the proposed changes",
     "J1": "No invented or distorted history",
     "J2a": "Supplier problem raised as a question",
     "J2b": "Item problem raised as a question",
@@ -44,7 +45,7 @@ CHECK_NAMES = {
 BLOCKING, WARNING = "blocking", "warning"
 SEVERITY = {
     "C1": BLOCKING, "C2": BLOCKING, "C3": BLOCKING, "C4": BLOCKING, "C5": BLOCKING, "C6": BLOCKING,
-    "C7": WARNING, "C8": WARNING,
+    "C7": WARNING, "C8": WARNING, "C9": BLOCKING,
     "J1": BLOCKING,
     "J2a": WARNING, "J2b": WARNING,  # until replaced by the check on documents left unused
     "J2c": WARNING,
@@ -57,9 +58,10 @@ _JUDGE_TEXT = {
     "J7": "Every figure from the stock data that the analysis quotes anywhere (summary, findings, "
           "questions, actions, reasons) matches the input for that item exactly: available stock, weeks "
           "to stockout, expected stockout weeks (the gap), suggested quantity, recommended order and "
-          "delivery dates. A figure that equals a value the analysis proposes in po_date_changes or "
-          "quantity_changes for that item also passes (those are checked in code), and figures that "
-          "come from the history documents are not judged here.",
+          "delivery dates. For an item with a proposed change in po_date_changes or quantity_changes, "
+          "the changed figure (its order date or its quantity) is written as '<pipeline value> → "
+          "<proposed value>' wherever the text mentions it; writing only one of the two fails. Figures "
+          "that come from the history documents are not judged here.",
     "J1": "Every statement the analysis makes about supplier or item history (incidents, trends, "
           "reliability) is supported by the history documents given, none of them is distorted (for "
           "example, 'high demand' reported as 'medium demand'), and none is attributed to a supplier or "
@@ -255,7 +257,49 @@ def code_checks(items: list[dict[str, Any]], analysis: Any,
                         "names every Critical item" if critical_items(items) else "no Critical items")
     words = len(summary.split())
     out["C8"] = _result([f"{words} words"] if words > SUMMARY_WORDS else [], f"{words} words")
+
+    # C9 every "original -> proposed" written in the text is one of the proposed changes
+    allowed = change_pairs(obj)
+    wrong = [f"{a} → {b}" for a, b in arrows_in(analysis_text(obj)) if (a, b) not in allowed]
+    out["C9"] = _result([f"not a proposed change: {w}" for w in wrong],
+                        "every arrow matches a change" if allowed else "no changes proposed")
     return out
+
+
+ARROW = re.compile(r"(\d{4}-\d{2}-\d{2}|\d[\d,]*(?:\.\d+)?)\s*(?:→|->)\s*(\d{4}-\d{2}-\d{2}|\d[\d,]*(?:\.\d+)?)")
+
+
+def _figure(v: Any) -> str:
+    """A date or a number, written the same way whatever its format (2,600 / 2600 / 2600.0)."""
+    t = str(v).strip().replace(",", "")
+    try:
+        f = float(t)
+        return str(int(f)) if f.is_integer() else str(f)
+    except ValueError:
+        return t
+
+
+def change_pairs(obj: dict) -> set[tuple[str, str]]:
+    """(pipeline value, proposed value) of every proposed change."""
+    pairs = {(_figure(c.get("original_po_date")), _figure(c.get("proposed_po_date")))
+             for c in _entries(obj, "po_date_changes")}
+    pairs |= {(_figure(c.get("original_quantity")), _figure(c.get("proposed_quantity")))
+              for c in _entries(obj, "quantity_changes")}
+    return pairs
+
+
+def arrows_in(text: str) -> list[tuple[str, str]]:
+    return [(_figure(a), _figure(b)) for a, b in ARROW.findall(text or "")]
+
+
+def analysis_text(obj: dict) -> str:
+    """All the model's prose: summary, findings, questions, actions and the changes' reasons."""
+    parts = [str(obj.get("summary") or "")]
+    parts += [str(f.get("text") or "") for f in _entries(obj, "findings")]
+    parts += [str(q.get("question") or "") for q in _entries(obj, "critical_questions")]
+    parts += [str(a.get("action") or "") for a in _entries(obj, "recommended_actions")]
+    parts += [str(c.get("reason") or "") for f in ("po_date_changes", "quantity_changes") for c in _entries(obj, f)]
+    return "\n".join(parts)
 
 
 # ----------------------------------------------------------------------------- judge checks

@@ -15,8 +15,10 @@ class Settings(BaseSettings):
 
     # Model that checks each analysis ("provider:model"). From a different provider than the
     # model that writes the analysis (GPT-4o), so the analysis is never judged by its own
-    # author or a model of the same family. Needs GEMINI_API_KEY.
-    evaluator_model: str = "gemini:gemini-3.7-flash"
+    # author or a model of the same family. Provisional until judge validation: Claude Haiku
+    # since 2026-10-23, after gemini-3.7-flash took 30-109 s per call and then returned 504,
+    # 503 and 429. Needs CLAUDE_API_KEY (or ANTHROPIC_API_KEY).
+    evaluator_model: str = "anthropic:claude-haiku-5-5"
     # Time limits on every model call, so one call that never answers cannot hold up a run.
     # A judge call that runs out is retried once and then recorded as "Not checked"; the
     # documents do not wait for the judge (services/agents.py).
