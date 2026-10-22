@@ -17,7 +17,7 @@ storage) are recorded in `docs/changelog_2026-10.md`.
 | v1 | Before October 2026 | branch `legacy/v1` (3866d60) |
 | v2 | Critical risk level, input validation; history still by tool calls | never committed as a prompt set (the next commit, ddd4a06, already holds v3); kept only as this folder |
 | v3 | History retrieved in code; Referenced Documents section | commit ddd4a06 to a475674 |
-| v4 | One history store scoped by document headers; `AvailableStock` | uncommitted as of 2026-10-19 |
+| v4 | One history store scoped by document headers; `AvailableStock` | commit 718a062 onward (current) |
 
 ## Files
 
@@ -35,6 +35,17 @@ The email check and rewrite prompts were written inline in `services/agents.py` 
 2026-10-19; their text is the same in every version.
 
 ---
+
+## v5 — in progress (not yet in use)
+
+Being written; `config.py` still uses v4. Design and reasons: `docs/changelog_2026-10.md`,
+item 16. In short: the analysis agent returns fields and no report — a summary, numbered
+findings (facts from the documents or the stock figures, each with its source), and critical
+questions (marked supplier or internal), proposed order-date and quantity changes, and
+recommended actions, each citing the findings it rests on. The analysis report is assembled by
+code; the purchase-request narrative for approvers is one new prompt (`approval_request.md`);
+the supplier email receives only the supplier questions and the items, and code writes its item
+lines; `report_doc.md`, `pr_draft.md` and `pr_doc.md` are gone.
 
 ## v4 — 2026-10-19 (current)
 
@@ -57,8 +68,21 @@ The email check and rewrite prompts were written inline in `services/agents.py` 
 - "CurrentStock" read as the quantity in the warehouse, while the figure includes stock on
   order and excludes stock committed to customers.
 
-**Effect measured:** not yet; GPT-4o outputs are to be regenerated with v4 once the
-evaluation scenarios are converted to history documents.
+**Effect measured** (GPT-4o, evaluation scenarios converted to history documents): the
+unattributed quality note in eval_08 no longer reaches any item's notes (it reached all
+three before); the other-item document added to eval_12 reaches no item's notes; supply-side
+documents in H2 and H3 reach only the item they name; no item with history was given the
+no-history sentence.
+
+**Known fault — the example teaches a wrong note.** The example's notes end with "History
+reviewed: no notable supplier or item issues." although the example supplier had a 3-week
+delay. (In v3 the example note named the delay; v4 moved supplier-wide issues to the
+summary and put the no-notable sentence in its place.) GPT-4o copied both lessons: it ended
+a note with the sentence right after describing a demand surge (eval_16, TitaniumAlloyWheel)
+and wrote "No notable supplier issues" for an item of a supplier whose operations had halted
+(H5, PanelFiber). Adding a correct example for an item with an incident ("History reviewed:
+<what the document says>") changed the eval_16 note to that form. Fixed in v5, where notes
+are written by code.
 
 ## v3 — 2026-10-18
 

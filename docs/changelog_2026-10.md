@@ -89,7 +89,7 @@ before these changes is kept on branch `legacy/v1` (3866d60). Not yet committed:
 - Email: Critical items get the earliest dispatch date and a faster shipping option, without
   revealing internal urgency.
 
-### 9. One kind of history, scoped by the document's header *(uncommitted)*
+### 9. One kind of history, scoped by the document's header
 
 - Supplier history and item history are no longer separate. Many records sit across the
   boundary (a defect in one item from one supplier), and the split depended on whoever
@@ -109,7 +109,7 @@ before these changes is kept on branch `legacy/v1` (3866d60). Not yet committed:
   were moved with `scripts/migrate_history_store.py`. The previous prompts are kept as
   `prompts/v3/`.
 
-### 10. Sync from the shared folder *(uncommitted)*
+### 10. Sync from the shared folder
 
 - `scripts/sync_history_folder.py` walks the shared history folder (any layout: by year, by
   supplier, …) and sends only what changed: new files added, changed files replaced, deleted
@@ -127,7 +127,7 @@ before these changes is kept on branch `legacy/v1` (3866d60). Not yet committed:
 - `/history` (single upload, for the homepage showcase) is kept; re-uploading a file name
   now replaces it.
 
-### 11. `CurrentStock` renamed `AvailableStock` *(uncommitted)*
+### 11. `CurrentStock` renamed `AvailableStock`
 
 - The stock column has always been on hand + on order − committed, but its name read as
   the quantity in the warehouse. Renamed in the CSV, the item fields (`available_stock`),
@@ -137,14 +137,14 @@ before these changes is kept on branch `legacy/v1` (3866d60). Not yet committed:
 - The fixed no-history sentence now ends "analysis based on available stock and deadlines
   only".
 
-### 12. Judge calls traced *(uncommitted)*
+### 12. Judge calls traced
 
 - The evaluation node's judge calls go to the providers' SDKs directly, so LangSmith showed
   the node but not what the judge was sent, what it answered or what it cost. They are now
   traced (`Judge` and `Judge_LLM` runs under the evaluation node) with token usage,
   including Gemini's thinking tokens. No effect when tracing is off.
 
-### 13. Tracing without sending company data *(uncommitted)*
+### 13. Tracing without sending company data
 
 - New setting `langsmith_hide_content`, for wherever real data runs: traces keep the run
   tree, timings, token counts and model names but no prompt or response text.
@@ -153,7 +153,7 @@ before these changes is kept on branch `legacy/v1` (3866d60). Not yet committed:
   must not quote data. Details and the split between LangSmith and in-house records:
   `docs/observability.md`.
 
-### 14. Prompt versions *(uncommitted)*
+### 14. Prompt versions
 
 - Prompts now live in `prompts/<version>/`, one folder per version holding the whole set,
   including the email check and rewrite prompts that were written inline in the code.
@@ -165,7 +165,7 @@ before these changes is kept on branch `legacy/v1` (3866d60). Not yet committed:
 - A version is not edited once results have been recorded with it.
 - The Docker image now copies `prompts/`.
 
-### 15. Run records *(uncommitted)*
+### 15. Run records
 
 - Every run writes `runs/<run_id>.json`, also when it fails: the CSV as received, client IP,
   prompt version and models, and per supplier the preprocessed items, the history documents
@@ -184,6 +184,278 @@ before these changes is kept on branch `legacy/v1` (3866d60). Not yet committed:
   four times the analysis agent, with up to 7,032 output tokens; the email check rejected one
   draft for "internal stock quantities" that were proposed order quantities (the known
   validator fault), and the rewrite passed.
+
+### 16. v5 design: which parts need an LLM *(in progress, decided 2026-10-19)*
+
+The decisions below are LLM-design choices to explain in the README and portfolio. Each has
+the problem that prompted it.
+
+**Order of work.** v5 is built before judge validation, because the judge must be validated on
+the output format it will grade in production. Then judge validation, the analysis-model
+benchmark, SFT retraining.
+
+**One rule for where LLMs are used: judgement, and writing for a different reader.** Facts and
+layout are code.
+
+| Step | v4 | v5 | Why |
+|---|---|---|---|
+| Analysis | LLM writes judgement and a free-form markdown report | LLM writes judgement only, in fields | The report was written twice: once by the analysis agent and again by the report agent, so figures went through two LLMs and only the first was checked |
+| Analysis report (for the buyer) | Report agent (LLM) rewrites the analysis markdown, in the style of exemplar reports from RAG | **Code template**; the report agent is removed | Same reader as the analysis; nothing to rewrite. One company layout that rarely changes, so a template file edited on request does the exemplar's job |
+| Purchase request (for the approvers) | Two LLM agents: one restates the analysis as JSON, one writes the document | **One LLM agent** writes the purpose and justification for approvers; code renders the item table, timing and signature block | Approvers need a request ("this seeks approval to buy … because …"), a different reader and tone; the figures need no LLM |
+| Supplier email | LLM agent ⇄ validator agent | unchanged | Outside reader; internal facts must be hidden |
+| Evaluation | Judge from another provider | unchanged | Cross-checking judgement |
+
+The multi-agent design is described by reader: buyer (code), approvers (LLM), supplier (LLM
+with a validator), and a judge from another provider. A template-drafting agent (exemplar
+document in, template draft out, human approval) was considered and not built: the company has
+one layout and it rarely changes.
+
+**Analysis output fields (prompt v5, revised 2026-10-22).**
+`summary`; `findings` (numbered facts: `{id, items, text, basis: {stock, documents}}`);
+`critical_questions` (`{question, ask: supplier | internal, items, findings}`);
+`po_date_changes` and `quantity_changes` (each with `reason` and `findings`);
+`recommended_actions` (`{action, items, findings}`).
+Removed: `purchasing_report_markdown`, `replenishment_timeline` (it made the model copy the
+item figures), the questions' `reason` (no code read it and it was sometimes wrong), and the
+separate `supplier_findings` / `item_findings`, now one numbered list.
+
+**Decisions, each with what led to it.**
+- **No classification of findings (e.g. a "notable" yes/no).** Such a label needs a definition
+  of what counts (is substitution notable?), and that definition would then decide which
+  questions and report sentences appear. The model reports what the documents say, ordinary or
+  not; code adds only the label.
+- **"No documents" findings written by code, from the document headers.** When no document
+  names an item, code adds the finding "<item> — no documents on this item."; the model never
+  writes it. In v4 the model wrote such labels and used them inconsistently (as a heading before
+  history text, or as a "no notable issues" ending after a demand surge, eval_16).
+- **Figures are part of the analysis and stay in the text** ("a 16-week gap"), quoted as given
+  and checked rather than avoided: code compares every figure in the text with the input, and
+  the judge checks the rest.
+- **Questions: what the buyer needs to find out to place this order well, from the stock
+  position, the history or both; none whose answer would not change the order; [] if there is
+  nothing, and the report then says "No open questions for this order."** v4 left the list empty
+  in some untroubled scenarios (eval_01) and asked courtesy questions in others (eval_03). The
+  section is read as "answers needed before ordering", so courtesy questions would bury the real
+  ones; routine confirmations (availability, lead time, terms) are already requested in every
+  supplier email. Sources are not restricted: a High item due for ordering within a week (eval_01,
+  RubberSeal) needs a lead-time check although its history is unremarkable.
+- **No "do not do this" examples in prompts.** A rule illustrated with the behaviour it forbids
+  tended to bring that behaviour on (a "which items were affected" wording spread to unrelated
+  questions; v4's example sentence was copied into item notes). Rules are stated as principles.
+- **A supplier-wide problem that names no items is asked about in terms of this order**
+  ("how does it affect the items in this order?"), whatever the problem is — quality, delay,
+  price: a price rise from a raw-material shortage, or a strike at one warehouse, can hit some
+  items and not others.
+- **Actions as one list with no cap, each tagged with the items it concerns.** A cap would
+  drop or merge actions for a supplier with many problems. Actions are not tied to fixed slots
+  (per finding, per item): many actions span several items, or come from the stock position and
+  the history together. Code checks that every Critical item has at least one action that cites
+  a stock finding about it.
+- **Summary: most urgent first, at most about 100 words; the first sentence names every Critical
+  item and the longest gap; detail is left to the sections below.** A fixed sentence count was
+  rejected (three sentences cannot hold a supplier with several problems); no limit was
+  rejected (half a page). 100 words holds the worst case — a supplier has at most seven items,
+  so naming all seven takes 15–20 words. The summary's word count is kept in the run record to
+  see how often the limit is passed; nothing is cut.
+- **The example in the prompt shows every case once and agrees with its own input** — a
+  supplier-wide delay, an item with an incident, an item with ordinary history, an item with no
+  document — after v4's example taught a wrong note (`prompts/CHANGES.md`).
+
+- **Figures.** The pipeline's figures (available stock, weeks to stockout, expected stockout,
+  suggested quantity, recommended dates) are quoted as given; other figures are not restricted.
+  Not every figure the model writes can be verified, so they are handled by what an error would
+  cost: the pipeline's figures are checked exactly by code; figures quoted from history are
+  checked by the judge; incidental figures (counts, time phrases) are left to the judge.
+- **Proposed order-date and quantity changes, in either direction.** A delay, a changed lead time
+  or a change in demand can mean the pipeline's date or quantity should move, but the model must
+  not quietly rewrite figures the code calculated. So a change is proposed in its own field with
+  the pipeline's value, the shift in weeks (negative = earlier) or the factor, the proposed value,
+  the reason, and the findings it rests on. Code checks the arithmetic
+  (proposed = original moved by the shift, or original × factor rounded up), that the original is
+  the pipeline's value, that the cited findings exist and concern the item, and flags a
+  proposed date that has already passed. A new judge check (J6) asks whether the history supports
+  the change and its size, and whether items the same reason applies to were left out. The report
+  shows the changes in its Proposals section, original and proposed side by side, and marks the
+  values in the tables. Changing an
+  assumption (lead time, demand rate) and recomputing everything was considered; stating the
+  original and proposed date or quantity is clearer for the buyer.
+- **The prompt's example leaves the change fields empty; their format is described in the rules**
+  ("-2 means two weeks earlier", "1.5 means 50% more"). How well a model proposes changes from
+  rules alone depends on the model, and the analysis-model benchmark should measure that
+  difference rather than have an example hide it.
+- **Findings are numbered facts, and every question, change and action cites the findings it
+  rests on (2026-10-22).** A finding states a fact from the documents or from the stock figures,
+  without judgement; what it means for the order is in the questions, changes and actions that
+  cite it. Facts from the stock figures are findings too, written by the model and marked
+  "(stock position)" (e.g. "WidgetX runs out before a new order can arrive; the gap is 14
+  weeks."), so an action that rests on the stock position has something to cite. Questions,
+  changes and actions may overlap: a question can lead to a change, and a change can still need
+  confirming with the supplier. Why: each judgement can be traced to its facts and each fact to
+  its source, so the checks are in two steps — finding against the document (judge), and
+  question, change or action against the findings it cites (judge; code checks that the cited
+  ids exist and concern the items). Code can also list documents that no finding uses. Citing
+  documents directly was considered; citing findings keeps the stock position citable and lets
+  the report show one list of facts. A separate layer of "issues" between findings and
+  questions, changes and actions was considered and not adopted: each judgement would be bound
+  to one issue, and the issue sentences would repeat the summary.
+- **Sources shown by code.** Each finding ends with the numbers of its documents ([1]) or
+  "(stock position)"; each question, change and action ends with the findings it cites (F1,
+  F2). The model gives ids; code renders them and resolves document ids to file names.
+
+**Report layout (2026-10-22, revised the same day).** Facts first, then the judgements that
+cite them:
+- Header: "Snapshot date: <date> (N days before this report)" (the age only when older), then
+  "Report date: <date>".
+- Data Issues Requiring Attention, only when rows were excluded.
+- Summary.
+- Items: item, risk, weeks to stockout, order by, quantity; most urgent first.
+- Findings: F1, F2, … — supplier-wide findings first, then items most urgent first; each line
+  starts with the supplier or item name and ends with its source.
+- Critical Questions: "Ask <supplier>:" then "Check internally:", numbered through, each ending
+  with the findings it cites.
+- Proposals: order-date and quantity changes, "pipeline value → proposed value", with the
+  reason and the findings cited.
+- Recommended Actions: numbered, each with the findings cited.
+- Item Details: one Measure | Value table per item (available stock, weeks to stockout, lead
+  time, order by, deliver by, suggested quantity), Low items included.
+- Referenced Documents: the search window and limits, then a numbered table.
+- Run id at the foot.
+"Critical" is shown in bold red in tables and headings (not inside the model's sentences, where
+the word can have other meanings). History is searched as "documents dated <from> to <to> (last
+12 months), at most 5 per supplier and per item". Every proposed change is shown as "pipeline
+value → proposed value", including the risk level (High → Critical), with the whole "pipeline
+value → proposed value" highlighted in yellow (not red, which would read as risk and clash with
+Critical; the highlight survives black-and-white printing as a grey band, and the arrow carries
+the meaning without colour). Finding numbers, document numbers and all figures come from code.
+The earlier layout put history, proposals, actions and questions in each item card; side by
+side they did not show which answered which problem, so the sections now follow the chain
+facts → judgements, linked by finding numbers.
+
+**Purchase request (internal approval document; 2026-10-22).** All documents are in
+English; the prompts only state the register ("a professional company analysis report", "a
+professional internal approval document"). The approval agent writes two parts, Purpose and
+Justification; everything else is code. In order:
+- The red italic draft note, then Critical Questions and Recommended Actions in red italic
+  (see "The pipeline produces drafts"), without finding numbers: the request has no findings
+  list for them to point to, and the buyer works from the analysis report.
+- Header: "Purchase Request — <supplier>", request date, "Requested by: *[Your name here]*"
+  (italic, for the buyer's name), and the analysis run it comes from.
+- Purpose, Justification (approval agent).
+- "Items Requested (snapshot <date>)": item, code, risk, weeks to stockout, quantity, order by,
+  deliver by, with the same arrows and highlighting as the analysis report; then "Unit price
+  and total: to be confirmed with the supplier" (no price data exists, so none is invented).
+- Supporting Documents: the documents Justification cites, numbered in the order first cited.
+- Approval block: Purchasing Manager, Operations Director, Finance Officer.
+
+Items requested: Critical, High and Medium — everything due to be ordered within about 17 weeks
+— and not Low, whose order dates are months away and which the analysis report still shows.
+
+The approval agent receives, chosen by code: the supplier; the items requested with their risk
+level and figures; the findings about the supplier as a whole or these items, each with the
+numbers of its documents; the changes and actions for them. Not the summary (written for the
+buyer, and likely to be copied), the questions (code puts them in the note) or Low items.
+Justification gives the reasons with the findings' content written in, and ends a statement
+that rests on a document with its number ([1]); facts from the stock figures carry no number,
+since the items table shows them. Code renumbers the cited documents for Supporting Documents
+and checks that every cited number was given.
+
+**Critical questions split by who answers them (2026-10-22).** Each question is marked
+"supplier" (the supplier can answer it, and it reveals nothing internal: no stock levels,
+urgency, budget or analysis) or "internal" (the company must settle it). A single question can
+mix the two ("does the price rise apply, and can the budget absorb it?"), so the split is made
+when the question is written. The report shows them under "Critical Questions" as "Ask
+<supplier>:" and "Check internally:"; the supplier email receives only the supplier questions.
+
+**Supplier email (2026-10-22).** The email agent turns the supplier questions into polite,
+conversational requests to a business partner, in one or two short paragraphs rather than a
+list, combining questions that seek the same information, without mentioning what was reviewed
+or why a question is asked. It no longer mentions history on its own: the old rule to "mention
+history gracefully" produced "We noted your recent notice on pricing…", which stated a notice the
+documents did not contain, asked nothing, and repeated the request for prices.
+- Its input is chosen by code: snapshot date, supplier, items (name, quantity, requested
+  delivery date), the supplier questions, and the names of the Critical items, for which it also
+  asks the earliest dispatch date and a faster shipping option. It no longer receives the whole
+  analysis, the risk levels, the stock figures or the internal questions. Whether it also needs
+  the findings the questions cite, as background, is decided after the first v5 run.
+- The item lines are written by code where the agent puts `{ITEMS}`: "<item> — purchase
+  quantity: <n>; requested delivery date: <date>", the quantity after any proposed change and
+  highlighted when changed. No item code: suppliers use their own codes, not the company's SAP
+  ItemCode. "Requested delivery date" (formerly "target receipt date", which reads as an internal
+  target) is the pipeline's latest delivery date; whether to send it is left to the buyer when
+  reviewing the draft.
+
+**The pipeline produces drafts.** One run produces all three documents. The purchase request
+opens with a red italic note: "Draft — to be revised once the questions and actions below are
+resolved, with current quantities, dates and figures. Delete this note and everything in red
+before submitting." Below it, also in red italic, the Critical Questions and Recommended Actions;
+the body has no questions section, so approvers receive the revised
+request without them. The note asks for current figures because the request is usually
+submitted days after the analysis, when the stock has moved. The supplier email opens with
+"Supplier email draft — review and edit internally before use, then delete this note." The
+buyer gets the supplier's answers and edits the drafts; the formal purchase order is then issued
+in SAP, outside the pipeline.
+
+**Planned check changes (step 4 of v5).** C3 becomes "every figure in the text matches the
+input"; J5 becomes a code check (each Critical item has a tagged action); J1b and J3 are no
+longer judge checks, since code writes the no-history sentences from the headers.
+
+**Process note.** While drafting v5 the prompt was tried on evaluation scenarios eval_01, 03,
+08, 09, 11, 12, 13, 16, H2 and H4. That tunes the prompt to the scenarios later used to compare
+models. Still to decide: a separate set of development scenarios for prompt work, keeping the
+evaluation set for measurement only.
+
+**Still to decide.** The purchase request's tone and language (any fixed company phrasing;
+English or Korean).
+
+### 17. Which history the analysis sees; no chunking *(decided 2026-10-19)*
+
+- **Rule (agreed with the purchasing team):** documents dated within the 12 months before the
+  snapshot date; within that, the 5 most recent about the supplier and the 5 most recent about
+  each item. A document in several scopes counts once. The window is measured from the
+  snapshot date, not today, so re-running an old CSV sees the history of that time. An undated
+  document is placed by its upload date. Settings: `history_window_months`,
+  `history_docs_per_scope`.
+- **Why not "the 10 most recent":** document volume varies a lot by supplier — about one every
+  two months for large suppliers, one every four to six months for small ones. Ten most recent
+  reached back about 20 months for a large supplier but 3–5 years for a small one, bringing in
+  long-resolved problems; and one shared count let a busy scope push out another (a supplier with
+  many recent supplier-wide documents could leave an item with documents shown as having none).
+- **Shown in the report:** Referenced Documents opens with the window and the limit, and, if any
+  documents in the window were left out by the limit, how many.
+- **No chunking.** History documents are at most two A4 pages (about 1,100–1,400 tokens) and are
+  retrieved by metadata, never by similarity, so each is stored and given to the model whole.
+  They had been split into 1,000-character chunks overlapping by 200 and joined back for the
+  model, which repeated every overlap (35 repeated passages in one incident report, about 20 %
+  more tokens). `scripts/unchunk_history_store.py` stores chunked documents whole without the
+  overlaps; the migration from the earlier store now joins its chunks the same way.
+
+### 18. The analysis is as of the snapshot date; stale stock data is refused *(decided 2026-10-22)*
+
+- **One reference date: the snapshot.** Every judgement in the report (overdue, order-by dates,
+  the 12-month history window) is relative to the date the stock figures are true. Recomputing
+  from the run date was rejected: projecting stock forward from an old snapshot assumes nothing
+  happened since (no deliveries, no orders placed, no change in sales), so a 6-month-old CSV
+  would report stockouts for items that had been reordered and delivered meanwhile.
+- **A run accepts a snapshot up to 3 days old** (`require_fresh_snapshot`,
+  `max_snapshot_age_days = 3`), and refuses older ones with a request for a current export.
+  Stock moves every day (outbound runs at weekends too) and the snapshot is taken nightly at
+  23:00. A refused run also signals that the nightly snapshot job has stopped.
+- **The report shows the snapshot date first, with its age in plain text** when it is older than
+  the report ("Snapshot date: 2026-10-20 (2 days before this report)", then "Report date:
+  2026-10-22"). The run id, which carries
+  the actual run time, stays in the run record and at the foot of the report for tracing.
+- **Runs on fixed past data measure the age against a fixed run date.** `run_date` is set to
+  the day after the sample CSV's snapshot (2025-04-05 → 2025-04-06), so the check stays on and
+  every date in a demo report stays consistent without regenerating anything; in production
+  `run_date` is unset and the age is measured against the actual date of the run. The
+  evaluation scripts call the analysis directly with their own fixed snapshot date (2026-03-02)
+  and do not pass through the check. Rolling demo dates (snapshot set to today, history dated
+  relative to it, reloaded daily) was considered and dropped as more machinery than the demo
+  needs.
+- Report wording: "expected stockout if ordered today" is not shown; the buyer judges from weeks
+  to stockout and lead time. Changes proposed by the analyst are shown with an arrow
+  (pipeline value → proposed value) wherever they appear, including the risk level
+  (High → Critical).
 
 ## Evaluation
 
@@ -216,10 +488,46 @@ to be written after testing in Claude Desktop.
   a failing email is still sent after three rewrites.
 - Undecided: whether to call the model at all when every item is Low; whether the PR
   document also gets the data-issues section.
-- Undecided: keep or drop `target` / `reason` on critical questions. No code reads them,
-  downstream prompts use only the question text, and `reason` is sometimes wrong (H2: a
-  stock-driven question marked `item_history`). Decide when the output format is settled
-  for the model benchmark and SFT retraining.
+- **Later: a second stage for the purchase request** (designed 2026-10-22, not built). The
+  request is submitted days after the analysis, after the supplier has answered. Design: the
+  analysis report gives each critical question an "Update" and "Source" field, plus "Other new
+  facts"; the buyer fills them; a purchase-request run reads them with a current CSV, stores
+  each answer as a history document (headers written by code, linked to the first run's id),
+  runs the analysis again and writes the request from it. Updates can be wrong or vague; they are
+  treated like any history document — kept with their source, quoted without strengthening, and
+  checked by the judge against their text. Open: a docx round trip or a web form; whether answers
+  count towards the 5-per-scope history limit. To be built after judge validation.
+- **v5, before judge validation** — in progress; the design decisions and their reasons are
+  in item 16 above. The problems found in v4 that led to it:
+  - Critical questions: none when there is nothing to raise. Questions come only from a
+    problem in the history or from a Critical item's mitigation. GPT-4o now leaves the list
+    empty in some untroubled scenarios (eval_01) and invents neutral questions in others
+    ("Can we expect … to maintain steady delivery?", eval_03).
+  - Item notes: exactly one of a summary of the documents about the item, or the sentence
+    "History reviewed: no notable supplier or item issues.", never both and never as a
+    prefix. GPT-4o appended it after a demand surge (eval_16, 716001), contradicting the
+    note, and used it as a heading (H2, PartW).
+  - Analysis report layout: the prompt lists what the summary must contain but not its
+    form, so headings (`#` / `###`, `## Summary` / `**Summary:**`) and the history part
+    (separate supplier and item sections, one combined section, prose, or none) vary from
+    scenario to scenario. Either fix the layout in the prompt (A), or have the model fill
+    structured fields (Critical items, supplier findings, findings per item) and render the
+    markdown in code (B, always consistent; changes the output format, C1, the report
+    agent's input, the judge's input and the SFT format). The buyer-facing report is
+    rewritten by the report agent into fixed sections, so buyers see this less; the judge's
+    J5 (Critical items in the summary) depends on where the summary is.
+  - Underlying issue: the report is written twice. The analysis agent writes a free-form
+    markdown report, and the report agent rewrites it into the buyer-facing one, so
+    figures pass through two LLMs while C3 checks only the analysis agent's timeline, and
+    the loose markdown also feeds the judge, the purchase-request agent and the email
+    agent. Direction for v5: the analysis agent returns structured judgements only
+    (Critical-item mitigation, supplier findings, findings per item, questions); code
+    renders the figures table from the preprocessing; the report agent writes the prose
+    once. Affects the analysis output format, the report agent prompt, the PR and email
+    inputs, C1/C3/J5 and the SFT format.
+- Purchase request has no prices: there is a Finance sign-off but no unit price or total,
+  because the CSV carries none. A query for the last purchase price from SAP Business One
+  would supply it.
 - README and portfolio: explain what is hidden from LangSmith and what is still sent, from
   the summary at the top of `docs/observability.md`.
 - The evaluation node runs between analysis and report, so the judge's time (9–56 s per
