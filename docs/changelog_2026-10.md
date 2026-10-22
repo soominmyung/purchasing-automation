@@ -587,6 +587,24 @@ to be written after testing in Claude Desktop.
 - Purchase request has no prices: there is a Finance sign-off but no unit price or total,
   because the CSV carries none. A query for the last purchase price from SAP Business One
   would supply it.
+- **README and portfolio: what moved from the LLMs to code** — a key point of the design: LLMs
+  only judge and write for a different reader; whatever code can fill in or verify, code does,
+  which makes the output exact, checkable and cheaper. Write it up with examples:
+  - Filled in by code: risk levels, order dates and suggested quantities (preprocessing); the
+    history given to the model (retrieval by headers, window and limits); every table and figure
+    in the reports; the "no documents" findings; finding and document numbers, and the
+    renumbering for Supporting Documents; the data-issues section; the purchase request's
+    header, items table and approval block; the email's item lines and their placement.
+  - Verified by code: output format, items named, figures against the pipeline (C1-C3);
+    citations exist and apply (C4); change arithmetic (C5); each Critical item has a
+    stock-based action (C6); purchase request length and cited documents (P2, P3); stock data
+    no older than 3 days; time limits on every model call.
+  - What stayed with LLMs, and why: findings, judgements and the summary (analysis); the
+    approvers' Purpose and Justification; the supplier email's wording; the judge for what
+    needs reading (J and P1 checks).
+  - The effect: v4's report was written twice by LLMs with figures passing through both; v5
+    removed three agents (about 10-14 s per supplier) and every figure is now exact by
+    construction (`prompts/CHANGES.md`, v5).
 - README and portfolio: explain what is hidden from LangSmith and what is still sent, from
   the summary at the top of `docs/observability.md`.
 - Return the documents as soon as they are ready, before the evaluation finishes (item 19):
