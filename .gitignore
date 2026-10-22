@@ -65,5 +65,6 @@ docs/task.md
 docs/implementation_plan.md
 docs/project_overview.md
 
-# Run records hold company data (services/run_record.py); never commit them
-runs/
+# Run records hold company data (services/run_record.py); never commit them.
+# Only the top-level folder: dev/runs/ holds development runs on synthetic data.
+/runs/

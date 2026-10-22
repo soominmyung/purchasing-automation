@@ -1,0 +1,54 @@
+{
+  "name": "nordic_fasteners",
+  "purpose": "One supplier with one item at each risk level and one history document of each kind: supplier-wide (a customs hold), one item whoever supplies it (a demand rise), one item from this supplier (a defective batch), one item with ordinary history (steady demand); the Critical item has no document. Written for v5 development on 2026-10-22; not part of the evaluation set.",
+  "known_limits": [
+    "Every item has weekly sales of 100, so every suggested quantity is 2,600."
+  ],
+  "csv": "SnapshotDate,2025-04-05\n\nItemCode,ItemName,SupplierName,AvailableStock,WksToOOS\n410001,HexBoltM12,NordicFasteners,900,9\n410002,WasherSteel,NordicFasteners,2000,20\n410003,AnchorPlug,NordicFasteners,3000,30\n410004,CableTie,NordicFasteners,4400,44\n",
+  "history": [
+    {
+      "supplier": "NordicFasteners",
+      "items": [],
+      "item_codes": [],
+      "date": "2024-11-20",
+      "source": "nordic_customs_hold_2024-11.docx",
+      "text": "NordicFasteners shipments were held for four weeks in November 2024 after a customs documentation error at Gothenburg. The supplier says it has since changed how its export paperwork is prepared."
+    },
+    {
+      "supplier": "",
+      "items": [
+        "WasherSteel"
+      ],
+      "item_codes": [
+        "410002"
+      ],
+      "date": "2025-02-10",
+      "source": "washersteel_demand_2025-02.docx",
+      "text": "WasherSteel demand has risen by about 60% since January 2025, after a new construction customer started placing monthly orders."
+    },
+    {
+      "supplier": "NordicFasteners",
+      "items": [
+        "AnchorPlug"
+      ],
+      "item_codes": [
+        "410003"
+      ],
+      "date": "2025-01-08",
+      "source": "anchorplug_batch_2024-12.docx",
+      "text": "A batch of AnchorPlug delivered by NordicFasteners in December 2024 had about 3% of units with cracked sleeves. Replacements arrived two weeks later."
+    },
+    {
+      "supplier": "",
+      "items": [
+        "CableTie"
+      ],
+      "item_codes": [
+        "410004"
+      ],
+      "date": "2024-12-01",
+      "source": "cabletie_review_2024.docx",
+      "text": "CableTie demand has been steady over the past year."
+    }
+  ]
+}

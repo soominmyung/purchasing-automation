@@ -1,0 +1,383 @@
+{
+  "items": [
+    {
+      "item_code": "410001",
+      "item_name": "HexBoltM12",
+      "risk_level": "Critical",
+      "available_stock": 900,
+      "wks_to_oos": 9,
+      "expected_stockout_weeks": 9,
+      "suggested_quantity": 2600,
+      "recommended_latest_po_date": "2025-04-05",
+      "recommended_latest_delivery_date": "2025-06-07",
+      "recommended_latest_po_timing": "overdue",
+      "recommended_latest_delivery_timing": "within 9 weeks",
+      "data_issues": [],
+      "system_notes": [
+        "Critical: even if ordered today, a stockout of about 9 weeks is expected (lead time 18 weeks)."
+      ]
+    },
+    {
+      "item_code": "410002",
+      "item_name": "WasherSteel",
+      "risk_level": "High",
+      "available_stock": 2000,
+      "wks_to_oos": 20,
+      "expected_stockout_weeks": 0.0,
+      "suggested_quantity": 2600,
+      "recommended_latest_po_date": "2025-04-19",
+      "recommended_latest_delivery_date": "2025-08-23",
+      "recommended_latest_po_timing": "within 2 weeks",
+      "recommended_latest_delivery_timing": "within 20 weeks",
+      "data_issues": [],
+      "system_notes": []
+    },
+    {
+      "item_code": "410003",
+      "item_name": "AnchorPlug",
+      "risk_level": "Medium",
+      "available_stock": 3000,
+      "wks_to_oos": 30,
+      "expected_stockout_weeks": 0.0,
+      "suggested_quantity": 2600,
+      "recommended_latest_po_date": "2025-06-28",
+      "recommended_latest_delivery_date": "2025-11-01",
+      "recommended_latest_po_timing": "within 12 weeks",
+      "recommended_latest_delivery_timing": "within 30 weeks",
+      "data_issues": [],
+      "system_notes": []
+    },
+    {
+      "item_code": "410004",
+      "item_name": "CableTie",
+      "risk_level": "Low",
+      "available_stock": 4400,
+      "wks_to_oos": 44,
+      "expected_stockout_weeks": 0.0,
+      "suggested_quantity": 2600,
+      "recommended_latest_po_date": "2025-10-04",
+      "recommended_latest_delivery_date": "2026-02-07",
+      "recommended_latest_po_timing": "within 26 weeks",
+      "recommended_latest_delivery_timing": "within 44 weeks",
+      "data_issues": [],
+      "system_notes": []
+    }
+  ],
+  "analysis": {
+    "summary": "HexBoltM12 will run out before a new order can arrive, facing a 9-week gap that must be addressed immediately. WasherSteel demand has surged by 60% due to a new customer, and NordicFasteners previously experienced a shipment delay due to customs issues, which should be confirmed as resolved.",
+    "findings": [
+      {
+        "id": 1,
+        "items": [],
+        "text": "NordicFasteners shipments were held for four weeks in November 2024 due to a customs documentation error at Gothenburg. The supplier has since changed its export paperwork preparation.",
+        "basis": {
+          "stock": false,
+          "documents": [
+            1
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "items": [
+          "410001"
+        ],
+        "text": "HexBoltM12 runs out before a new order can arrive; the gap is 9 weeks.",
+        "basis": {
+          "stock": true,
+          "documents": []
+        }
+      },
+      {
+        "id": 3,
+        "items": [
+          "410002"
+        ],
+        "text": "WasherSteel demand has risen by about 60% since January 2025 due to a new construction customer.",
+        "basis": {
+          "stock": false,
+          "documents": [
+            2
+          ]
+        }
+      },
+      {
+        "id": 4,
+        "items": [
+          "410003"
+        ],
+        "text": "A batch of AnchorPlug delivered by NordicFasteners in December 2024 had about 3% of units with cracked sleeves. Replacements arrived two weeks later.",
+        "basis": {
+          "stock": false,
+          "documents": [
+            3
+          ]
+        }
+      },
+      {
+        "id": 5,
+        "items": [
+          "410004"
+        ],
+        "text": "CableTie demand has been steady over the past year.",
+        "basis": {
+          "stock": false,
+          "documents": [
+            4
+          ]
+        }
+      }
+    ],
+    "critical_questions": [
+      {
+        "question": "Has the customs documentation issue that delayed shipments in November 2024 been fully resolved, and could it affect HexBoltM12, WasherSteel, AnchorPlug, or CableTie in this order?",
+        "ask": "supplier",
+        "items": [],
+        "findings": [
+          1
+        ]
+      },
+      {
+        "question": "Is the increased WasherSteel demand from the new construction customer expected to continue?",
+        "ask": "internal",
+        "items": [
+          "410002"
+        ],
+        "findings": [
+          3
+        ]
+      }
+    ],
+    "po_date_changes": [],
+    "quantity_changes": [],
+    "recommended_actions": [
+      {
+        "action": "Ask NordicFasteners for expedited shipping of HexBoltM12, or cover it from an alternative source, to bridge the 9-week gap.",
+        "items": [
+          "410001"
+        ],
+        "findings": [
+          2
+        ]
+      },
+      {
+        "action": "Confirm delivery dates for this order with NordicFasteners before placing it, given the previous customs delay.",
+        "items": [],
+        "findings": [
+          1
+        ]
+      },
+      {
+        "action": "Check whether the WasherSteel order should be larger than suggested, since the suggestion is based on demand before the new customer orders.",
+        "items": [
+          "410002"
+        ],
+        "findings": [
+          3
+        ]
+      }
+    ],
+    "references": {
+      "documents": [
+        {
+          "source": "nordic_customs_hold_2024-11.docx",
+          "supplier": "NordicFasteners",
+          "items": "",
+          "date": "2024-11-20"
+        },
+        {
+          "source": "washersteel_demand_2025-02.docx",
+          "supplier": "",
+          "items": "WasherSteel",
+          "date": "2025-02-10"
+        },
+        {
+          "source": "anchorplug_batch_2024-12.docx",
+          "supplier": "NordicFasteners",
+          "items": "AnchorPlug",
+          "date": "2025-01-08"
+        },
+        {
+          "source": "cabletie_review_2024.docx",
+          "supplier": "",
+          "items": "CableTie",
+          "date": "2024-12-01"
+        }
+      ],
+      "window": null
+    }
+  },
+  "approval": {
+    "purpose": "This request seeks approval to purchase HexBoltM12, WasherSteel, and AnchorPlug from NordicFasteners to address current and anticipated stock needs.",
+    "justification": "Approval is needed due to several critical factors. HexBoltM12 is projected to run out before a new order can arrive, resulting in a 9-week gap in supply. To mitigate this, expedited shipping from NordicFasteners or sourcing from an alternative supplier is recommended. WasherSteel demand has increased by approximately 60% since January 2025 due to a new construction customer [2], necessitating a review of the order size to ensure it meets current demand levels. Additionally, while NordicFasteners experienced a four-week shipment delay in November 2024 due to customs documentation errors [1], they have since revised their export paperwork preparation. It is essential to confirm delivery dates with NordicFasteners before placing the order to avoid similar delays. Furthermore, a previous batch of AnchorPlug had a 3% defect rate, which was promptly addressed with replacements [3]."
+  },
+  "email_text": "Dear NordicFasteners Team,\n\nWe are preparing for a possible replenishment and are sending this as a preliminary request before a formal purchase order.\n\nITEMS\n\nCould you please provide us with the current availability, lead time, and commercial terms for the items listed? Additionally, we would like to know if the quantities can be delivered by the requested delivery dates and by when we would need to place the order. For the HexBoltM12, could you also share the earliest dispatch date you can offer and whether a faster shipping option is available? \n\nThank you for your assistance, and we look forward to your timely response.\n\nBest regards,  \nCompany K Purchasing Team",
+  "validation_log": [
+    {
+      "attempt": 1,
+      "check": "llm",
+      "passed": true,
+      "feedback": ""
+    }
+  ],
+  "document_issues": [],
+  "evaluation": {
+    "verdict": "needs_review",
+    "failed": [
+      "J5"
+    ],
+    "checks": {
+      "C1": {
+        "pass": true,
+        "detail": "all required fields present"
+      },
+      "C2": {
+        "pass": true,
+        "detail": "every item named is in the input"
+      },
+      "C3": {
+        "pass": true,
+        "detail": "changes start from the pipeline's figures"
+      },
+      "C4": {
+        "pass": true,
+        "detail": "every judgement cites findings that apply"
+      },
+      "C5": {
+        "pass": true,
+        "detail": "no changes proposed"
+      },
+      "C6": {
+        "pass": true,
+        "detail": "each Critical item has one"
+      },
+      "J1": {
+        "pass": true,
+        "detail": "All statements in findings 1, 3, 4, 5 and the summary accurately reflect history documents 1 to 4 without distortion or misattribution."
+      },
+      "J2c": {
+        "pass": true,
+        "detail": "Both critical questions are grounded in the history documents (customs delay in doc 1, demand increase in doc 2)."
+      },
+      "J1b": {
+        "pass": true,
+        "detail": "The analysis does not claim that no history is available for any item."
+      },
+      "J2a": {
+        "pass": true,
+        "detail": "Question 1 asks: 'Has the customs documentation issue that delayed shipments in November 2024 been fully resolved...'"
+      },
+      "J2b": {
+        "pass": true,
+        "detail": "Question 2 addresses the demand increase on WasherSteel: 'Is the increased WasherSteel demand from the new construction customer expected to continue?'"
+      },
+      "J5": {
+        "pass": false,
+        "detail": "While the summary names HexBoltM12 and its 9-week gap, it only states that it 'must be addressed immediately' without recommending any mitigation such as expedited shipping or an alternative source."
+      }
+    },
+    "judge": "gemini:gemini-3.7-flash"
+  },
+  "approval_check": {
+    "verdict": "needs_review",
+    "failed": [
+      "P1",
+      "P2"
+    ],
+    "checks": {
+      "P1": {
+        "pass": false,
+        "detail": "\"promptly addressed with replacements\" judges the two-week replacement duration"
+      },
+      "P2": {
+        "pass": false,
+        "detail": "justification has 7 sentences (2-4)"
+      },
+      "P3": {
+        "pass": true,
+        "detail": "all cited documents given"
+      }
+    },
+    "judge": "gemini:gemini-3.7-flash"
+  },
+  "nodes": [
+    {
+      "node": "analysis",
+      "seconds": 6.43,
+      "usage": {
+        "gpt-4o-2024-08-06": {
+          "input_tokens": 3421,
+          "output_tokens": 704
+        }
+      },
+      "error": null
+    },
+    {
+      "node": "evaluation",
+      "seconds": 40.87,
+      "usage": {
+        "gemini:gemini-3.7-flash": {
+          "input_tokens": 2544,
+          "output_tokens": 4723
+        }
+      },
+      "error": null
+    },
+    {
+      "node": "report",
+      "seconds": 0.0,
+      "usage": {},
+      "error": null
+    },
+    {
+      "node": "approval",
+      "seconds": 3.35,
+      "usage": {
+        "gpt-4o-2024-08-06": {
+          "input_tokens": 1076,
+          "output_tokens": 220
+        }
+      },
+      "error": null
+    },
+    {
+      "node": "approval_check",
+      "seconds": 53.39,
+      "usage": {
+        "gemini:gemini-3.7-flash": {
+          "input_tokens": 1247,
+          "output_tokens": 670
+        }
+      },
+      "error": null
+    },
+    {
+      "node": "email_draft",
+      "seconds": 2.96,
+      "usage": {
+        "gpt-4o-mini-2024-07-18": {
+          "input_tokens": 670,
+          "output_tokens": 132
+        }
+      },
+      "error": null
+    },
+    {
+      "node": "validator",
+      "seconds": 1.4,
+      "usage": {
+        "gpt-4o-mini-2024-07-18": {
+          "input_tokens": 253,
+          "output_tokens": 1
+        }
+      },
+      "error": null
+    },
+    {
+      "node": "email_doc",
+      "seconds": 0.0,
+      "usage": {},
+      "error": null
+    }
+  ]
+}
