@@ -19,7 +19,7 @@ RiskLevel is overwritten with the value the production pipeline derives from Wks
 Supplier and item names are kept disjoint from the training set so no scenario
 overlaps with anything the fine-tuned model has seen.
 
-Run: python scripts/generate_eval_scenarios.py   (then scripts/set_eval_risk_mix.py)
+Run: python scripts/generate_eval_scenarios.py   (then set_eval_risk_mix.py, convert_eval_history.py)
      python scripts/generate_eval_scenarios.py --replace eval_21,eval_25   (redo some, keep the rest)
 Out: eval_data/eval_scenarios.jsonl
 """

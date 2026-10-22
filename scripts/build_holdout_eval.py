@@ -16,7 +16,7 @@ Labels were assigned by reading each scenario's histories and inventory:
                        data: ToolsetB stock and weeks-to-stockout are N/A
   H5 EnviroGoods       supplier: operations halted, no company named       item: PanelFiber boom demand, EcoBag frequent substitution
 
-Run: python scripts/build_holdout_eval.py   (then scripts/set_eval_risk_mix.py)
+Run: python scripts/build_holdout_eval.py   (then set_eval_risk_mix.py, convert_eval_history.py)
 Out: eval_data/holdout_scenarios.jsonl
 """
 import ast

@@ -6,7 +6,7 @@ exactly as the pipeline runs it:
 
   scenario rows -> services/item_grouping (risk level, Critical gap, code-written notes,
   exclusion of rows with unusable figures) -> run_analysis_agent with the scenario's
-  histories injected as the tool results -> apply_system_notes, as analysis_node does
+  history documents in place of retrieval -> apply_system_notes, as analysis_node does
 
 Full inputs and outputs are saved so the run can be re-scored under a different rubric.
 
@@ -73,11 +73,7 @@ def main():
             group = preprocess(s)
             input_json = {"snapshot_date": SNAPSHOT_DATE, "supplier": group["supplier"], "items": group["items"]}
             started = time.time()
-            analysis, used_sh, used_ih = run_analysis_agent(
-                input_json,
-                supplier_history_override=s["supplier_history"],
-                item_history_override=s["item_history"],
-            )
+            analysis, history_docs = run_analysis_agent(input_json, history_override=s["history"])
             seconds = round(time.time() - started, 1)
             analysis = apply_system_notes(analysis, group["items"])
             f.write(json.dumps({
@@ -89,8 +85,7 @@ def main():
                 "seconds": seconds,
                 "input": input_json,
                 "data_issue_lines": group["data_issue_lines"],
-                "supplier_history": used_sh,
-                "item_history": used_ih,
+                "history_docs": history_docs,
                 "output": analysis,
             }, ensure_ascii=False) + "\n")
             f.flush()

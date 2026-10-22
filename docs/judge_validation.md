@@ -4,7 +4,7 @@ Before a judge model is trusted to score the analysis agent (`docs/eval_rubric.m
 itself tested on outputs whose correct verdict is already known. Without this, a difference
 between two analysis models could just as well be a judge getting things wrong.
 
-**Status:** seeded errors built 2026-10-18 (`scripts/build_judge_calibration.py`); hand-scoring sheet ready (`eval_data/hand_scoring_sheet.md`), scores not yet in; judge run not yet done.
+**Status:** seeded errors rebuilt 2026-10-19 (`scripts/build_judge_calibration.py`); hand-scoring sheet ready (`eval_data/hand_scoring_sheet.md`), scores not yet in; judge run not yet done.
 
 ## Calibration set
 
@@ -22,6 +22,7 @@ are left as they were in the original and have no known answer.
 |---|---|---|---:|
 | J1 — invented history | One sentence describing an incident that is in neither history, added to the report or an item's notes | Scenarios with history | 5 |
 | J1 — distorted history | One fact from the history changed in the output (for example "high demand" to "medium demand", a 3-week delay to "a minor delay") | Scenarios with history | 3 |
+| J1 — misattributed | A document's content written into the notes of an item the document does not name (eval_08: the unattributed quality note; eval_12: the other item's defective batch) | eval_08, eval_12 | 2 |
 | J1b | An item's notes replaced with the fixed sentence "No historical supplier or item data available…" although history applies to it | Scenarios with history | 4 |
 | J2a | Every critical question about the supplier's problem removed | `supplier_issue = material` | 4 |
 | J2b | Every critical question about the item's problem removed | `item_issue = material` | 4 |
@@ -29,7 +30,7 @@ are left as they were in the original and have no known answer.
 | J3 | Every statement that no history is available removed | `no_history` | 2 |
 | J5 — omitted | Every mention of the Critical item removed from the report summary | Critical items present | 4 |
 | J5 — wrong figure | The expected stockout figure in the summary changed to a different number | Critical items present | 3 |
-| | | **Total** | **33** |
+| | | **Total** | **35** |
 
 How the faults are made:
 - Every fault is an exact text edit written out in `scripts/build_judge_calibration.py`, so
@@ -102,9 +103,9 @@ result is recorded here and the judge prompt is revisited first.
 
 ### Detection rate by check
 
-| Model | J1 invented | J1 distorted | J1b | J2a | J2b | J2c | J3 | J5 omitted | J5 wrong figure |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| | | | | | | | | | |
+| Model | J1 invented | J1 distorted | J1 misattributed | J1b | J2a | J2b | J2c | J3 | J5 omitted | J5 wrong figure |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| | | | | | | | | | | |
 
 ### Decision
 
@@ -115,4 +116,5 @@ result is recorded here and the judge prompt is revisited first.
 | Date | Change |
 |---|---|
 | 2026-10-18 | Design written. |
+| 2026-10-19 | Rebuilt on GPT-4o outputs made with prompt v4 (history documents, AvailableStock). Two misattribution faults added for the extended J1, making 35. Hand-scoring sheet rebuilt. |
 | 2026-10-18 | 33 seeded errors built from GPT-4o outputs regenerated after the risk mix was spread across all four levels. J1b faults replace the item's notes, mirroring how GPT-4o makes this error. |

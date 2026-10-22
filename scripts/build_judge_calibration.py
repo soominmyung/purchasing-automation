@@ -31,31 +31,39 @@ NO_HISTORY = "No historical supplier or item data available; analysis based on a
 #   ("add_q", question_dict)      append a critical question
 SEEDS = [
     # --- J1: invented history -------------------------------------------------------
-    ("J1", "invented", "eval_01", "Late shipments that are in neither history added to the summary",
-     [("md", "Supplier history indicates consistent timely deliveries and stable pricing.",
-       "Supplier history indicates consistent timely deliveries and stable pricing. Two shipments in January 2026 arrived about three weeks late.")]),
-    ("J1", "invented", "eval_02", "A product recall that is in neither history added to SwitchButtonX's notes",
-     [("note", "702002", "History reviewed: no notable supplier or item issues.",
-       "History reviewed: no notable supplier or item issues. A batch of SwitchButtonX was recalled in November 2025 for faulty contacts.")]),
-    ("J1", "invented", "eval_10", "CopperWiringBundle's regular consumption replaced with a doubling of demand the history does not mention",
-     [("md", "- CopperWiringBundle maintains regular consumption with no notable item-specific issues.",
-       "- CopperWiringBundle demand has roughly doubled since January.")]),
-    ("J1", "invented", "eval_14", "A price increase that is in neither history added to the supplier summary",
+    ("J1", "invented", "eval_01", "Late shipments that are in no history document added to the supplier summary",
+     [("md", "consistent record of timely deliveries and stable pricing over the years.\n",
+       "consistent record of timely deliveries and stable pricing over the years. Two shipments in January 2026 arrived about three weeks late.\n")]),
+    ("J1", "invented", "eval_02", "A product recall that is in no history document added to SwitchButtonX's notes",
+     [("note", "702002", "History reviewed: SwitchButtonX has shown consistent demand with steady inventory levels.",
+       "History reviewed: SwitchButtonX has shown consistent demand with steady inventory levels. A batch of SwitchButtonX was recalled in November 2025 for faulty contacts.")]),
+    ("J1", "invented", "eval_10", "CopperWiringBundle's regular consumption replaced with a doubling of demand no document mentions",
+     [("md", "  - CopperWiringBundle: Staple in electrical installations, maintaining a regular rate of consumption.",
+       "  - CopperWiringBundle: Demand has roughly doubled since January.")]),
+    ("J1", "invented", "eval_14", "A price increase that is in no history document added to the supplier summary",
      [("md", "TechMarvelSupplies has been reliable with consistent deliveries and competitive pricing.",
        "TechMarvelSupplies has been reliable with consistent deliveries and competitive pricing. It has announced a 12% price increase effective April 2026.")]),
-    ("J1", "invented", "H4", "A past stockout that is in neither history added to HandleGrip's notes",
-     [("note", "500041", "due to an upcoming product accessory launch.",
-       "due to an upcoming product accessory launch. HandleGrip ran out of stock for two weeks in December 2025.")]),
+    ("J1", "invented", "H4", "A past stockout that is in no history document added to HandleGrip's notes",
+     [("note", "500041", "anticipates a rise due to an upcoming product accessory launch.",
+       "anticipates a rise due to an upcoming product accessory launch. HandleGrip ran out of stock for two weeks in December 2025.")]),
 
     # --- J1: distorted history ------------------------------------------------------
     ("J1", "distorted", "eval_11", "An unresolved strike reported as resolved",
-     [("md", "  - Significant delivery delays due to a strike at the main warehouse, unresolved.",
-       "  - Significant delivery delays due to a strike at the main warehouse, since resolved.")]),
+     [("md", "is experiencing significant delivery delays due to a strike at their main warehouse, causing ongoing uncertainty in supply timelines.",
+       "experienced significant delivery delays due to a strike at their main warehouse, which has since been resolved.")]),
     ("J1", "distorted", "eval_14", "A demand surge reported as a slight increase",
-     [("md", "  - **NanoResistorTypeA**: Recent demand surge due to new product application.",
-       "  - **NanoResistorTypeA**: Slight recent increase in demand due to new product application.")]),
+     [("md", "  - **NanoResistorTypeA**: Surge in demand due to new product application.",
+       "  - **NanoResistorTypeA**: Slight increase in demand due to new product application.")]),
     ("J1", "distorted", "H2", "A slight lead-time increase reported as a sharp one",
      [("note", "300021", "PartW's lead time has increased slightly", "PartW's lead time has increased sharply")]),
+
+    # --- J1: attributed to an item the document does not name -----------------------
+    ("J1", "misattributed", "eval_08", "The supplier-wide quality note, which names no item, attributed to TitaniumValve",
+     [("note", "708001", "History reviewed: no significant fluctuations in demand have been observed.",
+       "History reviewed: no significant fluctuations in demand have been observed. TitaniumValve shipments have shown quality discrepancies.")]),
+    ("J1", "misattributed", "eval_12", "The defective PowerModuleZ batch reported in PrecisionResistor's notes",
+     [("note", "712001", "History reviewed: no notable supplier or item issues.",
+       "A recent batch failed incoming inspection because of loose terminals and was returned.")]),
 
     # --- J1b: false "no history" sentence -------------------------------------------
     ("J1b", "false_no_history", "eval_05", "AluminumSheetY's notes replaced with the fixed no-history sentence",
@@ -68,11 +76,11 @@ SEEDS = [
      [("set_note", "200011", NO_HISTORY)]),
 
     # --- J2a: supplier problem not asked about --------------------------------------
-    ("J2a", "supplier_question_removed", "eval_08", "Both questions about the delays and quality problems removed (no questions left)",
-     [("drop_q", [0, 1])]),
+    ("J2a", "supplier_question_removed", "eval_08", "The question about the delays and quality problems removed (no questions left)",
+     [("drop_q", [0])]),
     ("J2a", "supplier_question_removed", "eval_11", "The question about the warehouse strike removed (no questions left)",
      [("drop_q", [0])]),
-    ("J2a", "supplier_question_removed", "H2", "The question about the price spike removed; the ComponentZ question remains",
+    ("J2a", "supplier_question_removed", "H2", "The question about the price spike removed; the two item questions remain",
      [("drop_q", [0])]),
     ("J2a", "supplier_question_removed", "H5", "The question about the operational halt removed; the EcoBag question remains",
      [("drop_q", [0])]),
@@ -82,8 +90,8 @@ SEEDS = [
      [("drop_q", [0])]),
     ("J2b", "item_question_removed", "eval_16", "The question about TitaniumAlloyWheel's demand surge removed (no questions left)",
      [("drop_q", [0])]),
-    ("J2b", "item_question_removed", "H1", "The question about GadgetY's demand volatility removed; the supplier question remains",
-     [("drop_q", [1])]),
+    ("J2b", "item_question_removed", "H1", "Both item questions removed; the supplier question remains",
+     [("drop_q", [1, 2])]),
     ("J2b", "item_question_removed", "H3", "Both item questions removed; the supplier question remains",
      [("drop_q", [1, 2])]),
 
@@ -112,22 +120,22 @@ SEEDS = [
       ("set_note", "707001", ""), ("set_note", "707002", ""), ("drop_q", [0])]),
 
     # --- J5: Critical item missing from the summary ---------------------------------
-    ("J5", "critical_omitted", "eval_08", "The Critical item TitaniumValve's stockout line removed from the summary",
-     [("md", "- **Critical Item:** TitaniumValve is expected to have a stockout of about 6 weeks. Consider expedited shipping or alternative sourcing.\n", "")]),
+    ("J5", "critical_omitted", "eval_08", "The Critical item TitaniumValve removed from the summary",
+     [("md", "- **TitaniumValve** is at a Critical risk level with an expected stockout of 6 weeks. Mitigation strategies such as expedited shipping or sourcing from an alternative supplier are recommended.\n", "")]),
     ("J5", "critical_omitted", "eval_10", "CopperWiringBundle, one of two Critical items, removed from the summary",
-     [("md", "- **CopperWiringBundle** is Critical with an expected stockout of 12 weeks. Consider expedited shipping or alternative sourcing.\n", "")]),
+     [("md", "  - CopperWiringBundle: Expected stockout of 12 weeks. Recommend considering expedited shipping or alternative sourcing.\n", "")]),
     ("J5", "critical_omitted", "eval_12", "HighVoltageCapacitor, one of two Critical items, removed from the summary",
-     [("md", "  - HighVoltageCapacitor: Expected stockout of 16 weeks. Consider expedited shipping or alternative sourcing.  \n", "")]),
+     [("md", "  - **HighVoltageCapacitor**: Expected stockout of 16 weeks. Mitigation recommended: expedite shipping or find an alternative source.\n", "")]),
     ("J5", "critical_omitted", "H1", "The Critical item WidgetX's stockout line removed from the summary",
-     [("md", "  - **WidgetX**: Expected stockout of 14 weeks. Recommend expedited shipping or alternative sourcing.\n", "")]),
+     [("md", "  - **WidgetX**: Expected stockout of 14 weeks. Recommend considering expedited shipping or alternative sourcing.\n", "")]),
 
     # --- J5: wrong stockout figure --------------------------------------------------
     ("J5", "critical_wrong_figure", "eval_04", "ConnectorABC's expected stockout changed from 10 to 8 weeks (its weeks to stockout)",
      [("md", "ConnectorABC: Expected stockout of 10 weeks.", "ConnectorABC: Expected stockout of 8 weeks.")]),
     ("J5", "critical_wrong_figure", "eval_15", "GrapheneCoating's expected stockout changed from 16 to 2 weeks (its weeks to stockout)",
-     [("md", "**GrapheneCoating** is Critical with an expected stockout of 16 weeks.", "**GrapheneCoating** is Critical with an expected stockout of 2 weeks.")]),
+     [("md", "with an expected stockout of 16 weeks.", "with an expected stockout of 2 weeks.")]),
     ("J5", "critical_wrong_figure", "H5", "EcoBag's expected stockout changed from 15 to 3 weeks (its weeks to stockout)",
-     [("md", "**EcoBag**: Expected stockout of 15 weeks.", "**EcoBag**: Expected stockout of 3 weeks.")]),
+     [("md", "experience a stockout for approximately 15 weeks.", "experience a stockout for approximately 3 weeks.")]),
 ]
 
 
@@ -199,8 +207,7 @@ def main():
             "edits": [list(e) for e in edits],
             "source": {"file": SOURCE.name, "sha256_12": source_sha, "model": base["model"]},
             "input": base["input"],
-            "supplier_history": base["supplier_history"],
-            "item_history": base["item_history"],
+            "history_docs": base["history_docs"],
             "output": apply(base["output"], edits, f"{cid} ({sid} {check})"),
         })
 

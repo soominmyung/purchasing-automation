@@ -30,10 +30,10 @@ CHOSEN = ["eval_01", "eval_03", "eval_06", "eval_08", "eval_11",
           "eval_14", "eval_16", "eval_18", "eval_19", "H3"]
 
 GLOSS = {
-    "J1": "히스토리에 없는 사건이나 추세를 지어내지 않았고, 있는 내용을 왜곡하지도 않았다 (예: 급증을 소폭 증가로).",
-    "J1b": "히스토리가 있는 품목에 \"히스토리 없음\"이라고 쓰지 않았다. 공급사 히스토리는 모든 품목에 해당한다.",
-    "J2a": "공급사 히스토리에 적힌 문제를 다루는 질문이 하나 이상 있다.",
-    "J2b": "품목 히스토리에 적힌 문제를 다루는 질문이 하나 이상 있다.",
+    "J1": "히스토리에 없는 사건이나 추세를 지어내지 않았고, 왜곡하지 않았고 (예: 급증을 소폭 증가로), 문서가 지정하지 않은 공급사나 품목의 일로 쓰지도 않았다 (예: 품목이 적히지 않은 공급사 품질 문제를 특정 품목의 문제로).",
+    "J1b": "적용되는 이력 문서가 있는 품목에 \"히스토리 없음\"이라고 쓰지 않았다. 공급사만 적힌 문서는 모든 품목에, 품목이 적힌 문서는 그 품목에 적용된다.",
+    "J2a": "이력에 적힌 공급사 문제를 다루는 질문이 하나 이상 있다.",
+    "J2b": "이력에 적힌 품목 문제를 다루는 질문이 하나 이상 있다.",
     "J2c": "데이터에 없는 문제를 전제한 질문이 없다. 중립적인 질문과 실제 문제에 대한 질문은 통과.",
     "J3": "히스토리가 없다고 밝혔고, 지어낸 히스토리가 없다.",
     "J5": "Critical 품목마다 요약에 품목명, 주어진 예상 품절 주수, 대응책(긴급 배송, 대체 공급처 등)이 있다.",
@@ -55,8 +55,7 @@ def load():
 
 
 def checks_for(out: dict, scenario: dict) -> list[str]:
-    return applicable_judge_checks(out["input"]["items"], out["supplier_history"], out["item_history"],
-                                   labels=scenario["labels"])
+    return applicable_judge_checks(out["input"]["items"], out["history_docs"], labels=scenario["labels"])
 
 
 def write_sheet():
@@ -90,8 +89,15 @@ def write_sheet():
                      f"| {it['risk_level']} | {gap} |")
         if o.get("data_issue_lines"):
             L += ["", "Excluded before analysis: " + " ".join(o["data_issue_lines"])]
-        L += ["", f"**Supplier history:** {o['supplier_history']}", "",
-              f"**Item history:** {o['item_history']}", "",
+        L += ["", "**History documents** (each applies only to what it names)", ""]
+        for n, d in enumerate(o["history_docs"], 1):
+            named = ", ".join(d.get("items") or d.get("item_codes") or [])
+            scope = (f"{d['supplier']} × {named}" if d.get("supplier") and named else
+                     f"{d['supplier']}, all items" if d.get("supplier") else f"{named}, any supplier")
+            L.append(f"{n}. *[{scope}]* {d['text']}")
+        if not o["history_docs"]:
+            L.append("(none)")
+        L += ["",
               "<details open><summary><b>GPT-4o report</b></summary>", "",
               out["purchasing_report_markdown"].strip(), "", "</details>", "",
               "**Critical questions**", ""]
@@ -137,8 +143,8 @@ def collect():
                 "expected": {c: v["verdict"] for c, v in found[s].items()},
                 "notes": {c: v["note"] for c, v in found[s].items() if v["note"]},
                 "source": {"file": SOURCE.name, "model": outs[s]["model"]},
-                "input": outs[s]["input"], "supplier_history": outs[s]["supplier_history"],
-                "item_history": outs[s]["item_history"], "output": outs[s]["output"],
+                "input": outs[s]["input"], "history_docs": outs[s]["history_docs"],
+                "output": outs[s]["output"],
             }, ensure_ascii=False) + "\n")
     fails = sum(v == "fail" for s in CHOSEN for v in (x["verdict"] for x in found[s].values()))
     print(f"{len(CHOSEN)} scenarios, {sum(len(found[s]) for s in CHOSEN)} verdicts ({fails} fail) -> {OUT_FILE}")

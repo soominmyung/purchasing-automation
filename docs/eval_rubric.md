@@ -62,6 +62,17 @@ and labels are unchanged.
 
 Counts are of the 53 items the model sees; the 3 rows with missing figures are excluded.
 
+### History documents
+
+The model receives history as a list of documents, each naming the supplier and items it is
+about, as the pipeline does in use. `scripts/convert_eval_history.py` turns each scenario's
+two history texts into documents without changing the text: the supplier history becomes a
+supplier-wide document, the item history a document about the items it names. Two item
+histories are split so a supply-side sentence becomes a supplier × item document (H2: PartW's
+lead time; H3: DeviceConnector's erratic supply). One document is added to eval_12, about a
+defective batch of an item of the same supplier that is not in the analysis. eval_08 keeps a
+supplier-wide quality note that names no item, which must not be attributed to any item.
+
 ### Labels
 
 Each scenario carries facts about itself, not the expected answer. The checks below decide
@@ -101,8 +112,8 @@ before any model sees them, exactly as the pipeline does in use:
 
 | ID | Passes when | Applies to |
 |---|---|---|
-| J1 | It invents no incident or trend that the histories do not contain, and does not distort what they say (for example, turning "high demand" into "medium demand") | All |
-| J1b | It does not attach the fixed "No historical supplier or item data available" sentence where history was in fact provided | `history_present = true` |
+| J1 | It invents no incident or trend that the history documents do not contain, does not distort what they say (for example, turning "high demand" into "medium demand"), and does not attribute a document to a supplier or item it does not name (for example, a supplier-wide quality note presented as one item's problem) | All |
+| J1b | It does not attach the fixed "No historical supplier or item data available" sentence to an item that a history document applies to | `history_present = true` |
 | J2a | At least one critical question addresses the supplier's problem | `supplier_issue = material` |
 | J2b | At least one critical question addresses an item's problem | `item_issue = material` |
 | J2c | No critical question presumes a supplier or item problem that the inputs do not show. Neutral questions that assume no problem, such as asking about upcoming changes, pass | All |
@@ -150,6 +161,7 @@ verdicts; see `docs/judge_validation.md`. Costs per call are in `docs/judge_mode
 
 | Date | Change |
 |---|---|
+| 2026-10-19 | History given as documents scoped by their headers (prompt v4). J1 also fails attribution to a supplier or item a document does not name. `CurrentStock` renamed `AvailableStock`. |
 | 2026-10-18 | Weeks to stockout reset for 29 items to spread the set across all four risk levels (previously 50 of 53 items were Critical). Holdout scenarios included, so their figures no longer match the teacher dataset. |
 | 2026-10-18 | Production evaluation node rewritten to use these checks (it previously scored four 1–10 criteria with GPT-4o judging its own analysis, one of them about email leaks it had no email to judge). Production judge set to `gemini-3.7-flash`. |
 | 2026-10-18 | Document created. J1 narrowed to invented or distorted history, with the fixed no-history sentence split out as J1b. J2d dropped and ambiguous supplier histories relabelled `material`. J4a and J4b dropped as the preprocessing now handles them. J5 added for Critical items. Gemini judge set to `gemini-3.7-flash`. |
