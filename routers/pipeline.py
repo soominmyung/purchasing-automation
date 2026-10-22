@@ -3,6 +3,7 @@
 스트리밍 시 complete 이벤트에 생성 파일 base64 포함 (HF Space 등 비영속 환경에서 다운로드 보장).
 """
 import asyncio
+from datetime import date
 import base64
 import json
 import queue
@@ -85,6 +86,7 @@ def _run_pipeline_inner(
             detail="No valid CSV rows. Ensure columns: SupplierName, ItemCode, ItemName, AvailableStock, WksToOOS (or similar).",
         )
     record.set_snapshot(rows, (SNAPSHOT_DATE_KEY, SNAPSHOT_SOURCE_KEY, SNAPSHOT_WARNINGS_KEY))
+    _require_fresh_snapshot(rows[0][SNAPSHOT_DATE_KEY])
     progress("item_grouping", {})
     groups = group_by_supplier_and_recommend(rows)
     if not groups:
@@ -256,6 +258,23 @@ def _run_pipeline_inner(
     if stream_mode:
         progress("complete", {"result": result_dump})
     return response
+
+
+def _require_fresh_snapshot(snapshot_date: str) -> None:
+    """Refuse stock data older than max_snapshot_age_days: the analysis is as of the snapshot
+    date, and an older snapshot no longer describes the stock."""
+    if not settings.require_fresh_snapshot:
+        return
+    # settings.run_date is fixed for runs on past sample data; in production it is unset and
+    # the age is measured against the actual date of the run.
+    today = date.fromisoformat(settings.run_date) if settings.run_date else date.today()
+    age = (today - date.fromisoformat(snapshot_date)).days
+    if age > settings.max_snapshot_age_days:
+        raise HTTPException(
+            status_code=400,
+            detail=(f"The stock data is from {snapshot_date}, {age} days ago; at most "
+                    f"{settings.max_snapshot_age_days} days is accepted. Export a current CSV from SAP and run again."),
+        )
 
 
 def _read_file_base64(path_str: str) -> str | None:

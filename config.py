@@ -20,6 +20,16 @@ class Settings(BaseSettings):
     # last 12 months before the snapshot date, at most 5 per supplier and 5 per item.
     history_window_months: int = 12
     history_docs_per_scope: int = 5
+    # The analysis is as of the snapshot date, so the stock data must be current (stock moves
+    # every day; outbound runs at weekends too; the snapshot is taken nightly at 23:00). A run
+    # accepts a snapshot up to 3 days old, and the report shows its age beside the date.
+    require_fresh_snapshot: bool = True
+    max_snapshot_age_days: int = 3
+    # The run date the snapshot's age is measured against. Fixed for now to the day after the
+    # sample CSV's snapshot (050425.csv, 2025-04-05), so runs on that fixed past data pass the
+    # check. In production this is left unset (None) and the run date is the actual date the
+    # run is made.
+    run_date: Optional[str] = "2025-04-06"
     # Which prompts/<version>/ folder the agents use; recorded with every run.
     prompt_version: str = "v4"
     # Run records (services/run_record.py): one JSON file per run on the server.
