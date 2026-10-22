@@ -644,8 +644,17 @@ to be written after testing in Claude Desktop.
     supplier into polite questions to a business partner, without naming past problems or items
     outside the email. Its input is only what that needs (`documents.email_input`); its output is
     one JSON field; the validator reads only that field. The way there, and why every fixed part
-    was taken away from the model, is in `prompts/CHANGES.md`, v5, steps 1-24. Where:
+    was taken away from the model, is in `prompts/CHANGES.md`, v5, steps 1-26. Where:
     `services/documents.py`, `EMAIL_PURPOSE`, `EMAIL_CLOSING`, `email_parts`, `render_email`.
+  - **Deciding in code what the agent asks, so it never sees why** (also for the README and
+    portfolio): items about to run out (Critical) need the supplier asked for the earliest dispatch
+    date and a faster shipping option, but the supplier must not learn that stock is short. In v4
+    the email agent received each item's risk level and applied "if Critical, ask…" itself; in v5
+    code picks the Critical items and passes only their names (`ask_earliest_dispatch`), so the
+    agent knows which items to ask about but not the risk behind it — one less way for internal
+    judgement to reach the supplier, and the choice of items is exact rather than left to the
+    model. The same idea: `other_items` names the items outside the email to leave out, and the
+    snapshot date is not passed at all. Where: `services/documents.py`, `email_input`.
   - What stayed with LLMs, and why: findings, judgements and the summary (analysis); the
     approvers' Purpose and Justification; the supplier email's wording; and the judge, for what
     needs reading: whether findings are faithful to their documents (J1); whether each
