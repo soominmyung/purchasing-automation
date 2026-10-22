@@ -101,7 +101,7 @@ def email_only(group: dict, earlier: Path, times: int, folder: Path) -> dict:
     for n in range(1, times + 1):
         started = time.perf_counter()
         text = run_email_draft_agent(payload)
-        md, problems = documents.render_email(text, group["items"], analysis)
+        md, problems = documents.render_email(text, group["items"], analysis, group["supplier"])
         runs.append({"seconds": round(time.perf_counter() - started, 1), "email_text": text,
                      "email_md": md, "document_issues": problems})
         (folder / f"email_draft_{n}.md").write_text(md, encoding="utf-8")

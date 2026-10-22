@@ -357,8 +357,9 @@ def email_draft_node(state: PurchasingState):
     return {"email_text": email_text, "iteration_count": state.get("iteration_count", 0) + 1}
 
 def validator_node(state: PurchasingState):
-    """DLP validator: checks if email draft is safe for external communication."""
-    email = state["email_text"]
+    """DLP validator: checks if email draft is safe for external communication. It reads the
+    email agent's own text; the item lines, written in code, are not part of it."""
+    email = documents.email_for_check(state["email_text"])
     
     # 1. Heuristic check (keyword-based)
     leak_keywords = ["stock level", "weeks to oos", "risk level", "internal analysis", "replenishment timeline", "wks_to_oos"]
@@ -399,9 +400,10 @@ def should_continue(state: PurchasingState):
     return "email_draft"
 
 def email_doc_node(state: PurchasingState):
-    """The email draft: the checked text with the item lines (written in code, so the
-    validator never sees the quantities) and the draft note."""
-    md, problems = documents.render_email(state.get("email_text") or "", state["items"], state["analysis_output"])
+    """The email draft: everything but the requests is written in code (greeting, purpose, item
+    lines, closing, signature, draft note); the validator sees only the agent's requests."""
+    md, problems = documents.render_email(state.get("email_text") or "", state["items"], state["analysis_output"],
+                                          state["supplier"])
     return {"email_md": md, "document_issues": [f"email: {p}" for p in problems]}
 
 # Build the graph.

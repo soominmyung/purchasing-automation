@@ -15,6 +15,7 @@ what its part of the document needs.
 Inline marks (**bold**, *italic*, ==highlight==, [[red]]…[[/red]]) are rendered by
 utils/docx_utils.py.
 """
+import json
 import math
 import re
 from datetime import date, timedelta
@@ -455,22 +456,40 @@ def email_item_lines(items: list[dict], analysis: dict) -> list[str]:
     return lines
 
 
-def render_email(email_text: str, items: list[dict], analysis: dict) -> tuple[str, list[str]]:
-    """The email draft with its item lines, which code puts right after the purpose: the
-    paragraph after the greeting. Returns (markdown, problems)."""
-    lines = email_item_lines(items, analysis)
-    text = (email_text or "").strip().replace("\r\n", "\n")
-    text = re.sub(r"(?m)^[ \t]*\{?ITEMS\}?[ \t]*\n?", "", text)  # a placeholder from earlier prompts
-    paras = [p for p in re.split(r"\n\s*\n", text) if p.strip()]
-    problems = []
-    greeting = next((n for n, p in enumerate(paras) if p.lstrip().lower().startswith("dear")), None)
-    if greeting is None:
-        problems.append("no greeting found; the item lines were put after the first paragraph")
-        at = 1
-    else:
-        first_line, _, rest = paras[greeting].partition("\n")
-        if rest.strip():  # greeting and purpose in one paragraph
-            paras[greeting:greeting + 1] = [first_line, rest.strip()]
-        at = greeting + 2
-    paras = paras[:at] + ["\n".join(lines)] + paras[at:]
-    return _red(EMAIL_NOTE) + "\n\n" + "\n\n".join(paras) + "\n", problems
+# The email's fixed parts, written in code: the agent writes only the requests (2026-10-23).
+EMAIL_PURPOSE = ("We are planning a possible order of the following items and would be grateful for your "
+                 "input before we issue a formal purchase order.")
+EMAIL_CLOSING = "Thank you in advance; we look forward to your reply."
+SIGNATURE = ("Best regards,", "Company K Purchasing Team")
+EMAIL_PARTS = ("requests",)
+
+
+def email_parts(email_text: str) -> tuple[dict[str, str], list[str]]:
+    """The email agent's part (requests) from its JSON answer. Returns (parts, problems); text
+    that is not that JSON is kept whole as the requests."""
+    raw = (email_text or "").strip()
+    m = re.search(r"\{[\s\S]*\}", raw)
+    try:
+        data = json.loads(m.group(0)) if m else None
+    except ValueError:
+        data = None
+    if not isinstance(data, dict):
+        return {"requests": raw}, ["the email agent did not return its JSON; its text was kept as it is"]
+    parts = {k: str(data.get(k) or "").strip() for k in EMAIL_PARTS}
+    return parts, [f"the email agent left {k} empty" for k in EMAIL_PARTS if not parts[k]]
+
+
+def email_for_check(email_text: str) -> str:
+    """What the validator reads: the agent's own text, without the item lines."""
+    parts, _ = email_parts(email_text)
+    return "\n\n".join(parts[k] for k in EMAIL_PARTS if parts[k])
+
+
+def render_email(email_text: str, items: list[dict], analysis: dict, supplier: str) -> tuple[str, list[str]]:
+    """The email draft, assembled in a fixed order: the draft note, the greeting, the purpose,
+    the item lines, the agent's requests, the closing and the signature. Only the requests come
+    from the agent. Returns (markdown, problems)."""
+    parts, problems = email_parts(email_text)
+    blocks = [_red(EMAIL_NOTE), f"Dear {supplier} Team,", EMAIL_PURPOSE, "\n".join(email_item_lines(items, analysis)),
+              parts["requests"], EMAIL_CLOSING, "\n".join(SIGNATURE)]
+    return "\n\n".join(b for b in blocks if b) + "\n", problems
