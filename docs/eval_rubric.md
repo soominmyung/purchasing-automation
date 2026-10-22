@@ -206,6 +206,11 @@ change it. A check the judge could not answer counts as not passed.
 3. Cost and response time, among systems of similar quality (target: a whole run within one
    minute).
 
+Stages 1 and 2 judge each system's first output, with the production rewrite loop off: writing
+it right the first time is the ability compared. Only when systems of similar quality remain is
+the loop turned on for them, and stage 3 then also compares how often a rewrite was needed, the
+tokens used and the run time.
+
 The set is small (25 scenarios), so a difference of one or two scenarios may be chance: counts
 are reported as they are, with how often the judges agreed, and only clear differences are read
 as differences.
