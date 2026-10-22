@@ -655,6 +655,16 @@ to be written after testing in Claude Desktop.
     judgement to reach the supplier, and the choice of items is exact rather than left to the
     model. The same idea: `other_items` names the items outside the email to leave out, and the
     snapshot date is not passed at all. Where: `services/documents.py`, `email_input`.
+  - **Failures are fixed before the documents, and what cannot be fixed is shown, not hidden**
+    (designed 2026-10-23, to be built and tested; also for the README and portfolio). When the
+    analysis fails a blocking code check (for example an order date moved before the snapshot
+    date, C5), the analysis agent is sent its output and the failures and asked to correct only
+    those, up to a fixed number of times, before any document is written, so the purchase request
+    and the email are built only from an analysis that passed. If it still fails, the documents
+    are written anyway and the red draft note lists the checks not passed ("Not passed: C5 — …"):
+    the draft note, already the place for what the buyer must settle before submitting, also
+    carries what the pipeline could not settle. Every attempt (output, checks, the feedback sent)
+    is kept in the run record. The same pattern as the email's check-and-rewrite loop.
   - What stayed with LLMs, and why: findings, judgements and the summary (analysis); the
     approvers' Purpose and Justification; the supplier email's wording; and the judge, for what
     needs reading: whether findings are faithful to their documents (J1); whether each
