@@ -590,15 +590,28 @@ to be written after testing in Claude Desktop.
 - **README and portfolio: what moved from the LLMs to code** — a key point of the design: LLMs
   only judge and write for a different reader; whatever code can fill in or verify, code does,
   which makes the output exact, checkable and cheaper. Write it up with examples:
-  - Filled in by code: risk levels, order dates and suggested quantities (preprocessing); the
-    history given to the model (retrieval by headers, window and limits); every table and figure
-    in the reports; the "no documents" findings; finding and document numbers, and the
-    renumbering for Supporting Documents; the data-issues section; the purchase request's
-    header, items table and approval block; the email's item lines and their placement.
-  - Verified by code: output format, items named, figures against the pipeline (C1-C3);
-    citations exist and apply (C4); change arithmetic (C5); each Critical item has a
-    stock-based action (C6); purchase request length and cited documents (P2, P3); stock data
-    no older than 3 days; time limits on every model call.
+  - Filled in by code, and where:
+    | What | Where |
+    |---|---|
+    | Risk level from weeks to stockout | `services/item_grouping.py`, `risk_level_from_weeks` |
+    | Latest order and delivery dates | `services/item_grouping.py`, `build_recommendations_for_item` |
+    | Suggested quantity (26 weeks of cover) | `services/item_grouping.py`, `compute_suggested_quantity_at_latest_delivery` |
+    | Rows that cannot be analysed, and the data-issues section | `services/item_grouping.py`, `screen_rows`, `data_issue_lines` |
+    | The history the model sees (headers, 12-month window, 5 per scope) and its document numbers | `services/vector_store.py`, `search_history`; `services/agents.py`, `retrieve_history`, `history_for_model` |
+    | The analysis report: every table and figure, the order of sections and items | `services/documents.py`, `render_analysis_report` |
+    | Finding numbers, their sources, and the "no documents" findings | `services/documents.py`, `number_findings` |
+    | The purchase request: note, header, items table, Supporting Documents (renumbered), approval block | `services/documents.py`, `render_purchase_request`, `renumber_citations` |
+    | What the approval and email agents are given | `services/documents.py`, `approval_input`, `email_input` |
+    | The email's item lines and where they go | `services/documents.py`, `email_item_lines`, `render_email` |
+    | Bold, italic, highlight and red in the .docx files | `utils/docx_utils.py`, `_add_runs` |
+  - Verified by code, and where:
+    | What | Where |
+    |---|---|
+    | C1-C6: format, items, figures, citations, change arithmetic, a stock-based action for each Critical item | `services/quality_checks.py`, `code_checks` |
+    | P2, P3: purchase request length and cited documents | `services/quality_checks.py`, `approval_checks` (P3 from `renumber_citations`) |
+    | Stock data no older than 3 days | `routers/pipeline.py`, `_require_fresh_snapshot`; `config.py`, `run_date` |
+    | Time limits on every model call | `services/agents.py`, `_llm`; `services/quality_checks.py`, `_judge_timeout` and the provider calls; `config.py` |
+    | Documents beside the evaluation | `services/agents.py`, `documents_graph`, `documents_node`, `purchasing_graph` |
   - What stayed with LLMs, and why: findings, judgements and the summary (analysis); the
     approvers' Purpose and Justification; the supplier email's wording; the judge for what
     needs reading (J and P1 checks).
