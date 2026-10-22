@@ -80,7 +80,8 @@ before these changes is kept on branch `legacy/v1` (3866d60). Not yet committed:
   code checks for format, items and figures, and yes/no judge checks by a model from a
   different provider (`evaluator_model`, provisionally `gemini:gemini-3.7-flash`). The
   analysis is marked ready only if every check passes; results are in the API response.
-- `GEMINI_API_KEY` added to the deploy workflow; the GitHub secret still has to be created.
+- `GEMINI_API_KEY` added to the deploy workflow and as a GitHub secret (2026-10-22, with the
+  new LangSmith key).
 
 ### 8. Prompt changes for Critical items
 
