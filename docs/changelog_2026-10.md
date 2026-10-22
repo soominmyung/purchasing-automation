@@ -521,6 +521,15 @@ English or Korean).
 - **Judge validation** (`docs/judge_validation.md`): 33 seeded-error outputs built
   (`scripts/build_judge_calibration.py`); hand scoring and the judge run not yet done.
 - **Judge costs** measured per call for 13 models (`docs/judge_model_costs.md`).
+- **No score; severity and staged comparison (2026-10-23)** (`docs/eval_rubric.md`). The first
+  version's 9.5/10 drew the question of what it measured, and weights would draw the same
+  question. Each check is blocking or a warning; the production evaluation node marks an
+  analysis ready only if every blocking check passes and lists warnings; models are compared in
+  stages — blocking checks first (a system that fails here is not chosen), then warnings, then
+  cost and response time. The same checks serve fine-tuning: the fine-tuned model is compared
+  in the same stages, teacher outputs must pass every blocking check to become training data,
+  and passing and failing outputs can form DPO pairs. Which check is blocking is still to be
+  decided, together with the v5 revision of the checks.
 
 ## MCP servers
 
@@ -535,7 +544,10 @@ to be written after testing in Claude Desktop.
 - Analysis-model benchmark (GPT-4o against 7 others on quality, cost, latency).
 - **SFT retraining:** the fine-tuned model was trained on raw CSV rows, source risk levels
   with no Critical, and GPT-4o outputs from the old prompt. Regenerate the teacher data with
-  the current pipeline and retrain before comparing it with GPT-4o.
+  the current pipeline and retrain before comparing it with GPT-4o. Keep only teacher outputs
+  that pass every blocking check; keep the five holdout scenarios out of the training data;
+  check how `scripts/generate_dpo_pairs.py` builds pairs today before using the checks for
+  them; compare the result in the staged comparison, fp16 and fp8 serving included.
 - Email validator wrongly flags proposed purchase quantities as internal stock figures, and
   a failing email is still sent after three rewrites.
 - Email validator: what it is given to judge what is internal. Today it gets general

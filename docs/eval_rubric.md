@@ -143,10 +143,44 @@ These choices are provisional until the judges have been tested on outputs with 
 verdicts; see `docs/judge_validation.md`. Costs per call are in `docs/judge_model_costs.md`.
 
 - Each judge check is decided by majority of the three judges.
-- Report per check: pass rate for each system, and how often the three judges agreed.
-- Report per scenario: the share of scenarios in which a system passed every applicable check.
 - A sample of about ten scenarios is also scored by hand, to check the judges against a
   person with domain knowledge.
+
+## Severity, verdicts and comparison (decided 2026-10-23)
+
+**No score.** The first version rated each analysis 1-10 on four criteria and reported an
+average (9.5/10), and readers asked what the number measured. A weighted score would raise the
+same question about its weights, and adding checks up hides what failed: an invented incident
+and a long summary would differ by the same few points. Results are reported check by check.
+
+**Each check is either blocking or a warning** (the assignment of each check is still to be
+made, with the revised checks for v5):
+- *Blocking*: the analysis must not be used as it is if this fails (for example invented or
+  distorted history, a wrong figure, an item not in the input, internal information in a
+  question for the supplier).
+- *Warning*: usable, but a person should look (for example a summary over length).
+
+**Production evaluation node: checks by severity.** Every analysis is "ready" only if every
+blocking check passes; otherwise "needs review". Warnings are listed with the result but do not
+change it. A check the judge could not answer counts as not passed.
+
+**Model comparison: staged.**
+1. Blocking checks: the share of analyses that pass every blocking check, and the count of
+   failures per blocking check. A system that falls short here is not chosen, whatever else.
+2. Warning checks, among the systems left: how much a person would have to correct.
+3. Cost and response time, among systems of similar quality (target: a whole run within one
+   minute).
+
+The set is small (25 scenarios), so a difference of one or two scenarios may be chance: counts
+are reported as they are, with how often the judges agreed, and only clear differences are read
+as differences.
+
+**The same checks serve fine-tuning.** The fine-tuned model is one of the systems compared, on
+the same scenarios and stages; its case rests on stage 3 (cost and latency when self-hosted) at
+blocking results close to the teacher's. Teacher outputs used as training data must pass every
+blocking check, so the student does not learn the teacher's mistakes; outputs that pass and fail
+on the same scenario can form preference pairs for DPO. Quantised serving variants are checked
+the same way.
 
 ## Checks that were considered and dropped
 
@@ -161,6 +195,7 @@ verdicts; see `docs/judge_validation.md`. Costs per call are in `docs/judge_mode
 
 | Date | Change |
 |---|---|
+| 2026-10-23 | No score: checks are blocking or warnings; the production verdict follows the blocking checks; models are compared in stages (blocking, warnings, cost and latency); the same checks filter fine-tuning data. The check list itself is to be revised for prompt v5 (C1 and C3 changed, C4-C6 and P1-P3 added in code; J1b, J3 and J5 to be reconsidered). |
 | 2026-10-19 | History given as documents scoped by their headers (prompt v4). J1 also fails attribution to a supplier or item a document does not name. `CurrentStock` renamed `AvailableStock`. |
 | 2026-10-18 | Weeks to stockout reset for 29 items to spread the set across all four risk levels (previously 50 of 53 items were Critical). Holdout scenarios included, so their figures no longer match the teacher dataset. |
 | 2026-10-18 | Production evaluation node rewritten to use these checks (it previously scored four 1–10 criteria with GPT-4o judging its own analysis, one of them about email leaks it had no email to judge). Production judge set to `gemini-3.7-flash`. |
