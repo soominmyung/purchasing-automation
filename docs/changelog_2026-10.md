@@ -185,7 +185,9 @@ before these changes is kept on branch `legacy/v1` (3866d60). Not yet committed:
   draft for "internal stock quantities" that were proposed order quantities (the known
   validator fault), and the rewrite passed.
 
-### 16. v5 design: which parts need an LLM *(in progress, decided 2026-10-19)*
+### 16. v5 design: which parts need an LLM *(decided 2026-10-19 to 2026-10-22; implemented 2026-10-22)*
+
+What changed from v4 and the effect measured on the first runs, including run time: `prompts/CHANGES.md`, v5.
 
 The decisions below are LLM-design choices to explain in the README and portfolio. Each has
 the problem that prompted it.
@@ -354,10 +356,18 @@ The approval agent receives, chosen by code: the supplier; the items requested w
 level and figures; the findings about the supplier as a whole or these items, each with the
 numbers of its documents; the changes and actions for them. Not the summary (written for the
 buyer, and likely to be copied), the questions (code puts them in the note) or Low items.
-Justification gives the reasons with the findings' content written in, and ends a statement
-that rests on a document with its number ([1]); facts from the stock figures carry no number,
-since the items table shows them. Code renumbers the cited documents for Supporting Documents
-and checks that every cited number was given.
+Justification covers only what the approvers decide on: why these items must be bought now,
+why at these quantities and order dates, and any action that adds cost or changes how the items
+are sourced; findings that bear on none of these are left out (the analysis report keeps them).
+Facts are stated as far as the input states them, figures exactly and with no word that judges
+them; an action's importance may be stated as far as its findings support; a check to be made
+before ordering is written as a condition the request rests on, for the buyer to revise once
+answered. A statement that rests on a document ends with its number ([1]); facts from the stock
+figures carry no number, since the items table shows them. The agent also receives each item's
+order-date timing ("overdue"). Code renumbers the cited documents for Supporting Documents.
+Checks on the text, in the quality-check document: P1 (judge) adds nothing to its input, P2
+(code) Purpose 1–2 and Justification 2–4 sentences, P3 (code) cites only documents given. The
+tuning that led here is in `prompts/CHANGES.md`, v5.
 
 **Critical questions split by who answers them (2026-10-22).** Each question is marked
 "supplier" (the supplier can answer it, and it reveals nothing internal: no stock levels,
@@ -366,23 +376,38 @@ mix the two ("does the price rise apply, and can the budget absorb it?"), so the
 when the question is written. The report shows them under "Critical Questions" as "Ask
 <supplier>:" and "Check internally:"; the supplier email receives only the supplier questions.
 
-**Supplier email (2026-10-22).** The email agent turns the supplier questions into polite,
-conversational requests to a business partner, in one or two short paragraphs rather than a
-list, combining questions that seek the same information, without mentioning what was reviewed
-or why a question is asked. It no longer mentions history on its own: the old rule to "mention
+**Supplier email (2026-10-22).** The email agent turns what the company needs to find out into
+polite, conversational requests to a business partner, in one or two short paragraphs rather
+than a list, one question per point, without mentioning what was reviewed. A point that comes
+from a problem the supplier had before is asked about the related steps of this order as an
+ordinary question, with no reference to what happened before or when: the analyst's question
+("Has the customs documentation issue that delayed shipments in November 2024 been fully
+resolved …?") becomes, in the email, whether the customs documentation for this order is
+expected to proceed normally. The analysis report keeps the analyst's wording, since it is read
+inside the company. The email no longer mentions history on its own: the old rule to "mention
 history gracefully" produced "We noted your recent notice on pricing…", which stated a notice the
 documents did not contain, asked nothing, and repeated the request for prices.
-- Its input is chosen by code: snapshot date, supplier, items (name, quantity, requested
-  delivery date), the supplier questions, and the names of the Critical items, for which it also
-  asks the earliest dispatch date and a faster shipping option. It no longer receives the whole
-  analysis, the risk levels, the stock figures or the internal questions. Whether it also needs
-  the findings the questions cite, as background, is decided after the first v5 run.
-- The item lines are written by code where the agent puts `{ITEMS}`: "<item> — purchase
-  quantity: <n>; requested delivery date: <date>", the quantity after any proposed change and
-  highlighted when changed. No item code: suppliers use their own codes, not the company's SAP
-  ItemCode. "Requested delivery date" (formerly "target receipt date", which reads as an internal
-  target) is the pipeline's latest delivery date; whether to send it is left to the buyer when
-  reviewing the draft.
+- Its input is chosen by code: the supplier, the items (name, quantity, requested delivery date),
+  `points_to_clarify` (the analyst's supplier questions, described as internal notes and not
+  wording for the supplier), the names of the Critical items, for which it also asks the
+  earliest dispatch date and a faster shipping option, and `other_items` (items of this
+  supplier outside the email, to be left out even where a point names them). No snapshot date
+  (when the company reviewed its stock is internal), risk levels, stock figures, findings or
+  internal questions. Findings as background were not needed.
+- Only text in quotes in the prompt is copied into the email (the greeting and the two-line
+  signature); everything else describes what the email must do, so its wording is not copied.
+- The item lines are written by code and placed after the purpose paragraph; the agent writes
+  no item list and no placeholder (a `{ITEMS}` placeholder was dropped or filled in by the
+  model). Lines: "<item> — purchase quantity: <n>; requested delivery date: <date>", the quantity
+  after any proposed change and highlighted when changed, with no arrow. No item code: suppliers
+  use their own codes, not the company's SAP ItemCode. "Requested delivery date" (formerly
+  "target receipt date", which reads as an internal target) is the pipeline's latest delivery
+  date; whether to send it is left to the buyer when reviewing the draft.
+- The validator checks the agent's text before the item lines are added, so purchase quantities
+  never reach it.
+- Model: `gpt-5.4-mini` for the draft and its rewrite. `gpt-4o-mini` and `gpt-4o` carried the
+  analyst's wording into the email whatever the rule said, although `gpt-4o` explained the rule
+  correctly when asked about the point alone. The steps and what was hard: `prompts/CHANGES.md`, v5.
 
 **The pipeline produces drafts.** One run produces all three documents. The purchase request
 opens with a red italic note: "Draft — to be revised once the questions and actions below are
@@ -457,6 +482,32 @@ English or Korean).
   (pipeline value → proposed value) wherever they appear, including the risk level
   (High → Critical).
 
+### 19. Documents beside the evaluation; time limits on model calls *(2026-10-22)*
+
+- **The documents no longer wait for the judge.** Nothing in the documents uses the evaluation's
+  result. A first wiring started the evaluation and the report side by side, but LangGraph moves
+  in steps and a step ends only when all its nodes have finished, so the purchase request and the
+  email still waited for the judge (measured: report done at 5.9 s, purchase request at 189.5 s,
+  after the evaluation). The documents are now one node of the main graph, a graph of their own
+  inside it (report → purchase request → its check beside the email steps), run beside the
+  evaluation; a final node joins them and adds the purchase request's checks to the
+  quality-check document. Measured with a 20-second stand-in for the judge: documents done at
+  11.0 s, evaluation at 26.5 s. The run still returns when the evaluation is done; sending the
+  documents first needs a change to the API and the web page (in "Still to do").
+- **Every model call has a time limit** (`config.py`): analysis, approval and email agents 60 s
+  with one retry (`llm_timeout_seconds`, `llm_retries`); judge requests 90 s with one retry
+  (`judge_timeout_seconds`, `judge_retries`), after which the checks are recorded as "Not
+  checked" and the verdict is "needs review". Without limits a run hung for more than five
+  minutes while the judge did not answer; with them the same run ended at 194 s, the judge
+  having returned 504 (deadline exceeded) twice and 429 (quota exhausted) once. The offline
+  scripts keep two judge retries.
+- `gpt-5` models take only their default temperature, so no temperature is passed to them.
+- **Development runs are kept** (`dev/`): development cases, separate from the evaluation set so
+  prompts are not tuned on the scenarios used to measure them, and one folder per run with the
+  exact prompt text used, since prompts are edited in place while a version is written
+  (`scripts/run_dev_case.py`). Until 2026-10-22 test runs were kept only in a session's
+  working folder; that day's runs were moved in, without their prompt text.
+
 ## Evaluation
 
 - **Rubric** (`docs/eval_rubric.md`): fixed checklist replacing imitation-of-GPT-4o scoring;
@@ -486,6 +537,13 @@ to be written after testing in Claude Desktop.
   the current pipeline and retrain before comparing it with GPT-4o.
 - Email validator wrongly flags proposed purchase quantities as internal stock figures, and
   a failing email is still sent after three rewrites.
+- Email validator: what it is given to judge what is internal. Today it gets general
+  categories (stock quantities, weeks to stockout, risk levels, analysis logic). Options: give it
+  this run's actual internal data (available stock, weeks to stockout, risk levels, finding
+  sentences, internal questions) to compare against, and have code check that no such figure
+  appears in the email, leaving the validator the paraphrased leaks ("stock is running low").
+  Since v5 it checks the email text before code adds the item lines, so purchase quantities no
+  longer reach it.
 - Undecided: whether to call the model at all when every item is Low; whether the PR
   document also gets the data-issues section.
 - **Later: a second stage for the purchase request** (designed 2026-10-22, not built). The
@@ -530,10 +588,16 @@ to be written after testing in Claude Desktop.
   would supply it.
 - README and portfolio: explain what is hidden from LangSmith and what is still sent, from
   the summary at the top of `docs/observability.md`.
-- The evaluation node runs between analysis and report, so the judge's time (9–56 s per
-  supplier in the first run record) adds to every run, though nothing after it uses its
-  result. Once the production judge is chosen, consider running evaluation alongside
-  report → purchase request → email.
+- Return the documents as soon as they are ready, before the evaluation finishes (item 19):
+  the API and the web page now wait for the whole run.
+- Judge validation must also weigh speed and reliability: on 2026-10-22 `gemini-3.7-flash` took
+  30–109 s per call on the same case, then returned 504 and 429 (quota). Include the purchase
+  request check (P1) in the validation; it judged the same "60%" for "about 60%" both ways.
+- Target: a whole run within one minute. Without the judge one supplier takes about 11 s
+  (analysis 5-6 s, documents about 5 s); the judge alone took 30-109 s, so the evaluation
+  node's redesign and the judge model decide whether the target is met. Suppliers are processed
+  one after another, so a CSV with many suppliers also needs them run side by side (within the
+  API rate limits).
 - Re-ingest history PDFs so file names appear in Referenced Documents.
 - Demo: load sample history PDFs at startup when the store is empty, so a restarted
   Cloud Run container still shows history-based questions.
