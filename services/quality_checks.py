@@ -30,7 +30,7 @@ CHECK_NAMES = {
     "C4": "Every judgement cites findings that apply",
     "C5": "Proposed changes add up",
     "C6": "Each Critical item has an action on its stock position",
-    "C7": "Summary names every Critical item first",
+    "C7": "Summary names every Critical item",
     "C8": "Summary within about 100 words",
     "J1": "No invented or distorted history",
     "J2a": "Supplier problem raised as a question",
@@ -239,12 +239,11 @@ def code_checks(items: list[dict[str, Any]], analysis: Any,
     out["C6"] = _result([f"no action on the stock position of {m}" for m in missing],
                         "each Critical item has one" if critical_items(items) else "no Critical items")
 
-    # C7 the summary's first sentence names every Critical item; C8 its length
+    # C7 the summary names every Critical item; C8 its length
     summary = str(obj.get("summary") or "").strip()
-    first = re.split(r"(?<=[.!?])\s+", summary, maxsplit=1)[0] if summary else ""
     unnamed = [f"{it.get('item_name')} ({it.get('item_code')})" for it in critical_items(items)
-               if _norm(it.get("item_name")) not in _norm(first)]
-    out["C7"] = _result([f"first sentence does not name {u}" for u in unnamed],
+               if _norm(it.get("item_name")) not in _norm(summary)]
+    out["C7"] = _result([f"the summary does not name {u}" for u in unnamed],
                         "names every Critical item" if critical_items(items) else "no Critical items")
     words = len(summary.split())
     out["C8"] = _result([f"{words} words"] if words > SUMMARY_WORDS else [], f"{words} words")

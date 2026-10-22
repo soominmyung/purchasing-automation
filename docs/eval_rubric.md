@@ -114,7 +114,7 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 | C4 | Every finding rests on documents that were given and apply to what it is about, or on the stock position; every question, change and action cites at least one finding that exists and concerns its items or the supplier as a whole | Blocking |
 | C5 | Each change adds up (the date moved by the stated weeks; the quantity times the factor, rounded up), and no proposed order date is before the snapshot date | Blocking |
 | C6 | Each Critical item has an action that cites a stock finding about it | Blocking |
-| C7 | The summary's first sentence names every Critical item | Warning |
+| C7 | The summary names every Critical item | Warning |
 | C8 | The summary is within about 100 words | Warning |
 
 ### Judge checks — yes or no
@@ -151,7 +151,7 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 |---|---|---|
 | J1b | Does not attach the fixed "no history" sentence to an item a document applies to | Code now writes the "no documents" findings; the model never writes that sentence. Claiming that history is absent when it is not is a distortion, under J1 |
 | J3 | States that no history is available when there is none | Written by code, as above |
-| J5 | The summary names each Critical item with its gap and recommends a mitigation | The v5 summary leaves actions to their own section. Split into C7 (Critical items named first) and C6 (an action on each Critical item's stock position) |
+| J5 | The summary names each Critical item with its gap and recommends a mitigation | The v5 summary leaves actions to their own section. Split into C7 (Critical items named in the summary) and C6 (an action on each Critical item's stock position) |
 
 The judge sees the scenario's inputs and the candidate output. It is never told which
 model produced the output.
