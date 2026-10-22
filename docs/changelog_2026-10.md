@@ -665,6 +665,9 @@ to be written after testing in Claude Desktop.
     the draft note, already the place for what the buyer must settle before submitting, also
     carries what the pipeline could not settle. Every attempt (output, checks, the feedback sent)
     is kept in the run record. The same pattern as the email's check-and-rewrite loop.
+    Only the code checks decide a rewrite: they are exact and take no time, so a rewrite costs one
+    more analysis call (about 6 s); the judge checks, slow and less consistent, run beside the
+    documents and are reported in the verdict and the draft note instead of holding them up.
   - What stayed with LLMs, and why: findings, judgements and the summary (analysis); the
     approvers' Purpose and Justification; the supplier email's wording; and the judge, for what
     needs reading: whether findings are faithful to their documents (J1); whether each
