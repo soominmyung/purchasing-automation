@@ -582,6 +582,47 @@ English or Korean).
   than the snapshot date excepted). First run: all three judged correctly, including the overdue
   item as the allowed exception.
 
+### 21. Dates through the lead time: the analysis judges one figure, code works out the rest *(decided 2026-10-24, to be built)*
+
+- **What led here.** The analysis proposed order-date changes itself (weeks earlier or later). For
+  a supplier-wide notice of lead times four weeks longer it moved every item four weeks earlier,
+  including one already overdue, giving a date in the past (caught by C5); after a rewrite it
+  left a change of 0 weeks with the reason "lead times four weeks longer", which the judge passed
+  (it checked the four items that moved and read the overdue one as the allowed exception). And
+  the risk levels stayed as if nothing had changed, although a longer lead time is what makes an
+  item run out before a new order can arrive.
+- **The decision.** Every finding about dates comes down to one thing the analysis judges: the
+  lead time, for the supplier as a whole or for named items (`lead_time_changes`: items, weeks,
+  reason, findings). Code then works out everything that follows from it. The analysis prompt must
+  say so plainly: the analysis changes only the lead time, and code calculates and fills in the
+  order dates and risk levels (otherwise the model also tries to move the dates).
+- **Risk level from weeks to stockout and the lead time** (default 18 weeks = 16 import + 2
+  internal):
+  - Critical: weeks to stockout < lead time (runs out before a new order can arrive)
+  - High: weeks to stockout < lead time + 8
+  - Medium: weeks to stockout < lead time + 17
+  - Low: otherwise
+  With 18 weeks these are the current thresholds (18, 26, 35). Latest order date = latest
+  delivery date − lead time. Weeks to stockout, the latest delivery date and the suggested quantity
+  are not changed by a lead-time change (the stock runs out on the same day, and the quantity
+  rests on the weekly sales, stock ÷ weeks to stockout).
+- **The report shows the lead time** (Items and Item Details), with "18 → 22 weeks" highlighted
+  when it changes, so a risk level that rises has its reason beside it; the findings state the
+  lead-time fact the change rests on. A changed risk level and order date are shown as
+  "pipeline value → new value", highlighted.
+- **An order date that would fall on or before the snapshot date** is shown as the snapshot date,
+  highlighted like any change, with an asterisk; below the table, in red: "* <item> should have
+  been ordered by <date>; it is overdue."
+- **Checks split by who can judge what.** The judge checks whether each lead-time change holds:
+  its direction, its size, and no item the same reason applies to left out (J6). Code checks that
+  the changes are well formed (not 0 weeks, items that exist). The order-date arithmetic checks
+  (C3 and C5 for order dates) are no longer needed: the dates are calculated by code from the lead
+  time, so they cannot be wrong, and a proposed date before the snapshot date or a change of 0
+  weeks can no longer come from the model.
+- Still to decide: overlapping changes for one item (a supplier-wide change and an item's own);
+  how the proposals list shows an order-date change (only "old → new", or with the lead time as its
+  cause); whether the quantity line keeps "(×1.5)", which was added in code without being asked for.
+
 ## Evaluation
 
 - **Rubric** (`docs/eval_rubric.md`): fixed checklist replacing imitation-of-GPT-4o scoring;
@@ -742,6 +783,15 @@ to be written after testing in Claude Desktop.
     blocking failures instead of one in a test), and would have needed a rule per failure for which
     parts to rewrite together; a few seconds were not worth a report that can contradict itself.
     If rewrites run out, the attempt with the fewest blocking failures is used, not the last.
+  - **One judgement, the lead time; code works out the dates and the risk** (decided 2026-10-24,
+    item 21; for the README, the portfolio and the base documents). The risk formula must be
+    stated in all of them: Critical if weeks to stockout < lead time, High if < lead time + 8,
+    Medium if < lead time + 17, else Low; lead time 18 weeks by default; latest order date =
+    latest delivery date − lead time. The point to make: where the model used to move order dates
+    itself (and could move them into the past, or by 0 weeks), it now judges a single figure, the
+    lead time, so its judgement is simpler and easier to check; the judge checks only whether
+    that figure is justified, and code calculates the order dates and risk levels from it, so the
+    order-date arithmetic needs no check at all.
   - What stayed with LLMs, and why: findings, judgements and the summary (analysis); the
     approvers' Purpose and Justification; the supplier email's wording; and the judge, for what
     needs reading: whether findings are faithful to their documents (J1); whether each
