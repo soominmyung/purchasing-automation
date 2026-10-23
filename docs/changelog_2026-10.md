@@ -514,6 +514,32 @@ English or Korean).
   (`scripts/run_dev_case.py`). Until 2026-10-22 test runs were kept only in a session's
   working folder; that day's runs were moved in, without their prompt text.
 
+### 20. Analysis rewrite loop; check notes in the draft; J6 *(2026-10-23)*
+
+- **The analysis is corrected before any document is written.** If it fails a blocking code check
+  (C1-C6, C9), the analysis agent gets its output and the failures
+  (`prompts/v5/analysis_revision_request.md`) and corrects only those, up to `analysis_rewrites`
+  (2) times. Only code checks decide a rewrite: exact and instant, so a rewrite costs one more
+  analysis call; the judge's checks still run beside the documents. Every attempt, its checks and
+  the feedback are kept in the run record (`analysis_attempts`). First runs (`kestrel_components`):
+  an order date moved before the snapshot date (C5) was corrected on the second attempt each time,
+  the other changes kept.
+- **What is still wrong goes in the purchase request's red draft note, in plain words.** Once every
+  check has run, the note lists "Must be corrected before use" (blocking checks not passed) and
+  "Please check" (warnings), without check ids: a fixed sentence per code check, and for judge
+  checks a one-sentence note the judge writes for the buyer when a check fails. The analysis
+  report gets no note: it is built from the analysis after its rewrites, and the full results are
+  in the quality-check document. Warnings never cause a rewrite.
+- **Judge answers made reliable.** The judge writes its evidence before its verdict (with the
+  verdict first, Haiku twice concluded "pass" in its evidence and returned false); the Anthropic
+  judge answers through a tool, so the JSON is built by the API (a quote inside a cited sentence
+  had broken it); a verdict sent as a JSON string or wrapped once more is read. J7 judges the prose
+  only (Haiku had applied it to the change fields).
+- **J6a-c, whether proposed changes hold** (blocking, when any change is proposed): direction,
+  size, and no item the same reason applies to left out (an order date that cannot move earlier
+  than the snapshot date excepted). First run: all three judged correctly, including the overdue
+  item as the allowed exception.
+
 ## Evaluation
 
 - **Rubric** (`docs/eval_rubric.md`): fixed checklist replacing imitation-of-GPT-4o scoring;

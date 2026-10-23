@@ -196,6 +196,12 @@ five order-date changes and one quantity change were proposed, but the text ment
 figure ("requiring a reassessment of order quantities"), so the rule was not exercised; one order
 date was moved before the snapshot date, caught by C5.
 
+**Purchase request after the analysis rewrite loop (2026-10-23, `kestrel_components`).** With the
+analysis corrected before the documents (an order date before the snapshot date no longer reaches
+the items table), one run's Justification named only the requested items, wrote the delivery-date
+check as a condition ("Approval is contingent upon confirming …"), cited no document for a stock
+fact, and passed P1. One run; to be confirmed in later runs.
+
 **Known faults** (not yet changed)
 - Approval agent: "about" dropped from a figure; a pre-order check written as "it is crucial to
   confirm …" rather than as a condition.
