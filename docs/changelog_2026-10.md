@@ -545,6 +545,26 @@ English or Korean).
   whole analysis again (`dev/runs/2026-10-23_173030_*`, `173106_*`, `173433_*`).
 - **When the rewrites are used up and it still fails, the documents use the attempt with the
   fewest blocking failures**, not the last one, since a later attempt can be worse.
+- **The quality-check document is a checklist with reasons, kept for every run** (also for the
+  README and portfolio): the run id and snapshot date; an Attempts table (each attempt, whether the
+  judge ran, the blocking checks that failed, whether it was sent back, and which attempt the
+  documents use); then each check with its severity, result and reason (the judge's evidence for
+  judge checks), for the analysis and for the purchase request. It is saved with the run's id in
+  its file name, and the same results are in the run record.
+- **Checks split and added (2026-10-23).** J1 into J1a (found in the documents), J1b (not
+  distorted), J1c (not misattributed); J7 into J7a (stock figures match) and J7b (changed figures
+  written with both values); P1 into P1a (nothing added), P1b (figures as given), P1c (meaning
+  kept). New: J8 questions marked for the supplier reveal nothing internal (blocking), J9 each
+  question and action follows from its findings, J10 no document with a problem for this order
+  left unused (code lists the documents behind no judgement; the judge reads those), J11
+  findings state facts only (warnings). J2a and J2b stay until J10 has shown it can replace them.
+- **The Anthropic judge's tool names each check as a property.** With open property names Haiku
+  sometimes put every verdict into one field as a string, so the purchase request checks came back
+  unanswered; with the check ids as named, required properties, four runs in a row were answered.
+  When a verdict still cannot be read, the start of the judge's answer is kept as its reason.
+- Seen once after a rewrite: an order-date change of 0 weeks (2025-04-05 → 2025-04-05) left in
+  place of a removed change; it passes every check but adds an empty line to the proposals. To do:
+  drop such changes in code or catch them in a check.
 
 - **What is still wrong goes in the purchase request's red draft note, in plain words.** Once every
   check has run, the note lists "Must be corrected before use" (blocking checks not passed) and

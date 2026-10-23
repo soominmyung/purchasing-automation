@@ -661,7 +661,7 @@ def checks_table(result: dict[str, Any], names: dict[str, str]) -> str:
         mark = "Pass" if v["pass"] is True else ("Fail" if v["pass"] is False else "Not checked")
         detail = str(v["detail"] or "").replace("|", "/").replace("\n", " ")
         rows.append(f"| {names.get(cid, cid)} ({cid}) | {v.get('severity', '')} | {mark} | {detail} |")
-    return "| Check | Severity | Result | Detail |\n| --- | --- | --- | --- |\n" + "\n".join(rows) + "\n"
+    return "| Check | Severity | Result | Reason |\n| --- | --- | --- | --- |\n" + "\n".join(rows) + "\n"
 
 
 def evaluation_markdown(supplier: str, result: dict[str, Any], run_id: str = "", snapshot_date: str = "",
