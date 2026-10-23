@@ -9,7 +9,10 @@ import re
 from typing import Any, TypedDict, Annotated, List, Union
 import operator
 
-from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
+import copy
+import time
+
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, BaseMessage
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 
@@ -23,6 +26,7 @@ from services.vector_store import (
 )
 from services.prompts import (
     ANALYSIS_AGENT_SYSTEM,
+    ANALYSIS_REVISION_REQUEST,
     APPROVAL_AGENT_SYSTEM,
     EMAIL_DRAFT_AGENT_SYSTEM,
     EMAIL_REVISION_REQUEST_TEMPLATE,
@@ -31,7 +35,8 @@ from services.prompts import (
     EMAIL_VALIDATOR_TEMPLATE,
 )
 from services.quality_checks import (
-    approval_checks, approval_markdown, evaluate_analysis, evaluation_markdown, has_history,
+    BLOCKING, CHECK_NAMES, SEVERITY, approval_checks, approval_markdown, code_checks, evaluate_analysis,
+    evaluation_markdown, has_history,
 )
 from services.run_record import instrument
 
@@ -249,6 +254,10 @@ class PurchasingState(TypedDict):
 
     # History documents the Analysis Agent was given, passed to the evaluation node
     history_docs: list[dict]
+    # Every analysis attempt (output, code checks, the feedback sent), and the blocking code
+    # checks the final analysis still fails (the documents' red notes come from the evaluation)
+    analysis_attempts: list[dict]
+    analysis_not_passed: list[str]
 
 def apply_system_notes(analysis: Any, items: list[dict]) -> Any:
     """
@@ -276,13 +285,53 @@ def analysis_node(state: PurchasingState):
         "supplier": state["supplier"],
         "items": state["items"],
     }
+    started = time.perf_counter()
     out, history_docs = run_analysis_agent(
         input_json,
         history_override=state.get("history_override"),
         supplier_history_override=state.get("supplier_history_override"),
         item_history_override=state.get("item_history_override"),
     )
-    return {"analysis_output": out, "history_docs": history_docs}
+    # Blocking code checks decide a rewrite: exact and instant, so a rewrite costs one more
+    # analysis call. The judge's checks run later, beside the documents.
+    attempts, not_passed = [], []
+    for n in range(settings.analysis_rewrites + 1):
+        checks = code_checks(state["items"], out, history_docs, state["snapshot_date"])
+        failed = {k: v for k, v in checks.items() if SEVERITY.get(k) == BLOCKING and v["pass"] is not True}
+        not_passed = [f"{k} ({CHECK_NAMES.get(k, k)}): {v['detail']}" for k, v in failed.items()]
+        feedback = (ANALYSIS_REVISION_REQUEST.replace("{failures}", "\n".join(f"- {line}" for line in not_passed))
+                    if failed and n < settings.analysis_rewrites else None)
+        attempts.append({"attempt": n + 1, "output": copy.deepcopy(out), "code_checks": checks,
+                         "feedback": feedback, "seconds": round(time.perf_counter() - started, 2)})
+        if feedback is None:
+            break
+        started = time.perf_counter()
+        out = run_analysis_rewrite(input_json, history_docs, out, feedback)
+    return {"analysis_output": out, "history_docs": history_docs,
+            "analysis_attempts": attempts, "analysis_not_passed": not_passed}
+
+
+def run_analysis_rewrite(input_json: dict[str, Any], docs: list[dict[str, Any]], previous: dict[str, Any],
+                         feedback: str) -> dict[str, Any]:
+    """The analysis agent corrects its own output: the same input, its previous answer, and the
+    checks it failed. The references (which documents it was given) carry over."""
+    user_text = json.dumps({**input_json, "history": history_for_model(docs)}, ensure_ascii=False)
+    shown = {k: v for k, v in previous.items() if k != "references"}
+    answer = _llm(AGENT_MODELS["analysis"]).invoke([
+        SystemMessage(content=ANALYSIS_AGENT_SYSTEM),
+        HumanMessage(content=user_text),
+        AIMessage(content=json.dumps(shown, ensure_ascii=False)),
+        HumanMessage(content=feedback),
+    ])
+    text = answer.content if hasattr(answer, "content") else str(answer)
+    try:
+        out = _extract_json_from_text(text)
+    except Exception:
+        out = None
+    if not isinstance(out, dict):
+        return previous  # an answer that is not JSON changes nothing; the checks still fail
+    out["references"] = previous.get("references")
+    return out
 
 def evaluation_node(state: PurchasingState):
     """Node that evaluates the quality of analysis output."""
@@ -333,11 +382,17 @@ def approval_check_node(state: PurchasingState):
     return {"approval_check": result}
 
 def finish_node(state: PurchasingState):
-    """Runs once the evaluation and both document branches are done: the quality-check
-    document gets the purchase request's checks."""
-    if not state.get("approval_check"):
-        return {}
-    return {"evaluation_md": (state.get("evaluation_md") or "") + approval_markdown(state["approval_check"])}
+    """Runs once the evaluation and both document branches are done. The purchase request's red
+    draft note gets the blocking checks not passed and the warnings, which the buyer settles
+    before submitting (the judge's results arrive only now, as the documents do not wait for
+    them). The analysis report gets none: it is built from the analysis after its rewrites,
+    and the full results are in the quality-check document, which also gets the purchase
+    request's checks."""
+    update = {"pr_md": documents.fill_check_notes(
+        state.get("pr_md") or "", [state.get("evaluation_result") or {}, state.get("approval_check") or {}])}
+    if state.get("approval_check"):
+        update["evaluation_md"] = (state.get("evaluation_md") or "") + approval_markdown(state["approval_check"])
+    return update
 
 def email_draft_node(state: PurchasingState):
     """The email agent's text. After a failed check, rewritten by a stronger model with the

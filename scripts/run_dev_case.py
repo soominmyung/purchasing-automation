@@ -44,7 +44,7 @@ def prompts_used() -> dict[str, str]:
 
 
 def settings_used() -> dict:
-    keys = ("prompt_version", "evaluator_model", "llm_timeout_seconds", "llm_retries",
+    keys = ("prompt_version", "evaluator_model", "analysis_rewrites", "llm_timeout_seconds", "llm_retries",
             "judge_timeout_seconds", "judge_retries", "run_date")
     return {k: getattr(settings, k, None) for k in keys}
 
@@ -89,6 +89,8 @@ def full_run(case: dict, group: dict, folder: Path) -> dict:
                     **{key: state.get(key) for _, key in DOCUMENTS}},
         "evaluation": state.get("evaluation_result"),
         "approval_check": state.get("approval_check"),
+        "analysis_attempts": state.get("analysis_attempts"),
+        "analysis_not_passed": state.get("analysis_not_passed"),
         "email_validation": state.get("validation_log"),
         "document_issues": state.get("document_issues"),
     }

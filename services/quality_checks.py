@@ -38,6 +38,9 @@ CHECK_NAMES = {
     "J2b": "Item problem raised as a question",
     "J2c": "No question presumes a problem the data does not show",
     "J7": "Stock figures quoted match the input",
+    "J6a": "Each proposed change goes the way its findings point",
+    "J6b": "Each proposed change is the size its findings support",
+    "J6c": "No item the same reason applies to is left out",
 }
 
 # Blocking: the analysis must not be used as it is if this fails; the verdict follows these
@@ -50,17 +53,28 @@ SEVERITY = {
     "J2a": WARNING, "J2b": WARNING,  # until replaced by the check on documents left unused
     "J2c": WARNING,
     "J7": BLOCKING,
+    "J6a": BLOCKING, "J6b": BLOCKING, "J6c": BLOCKING,  # J6: whether the proposed changes hold
     "P1": WARNING, "P2": WARNING, "P3": BLOCKING,
 }
 SUMMARY_WORDS = 100
 
 _JUDGE_TEXT = {
-    "J7": "Every figure from the stock data that the analysis quotes anywhere (summary, findings, "
-          "questions, actions, reasons) matches the input for that item exactly: available stock, weeks "
+    # J6: whether the proposed order-date and quantity changes hold (applies when there are any)
+    "J6a": "Each proposed change in po_date_changes and quantity_changes follows from the findings it "
+           "cites: what those findings say is a reason to move that item's order date or quantity in the "
+           "direction proposed (earlier or later, more or less).",
+    "J6b": "The size of each proposed change (shift_weeks or factor) fits what the cited findings say, and "
+           "the change's reason explains that size.",
+    "J6c": "No item that the same reason applies to is left without the same kind of change, except an "
+           "item whose change cannot be made (an order date that cannot move earlier than the snapshot "
+           "date). If there is no such item, this check passes.",
+    "J7": "Every figure from the stock data that the analysis quotes in its prose (the summary, the "
+          "findings' text, the questions, the actions and the changes' reasons; not the values in the "
+          "change fields themselves) matches the input for that item exactly: available stock, weeks "
           "to stockout, expected stockout weeks (the gap), suggested quantity, recommended order and "
           "delivery dates. For an item with a proposed change in po_date_changes or quantity_changes, "
           "the changed figure (its order date or its quantity) is written as '<pipeline value> → "
-          "<proposed value>' wherever the text mentions it; writing only one of the two fails. Figures "
+          "<proposed value>' wherever the prose mentions it; writing only one of the two fails. Figures "
           "that come from the history documents are not judged here.",
     "J1": "Every statement the analysis makes about supplier or item history (incidents, trends, "
           "reliability) is supported by the history documents given, none of them is distorted (for "
@@ -305,7 +319,7 @@ def analysis_text(obj: dict) -> str:
 # ----------------------------------------------------------------------------- judge checks
 
 def applicable_judge_checks(items: list[dict[str, Any]], history_docs: list[dict[str, Any]],
-                            labels: dict | None = None) -> list[str]:
+                            labels: dict | None = None, analysis: Any = None) -> list[str]:
     """
     Which judge checks apply. Offline, labels decide J2a / J2b; in production they apply when
     some document concerns the supplier (J2a) or names an item (J2b), and the judge decides
@@ -315,6 +329,9 @@ def applicable_judge_checks(items: list[dict[str, Any]], history_docs: list[dict
     hs = any(d.get("supplier") for d in docs)
     hi = any(d.get("items") or d.get("item_codes") for d in docs)
     checks = ["J1", "J2c", "J7"]
+    obj = _as_obj(analysis) or {}
+    if _entries(obj, "po_date_changes") or _entries(obj, "quantity_changes"):
+        checks += ["J6a", "J6b", "J6c"]
     if labels is not None:
         if labels.get("supplier_issue") == "material":
             checks.append("J2a")
@@ -338,8 +355,11 @@ def check_text(check: str, items: list[dict[str, Any]], labelled: bool) -> str:
 
 JUDGE_SYSTEM = (
     "You audit a purchasing analysis written by an AI for a buyer. You are given the exact inputs the AI "
-    "received and its output. Answer each check strictly with true or false and cite the part of the "
-    "output that decides it. Judge only what the check asks; do not reward length or style."
+    "received and its output. For each check, first write the evidence (the part of the output that "
+    "decides it), then give the verdict, true or false, that the evidence supports. Judge only what the "
+    "check asks; do not reward length or style. When a check fails, also write a note: one plain "
+    "sentence for the buyer, saying which part of the output may be wrong and how, with no check ids "
+    "or technical terms."
 )
 
 
@@ -369,7 +389,7 @@ def judge_prompt(supplier: str, items: list[dict[str, Any]], history_docs: list[
         "AI OUTPUT\n"
         f"{json.dumps(analysis, ensure_ascii=False, indent=2) if isinstance(analysis, dict) else analysis}\n\n"
         "CHECKS\n" + "\n".join(lines) + "\n\n"
-        'Return JSON only: {"<check id>": {"pass": true|false, "evidence": "<short quote or reason>"}, ...} '
+        'Return JSON only: {"<check id>": {"evidence": "<short quote or reason>", "pass": true|false, "note": "<only if it fails: one plain sentence for the buyer>"}, ...} '
         "with one entry per check."
     )
 
@@ -423,9 +443,19 @@ def _call_anthropic(model: str, system: str, user: str) -> tuple[str, dict[str, 
     import anthropic
     client = anthropic.Anthropic(api_key=_key("ANTHROPIC_API_KEY", "CLAUDE_API_KEY"),
                                  timeout=_judge_timeout(), max_retries=0)
+    tool = {"name": "record_verdicts",
+            "description": "Record one verdict per check id.",
+            "input_schema": {"type": "object", "additionalProperties": {
+                "type": "object",
+                "properties": {"evidence": {"type": "string"}, "pass": {"type": "boolean"},
+                               "note": {"type": "string"}},
+                "required": ["evidence", "pass"]}}}
     resp = client.messages.create(model=model, max_tokens=2000, system=system,
-                                  messages=[{"role": "user", "content": user}])
-    text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+                                  messages=[{"role": "user", "content": user}],
+                                  tools=[tool], tool_choice={"type": "tool", "name": "record_verdicts"})
+    used = next((b for b in resp.content if getattr(b, "type", "") == "tool_use"), None)
+    text = json.dumps(used.input) if used is not None else "".join(
+        b.text for b in resp.content if getattr(b, "type", "") == "text")
     return text, _usage(resp.usage.input_tokens, resp.usage.output_tokens)
 
 
@@ -468,9 +498,18 @@ def run_judge(spec: str, prompt: str, checks: list[str], retries: int = 2) -> di
             data = json.loads(m.group(0)) if m else {}
             result = {}
             for c in checks:
-                v = data.get(c) if isinstance(data.get(c), dict) else {}
+                v = data.get(c)
+                if isinstance(v, str):  # a verdict sent as a JSON string instead of an object
+                    try:
+                        v = json.loads(v)
+                    except ValueError:
+                        v = {}
+                v = v if isinstance(v, dict) else {}
+                if "pass" not in v and isinstance(v.get(c), dict):  # wrapped once more
+                    v = v[c]
                 p = v.get("pass")
-                result[c] = {"pass": p if isinstance(p, bool) else None, "evidence": v.get("evidence", "")}
+                result[c] = {"pass": p if isinstance(p, bool) else None, "evidence": v.get("evidence", ""),
+                             "note": v.get("note", "") if p is False else ""}
             return result
         except Exception as e:  # record and retry; never drop a check silently
             if attempt == retries:
@@ -510,9 +549,11 @@ def approval_checks(payload: dict[str, Any], approval: dict[str, Any], citation_
     prompt = ("INPUT GIVEN TO THE WRITER\n" + json.dumps(payload, ensure_ascii=False, indent=2) + "\n\n"
               "TEXT WRITTEN\n" + json.dumps({"purpose": purpose, "justification": justification}, ensure_ascii=False, indent=2)
               + "\n\nCHECKS\n- P1: " + _P1_TEXT + "\n\n"
-              'Return JSON only: {"P1": {"pass": true|false, "evidence": "<short quote or reason>"}}')
+              'Return JSON only: {"P1": {"evidence": "<short quote or reason>", "pass": true|false, '
+              '"note": "<only if it fails: one plain sentence for the buyer>"}}')
     judged = run_judge(judge, prompt, ["P1"], retries=retries)
-    results = {"P1": {"pass": judged["P1"]["pass"], "detail": judged["P1"]["evidence"]}, **results}
+    results = {"P1": {"pass": judged["P1"]["pass"], "detail": judged["P1"]["evidence"],
+                      "note": judged["P1"].get("note", "")}, **results}
     return {**verdict(results), "checks": results, "judge": judge}
 
 
@@ -531,11 +572,12 @@ def evaluate_analysis(supplier: str, items: list[dict[str, Any]], analysis: Any,
     ready only if every check passed, and a check the judge could not answer counts as failed.
     """
     code = code_checks(items, analysis, history_docs, snapshot_date)
-    checks = applicable_judge_checks(items, history_docs)
+    checks = applicable_judge_checks(items, history_docs, analysis=analysis)
     judged = run_judge(judge, judge_prompt(supplier, items, history_docs,
                                            analysis, checks, labelled=False), checks, retries=retries)
     results = {**{k: {"pass": v["pass"], "detail": v["detail"]} for k, v in code.items()},
-               **{k: {"pass": v["pass"], "detail": v["evidence"]} for k, v in judged.items()}}
+               **{k: {"pass": v["pass"], "detail": v["evidence"], "note": v.get("note", "")}
+                  for k, v in judged.items()}}
     return {**verdict(results), "checks": results, "judge": judge}
 
 

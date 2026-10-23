@@ -245,6 +245,70 @@ def _docs_table(rows: list[tuple[int, dict]]) -> list[str]:
     return lines
 
 
+CHECK_NOTES = "<!-- check notes -->"  # replaced by fill_check_notes once every check has run
+
+
+# For the buyer, in plain words and without check ids: what a failed code check means. The
+# check's own detail (items and figures) follows.
+_PLAIN_CODE = {
+    "C1": "The analysis could not be read in full, so parts of this draft may be missing",
+    "C2": "An item that is not part of this order is named",
+    "C3": "A proposed change does not start from the calculated figure",
+    "C4": "A statement rests on a source that does not support it",
+    "C5": "A proposed change does not add up",
+    "C6": "No action is given for an item that will run out before a new order can arrive",
+    "C7": "The summary does not name every item that will run out before a new order can arrive",
+    "C8": "The summary is longer than intended",
+    "C9": "A changed figure in the text does not match the proposed change",
+    "P2": "Purpose or Justification is longer than intended",
+    "P3": "Justification cites a document that was not given",
+}
+# What a judge check looks at, for when the judge could not answer.
+_PLAIN_AREA = {
+    "J1": "What the analysis says about past documents",
+    "J2a": "Whether the supplier's problems are raised as questions",
+    "J2b": "Whether the items' problems are raised as questions",
+    "J2c": "Whether a question assumes a problem the documents do not show",
+    "J7": "The stock figures quoted in the text",
+    "J6a": "Whether each proposed change goes the way its reasons point",
+    "J6b": "Whether each proposed change is the right size",
+    "J6c": "Whether the same change was left out for an item it also applies to",
+    "P1": "Purpose and Justification",
+}
+
+
+def _plain(cid: str, v: dict) -> str:
+    if v.get("pass") is None:
+        return f"{_PLAIN_AREA.get(cid, 'One part')} could not be checked automatically; please review it."
+    if cid in _PLAIN_CODE:
+        return f"{_PLAIN_CODE[cid]}: {v.get('detail') or ''}".rstrip(": ")
+    return v.get("note") or f"{_PLAIN_AREA.get(cid, 'One part')} may be wrong; please review it."
+
+
+def check_note_lines(results: list[dict]) -> list[str]:
+    """In red, for the draft, in plain words: what must be corrected (blocking checks not passed
+    after the analysis rewrites) and what to check (warnings). Each result is {"checks": {id:
+    {pass, detail, severity, note}}}; check ids stay in the quality-check document."""
+    from services.quality_checks import BLOCKING
+    blocking, warnings = [], []
+    for result in results:
+        for cid, v in ((result or {}).get("checks") or {}).items():
+            if v.get("pass") is True:
+                continue
+            (blocking if v.get("severity") == BLOCKING else warnings).append(f"- {_plain(cid, v)}")
+    out = []
+    if blocking:
+        out += [_red("**Must be corrected before use**")] + [_red(x) for x in blocking] + [""]
+    if warnings:
+        out += [_red("**Please check**")] + [_red(x) for x in warnings] + [""]
+    return out
+
+
+def fill_check_notes(markdown: str, results: list[dict]) -> str:
+    lines = check_note_lines(results)
+    return (markdown or "").replace(CHECK_NOTES + "\n", "\n".join(lines) + ("\n" if lines else ""))
+
+
 def _date_header(snapshot_date: str) -> list[str]:
     today = run_date()
     age = (today - date.fromisoformat(snapshot_date)).days if snapshot_date else 0
@@ -386,7 +450,7 @@ def render_purchase_request(supplier: str, snapshot_date: str, items: list[dict]
     codes = {str(it.get("item_code")) for it in req}
     labels = _labels(number_findings(analysis, items, history_docs, supplier))
     keep = lambda e: _concerns(_codes(e), codes)
-    out = [_red(PR_NOTE), ""]
+    out = [_red(PR_NOTE), "", CHECK_NOTES]
     questions = _questions_lines(analysis, supplier, labels, keep=keep, cite=False)
     actions = _actions_lines(analysis, labels, keep=keep, cite=False)
     if questions:

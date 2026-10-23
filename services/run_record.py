@@ -155,6 +155,7 @@ class RunRecord:
             "document_issues": final_state.get("document_issues") or [],
             "evaluation": final_state.get("evaluation_result"),
             "approval_check": final_state.get("approval_check"),
+            "analysis_attempts": final_state.get("analysis_attempts") or [],
             "email_validation": {
                 "attempts": final_state.get("iteration_count", 0),
                 "passed": bool(final_state.get("is_valid_email")),

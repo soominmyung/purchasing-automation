@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     # since 2026-10-23, after gemini-3.7-flash took 30-109 s per call and then returned 504,
     # 503 and 429. Needs CLAUDE_API_KEY (or ANTHROPIC_API_KEY).
     evaluator_model: str = "anthropic:claude-haiku-5-5"
+    # An analysis that fails a blocking code check is sent back to the analysis agent with the
+    # failures, up to this many times, before any document is written (services/agents.py).
+    analysis_rewrites: int = 2
     # Time limits on every model call, so one call that never answers cannot hold up a run.
     # A judge call that runs out is retried once and then recorded as "Not checked"; the
     # documents do not wait for the judge (services/agents.py).

@@ -126,7 +126,10 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 | J2a | At least one critical question addresses the supplier's problem | `supplier_issue = material` | Warning |
 | J2b | At least one critical question addresses an item's problem | `item_issue = material` | Warning |
 | J2c | No critical question presumes a supplier or item problem that the inputs do not show. Neutral questions that assume no problem pass | All | Warning |
-| J7 | Every figure from the stock data quoted anywhere in the output (available stock, weeks to stockout, the gap, suggested quantity, recommended dates) matches the input for that item. A figure that a change proposes is written as "<pipeline value> → <proposed value>"; writing only one of the two fails. Figures from the history documents are J1's | All | Blocking |
+| J6a | Each proposed change follows from the findings it cites: they are a reason to move that item's order date or quantity in the direction proposed | Any change proposed | Blocking |
+| J6b | The size of each change (weeks or factor) fits what the cited findings say, and its reason explains that size | Any change proposed | Blocking |
+| J6c | No item the same reason applies to is left without the same kind of change, except where the change cannot be made (an order date that cannot move earlier than the snapshot date) | Any change proposed | Blocking |
+| J7 | Every figure from the stock data quoted in the prose (summary, findings' text, questions, actions, changes' reasons; not the values in the change fields) matches the input for that item. A figure that a change proposes is written as "<pipeline value> → <proposed value>"; writing only one of the two fails. Figures from the history documents are J1's | All | Blocking |
 
 ### Checks on the purchase request text (production)
 
@@ -140,7 +143,6 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 
 | Check | Severity | Note |
 |---|---|---|
-| A proposed change, and its size, follow from the findings it cites, and items the same reason applies to are not left out | Blocking | J6 in the v5 design |
 | A question for the supplier reveals nothing internal (stock levels, urgency, budget, the analysis) | Blocking | |
 | Each question and action follows from the findings it cites | Warning | |
 | No document that describes a problem for this order is left unused by every finding and judgement (code lists the unused documents; the judge reads only those) | Warning | To replace J2a and J2b |
