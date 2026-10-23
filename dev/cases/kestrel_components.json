@@ -1,8 +1,8 @@
 {
   "name": "kestrel_components",
-  "purpose": "Written so that changes are clearly warranted: a supplier-wide notice of lead times four weeks longer (a reason to order earlier) and a lasting 50% rise in one item's demand under a contract (a reason to order more). One item at each risk level and one more High item; weekly sales differ by item. The Critical item's order date has already passed, so it cannot be moved earlier. Written for v5 development on 2026-10-23; not part of the evaluation set.",
+  "purpose": "Written so that changes are clearly warranted: a supplier-wide notice of lead times four weeks longer (a reason to order earlier) and a lasting 50% rise in one item's demand under a contract (a reason to order more). One item at each risk level and one more High item; weekly sales differ by item. The Critical item's order date has already passed, so it cannot be moved earlier. Written for v5 development on 2026-10-23; not part of the evaluation set. On 2026-10-24 two items were added whose risk level rises with the 22-week lead time, so that a figure worked out at 18 weeks shows: ThrustWasher (20 weeks to stockout: High at 18 weeks, Critical at 22, a 2-week gap, its order date already passed) and SpringClip (28 weeks: Medium at 18, High at 22). Runs before that date have five items.",
   "known_limits": [],
-  "csv": "SnapshotDate,2025-04-05\n\nItemCode,ItemName,SupplierName,AvailableStock,WksToOOS\n520001,BearingCap,KestrelComponents,600,12\n520002,ValveSeat,KestrelComponents,2200,22\n520003,GasketKit,KestrelComponents,4800,24\n520004,PistonRing,KestrelComponents,1500,30\n520005,OilSeal,KestrelComponents,3500,50\n",
+  "csv": "SnapshotDate,2025-04-05\n\nItemCode,ItemName,SupplierName,AvailableStock,WksToOOS\n520001,BearingCap,KestrelComponents,600,12\n520002,ValveSeat,KestrelComponents,2200,22\n520003,GasketKit,KestrelComponents,4800,24\n520004,PistonRing,KestrelComponents,1500,30\n520005,OilSeal,KestrelComponents,3500,50\n520006,ThrustWasher,KestrelComponents,1800,20\n520007,SpringClip,KestrelComponents,2800,28\n",
   "history": [
     {
       "supplier": "KestrelComponents",

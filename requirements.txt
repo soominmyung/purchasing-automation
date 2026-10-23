@@ -12,6 +12,8 @@ openai>=1.12.0
 langchain>=0.1.0
 langchain-openai>=0.0.5
 langchain-community>=0.0.20
+# Trying other providers' models as the analysis agent (scripts/run_dev_case.py --analysis-model)
+# needs langchain-anthropic or langchain-google-genai; production uses OpenAI only.
 langgraph>=0.0.26
 
 # Vector store (in-memory / Chroma)

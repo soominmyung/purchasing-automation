@@ -20,7 +20,9 @@ from typing import Any
 from langsmith import traceable
 
 REQUIRED_FIELDS = {"summary": str, "findings": list, "critical_questions": list,
-                   "po_date_changes": list, "quantity_changes": list, "recommended_actions": list}
+                   "lead_time_changes": list, "quantity_changes": list, "figures_after_changes": list,
+                   "recommended_actions": list}
+DEFAULT_LEAD_WEEKS = 18  # services/item_grouping.py, TOTAL_LEAD_WEEKS
 NO_HISTORY_SENTENCE = "No historical supplier or item data available"
 
 CHECK_NAMES = {
@@ -28,11 +30,12 @@ CHECK_NAMES = {
     "C2": "Items match the input",
     "C3": "Figures match the input",
     "C4": "Every judgement cites findings that apply",
-    "C5": "Proposed changes add up",
+    "C5": "Proposed changes well formed and add up",
     "C6": "Each Critical item has an action on its stock position",
     "C7": "Summary names every Critical item",
     "C8": "Summary within about 100 words",
     "C9": "Arrows in the text match the proposed changes",
+    "C10": "Figures after the lead-time changes follow the rules",
     "J1a": "History statements found in the documents",
     "J1b": "History not distorted",
     "J1c": "History not attributed to what it does not name",
@@ -43,7 +46,6 @@ CHECK_NAMES = {
     "J6b": "Each proposed change is the size its findings support",
     "J6c": "No item the same reason applies to is left out",
     "J7a": "Stock figures quoted match the input",
-    "J7b": "Changed figures written as pipeline value and proposed value",
     "J8": "Questions marked for the supplier reveal nothing internal",
     "J9": "Each question and action follows from its findings",
     "J10": "No document with a problem for this order left unused",
@@ -55,12 +57,12 @@ CHECK_NAMES = {
 BLOCKING, WARNING = "blocking", "warning"
 SEVERITY = {
     "C1": BLOCKING, "C2": BLOCKING, "C3": BLOCKING, "C4": BLOCKING, "C5": BLOCKING, "C6": BLOCKING,
-    "C7": WARNING, "C8": WARNING, "C9": BLOCKING,
+    "C7": WARNING, "C8": WARNING, "C9": BLOCKING, "C10": BLOCKING,
     "J1a": BLOCKING, "J1b": BLOCKING, "J1c": BLOCKING,
     "J2a": WARNING, "J2b": WARNING,  # until J10 has shown it can replace them
     "J2c": WARNING,
     "J6a": BLOCKING, "J6b": BLOCKING, "J6c": BLOCKING,  # J6: whether the proposed changes hold
-    "J7a": BLOCKING, "J7b": BLOCKING,
+    "J7a": BLOCKING,
     "J8": BLOCKING,
     "J9": WARNING, "J10": WARNING, "J11": WARNING,
     "P1a": WARNING, "P1b": WARNING, "P1c": WARNING, "P2": WARNING, "P3": BLOCKING,
@@ -79,28 +81,29 @@ _JUDGE_TEXT = {
            "Neutral questions that assume no problem, such as asking whether anything is about to "
            "change, pass. Questions about problems the inputs do show also pass.",
     # J6: whether the proposed order-date and quantity changes hold (applies when there are any)
-    "J6a": "Each proposed change in po_date_changes and quantity_changes follows from the findings it "
-           "cites: what those findings say is a reason to move that item's order date or quantity in the "
-           "direction proposed (earlier or later, more or less).",
-    "J6b": "The size of each proposed change (shift_weeks or factor) fits what the cited findings say, and "
-           "the change's reason explains that size.",
-    "J6c": "No item that the same reason applies to is left without the same kind of change, except an "
-           "item whose change cannot be made (an order date that cannot move earlier than the snapshot "
-           "date). If there is no such item, this check passes.",
+    "J6a": "Each proposed change follows from the findings it cites: what those findings say is a reason "
+           "for the lead time in supplier_lead_time and lead_time_changes to be longer or shorter than "
+           "18 weeks, or for the quantity in quantity_changes to be larger or smaller, as proposed.",
+    "J6b": "The size of each proposed change fits what the cited findings say, and its reason explains that "
+           "size. For an item's lead time this includes whether the supplier-wide reason and the item's own "
+           "reasons were rightly added together or rightly taken as one.",
+    "J6c": "No item that a reason applies to is left without it: an item whose final lead time stays at "
+           "18 weeks while supplier_lead_time changes, or that misses a change other items get for the same "
+           "reason, has a reason for that which the findings support. If there is no such item, this check "
+           "passes.",
     # J7: stock figures in the prose (the summary, the findings' text, the questions, the actions and
     # the changes' reasons; not the values in the change fields)
     "J7a": "Every figure from the stock data quoted in the prose (the summary, the findings' text, the "
            "questions, the actions and the changes' reasons; not the values in the change fields) matches "
-           "the input for that item exactly: available stock, weeks to stockout, expected stockout weeks "
-           "(the gap), suggested quantity, recommended order and delivery dates. Figures that come from "
+           "that item's figures after the proposed changes exactly (the pipeline's figures for an item with no "
+           "change): available stock, weeks to stockout, lead time, expected stockout weeks (the gap), "
+           "suggested quantity, recommended order and delivery dates, risk level. Figures that come from "
            "the history documents are not judged here.",
-    "J7b": "For an item with a proposed change in po_date_changes or quantity_changes, the changed figure "
-           "(its order date or its quantity) is written as '<pipeline value> → <proposed value>' wherever "
-           "the prose mentions it; writing only one of the two fails. If the prose does not mention a "
-           "changed figure, this check passes.",
     "J8": "No critical question marked 'supplier' reveals anything internal to the company: its stock "
-          "levels or weeks to stockout, that stock is short or the order urgent, its budget, or its own "
-          "analysis or plans. What the supplier itself did or announced is not internal.",
+          "levels or weeks to stockout, how short its stock is, its budget, or its own analysis or plans. "
+          "What the supplier itself did or announced is not internal. Asking what expedited shipping, "
+          "earlier or partial delivery the supplier can offer for an item, with quantities and dates, passes "
+          "even though it shows the item is needed soon.",
     "J9": "Each critical question and recommended action follows from the findings it cites: what those "
           "findings say is a reason to ask that question or take that action. (Proposed changes are "
           "judged in J6.)",
@@ -187,23 +190,30 @@ def _norm(v: Any) -> str:
 def code_checks(items: list[dict[str, Any]], analysis: Any,
                 history_docs: list[dict[str, Any]] | None = None,
                 snapshot_date: str | None = None) -> dict[str, dict[str, Any]]:
-    """C1-C6 against the structured output (prompt v5). Each entry: {"pass": bool, "detail": str}."""
+    """C1-C10 against the structured output (prompt v5). Each entry: {"pass": bool, "detail": str}.
+    items are the pipeline's figures; C6, C7 and C10 use the figures after the lead-time changes."""
     obj = _as_obj(analysis) or {}
     docs = history_docs or []
     out: dict[str, dict[str, Any]] = {}
     expected = {str(it.get("item_code")): it for it in items}
+    final = figures_after_changes(items, obj, snapshot_date)
 
     # C1 the fields are there, with the right types
+    sl = obj.get("supplier_lead_time")
     out["C1"] = _result([f"{f} missing or not a {t.__name__}" for f, t in REQUIRED_FIELDS.items()
-                         if not isinstance(obj.get(f), t)], "all required fields present")
+                         if not isinstance(obj.get(f), t)]
+                        + (["supplier_lead_time is neither an object nor null"] if sl is not None and not isinstance(sl, dict) else []),
+                        "all required fields present")
 
     findings = _entries(obj, "findings")
     questions = _entries(obj, "critical_questions")
     actions = _entries(obj, "recommended_actions")
-    po_changes, qty_changes = _entries(obj, "po_date_changes"), _entries(obj, "quantity_changes")
+    lt_changes, qty_changes = _entries(obj, "lead_time_changes"), _entries(obj, "quantity_changes")
+    sl = sl if isinstance(sl, dict) else None
     judgements = ([("question", q, [str(c) for c in q.get("items") or []]) for q in questions]
                   + [("action", a, [str(c) for c in a.get("items") or []]) for a in actions]
-                  + [("order-date change", c, [str(c.get("item_code"))]) for c in po_changes]
+                  + [("lead-time change", c, [str(x) for x in c.get("items") or []]) for c in lt_changes]
+                  + ([("supplier lead time", sl, [])] if sl else [])
                   + [("quantity change", c, [str(c.get("item_code"))]) for c in qty_changes])
 
     # C2 every item named is in the input
@@ -211,13 +221,9 @@ def code_checks(items: list[dict[str, Any]], analysis: Any,
     out["C2"] = _result([f"not in input: {c}" for c in sorted(set(named)) if c not in expected],
                         "every item named is in the input")
 
-    # C3 the changes start from the pipeline's figures
+    # C3 the quantity changes start from the pipeline's figure (order dates are calculated by code
+    # from the lead time, so there is nothing to check for them)
     wrong = []
-    for c in po_changes:
-        src = expected.get(str(c.get("item_code")), {})
-        if src and c.get("original_po_date") != src.get("recommended_latest_po_date"):
-            wrong.append(f"{c.get('item_code')} original order date {c.get('original_po_date')}, "
-                         f"pipeline {src.get('recommended_latest_po_date')}")
     for c in qty_changes:
         src = expected.get(str(c.get("item_code")), {})
         if src and _num(c.get("original_quantity")) != _num(src.get("suggested_quantity")):
@@ -228,7 +234,8 @@ def code_checks(items: list[dict[str, Any]], analysis: Any,
     # C4 citations: findings rest on documents that apply or on the stock position; every
     # question, change and action cites findings that exist and concern its items
     by_id = {f.get("id"): f for f in findings}
-    problems = []
+    ids = [f.get("id") for f in findings]
+    problems = [f"finding id {i} is used twice" for i in sorted({i for i in ids if ids.count(i) > 1}, key=str)]
     for f in findings:
         basis = f.get("basis") if isinstance(f.get("basis"), dict) else {}
         doc_ids = basis.get("documents") or []
@@ -254,47 +261,61 @@ def code_checks(items: list[dict[str, Any]], analysis: Any,
                                 f"{', '.join(map(str, f['items']))}")
     out["C4"] = _result(problems, "every judgement cites findings that apply")
 
-    # C5 arithmetic of the proposed changes, and no proposed order date already passed
+    # C5 the changes are well formed: a lead time in whole weeks, each item at most once, every item
+    # given a final lead time when the supplier's changes, no change that changes nothing; quantity
+    # arithmetic, never below zero
     problems = []
-    for c in po_changes:
-        try:
-            orig, shift = date.fromisoformat(c["original_po_date"]), float(c["shift_weeks"])
-            want = (orig + timedelta(days=round(shift * 7))).isoformat()
-            if c.get("proposed_po_date") != want:
-                problems.append(f"{c.get('item_code')} order date {c.get('original_po_date')} moved by {c.get('shift_weeks')} "
-                                f"weeks is {want}, not {c.get('proposed_po_date')}")
-            elif snapshot_date and want < snapshot_date:
-                problems.append(f"{c.get('item_code')} proposed order date {want} is before the snapshot date")
-        except (KeyError, TypeError, ValueError):
-            problems.append(f"{c.get('item_code')} order-date change is incomplete")
+    seen: dict[str, int] = {}
+    for c in lt_changes:
+        weeks = c.get("lead_time_weeks")
+        if not isinstance(weeks, (int, float)) or isinstance(weeks, bool) or weeks <= 0:
+            problems.append(f"lead time for {', '.join(map(str, c.get('items') or [])) or 'no item'} is not a number of weeks")
+        elif weeks == DEFAULT_LEAD_WEEKS and not sl:
+            problems.append(f"lead time for {', '.join(map(str, c.get('items') or []))} is 18 weeks, which changes nothing")
+        if not c.get("items"):
+            problems.append("a lead-time change names no item")
+        for code in map(str, c.get("items") or []):
+            seen[code] = seen.get(code, 0) + 1
+    problems += [f"{code} has more than one final lead time" for code, n in seen.items() if n > 1]
+    if sl:
+        w = sl.get("lead_time_weeks")
+        if not isinstance(w, (int, float)) or isinstance(w, bool) or w <= 0 or w == DEFAULT_LEAD_WEEKS:
+            problems.append("supplier_lead_time is not a lead time other than 18 weeks")
+        problems += [f"{code} has no final lead time although the supplier's lead time changes"
+                     for code in expected if code not in seen]
     for c in qty_changes:
         orig, factor = _num(c.get("original_quantity")), _num(c.get("factor"))
         if orig is None or factor is None:
             problems.append(f"{c.get('item_code')} quantity change is incomplete")
             continue
+        if factor <= 0 or factor == 1:
+            problems.append(f"{c.get('item_code')} quantity factor {c.get('factor')} is not a change"
+                            if factor == 1 else f"{c.get('item_code')} quantity would fall to zero or below")
+            continue
         want = math.ceil(round(orig * factor, 6))
         if _num(c.get("proposed_quantity")) != want:
             problems.append(f"{c.get('item_code')} quantity {c.get('original_quantity')} × {c.get('factor')} rounded up "
                             f"is {want}, not {c.get('proposed_quantity')}")
-    out["C5"] = _result(problems, "the changes add up" if po_changes or qty_changes else "no changes proposed")
+    out["C5"] = _result(problems, "the changes are well formed and add up" if lt_changes or qty_changes or sl
+                        else "no changes proposed")
 
-    # C6 every Critical item has an action that cites a stock finding about it
+    # C6 every Critical item (after the lead-time changes) has an action that cites a stock finding about it
     missing = []
-    for it in critical_items(items):
+    for it in critical_items(final):
         code = str(it.get("item_code"))
         stock_ids = {f.get("id") for f in findings
                      if isinstance(f.get("basis"), dict) and f["basis"].get("stock") and code in map(str, f.get("items") or [])}
         if not any(code in map(str, a.get("items") or []) and set(a.get("findings") or []) & stock_ids for a in actions):
             missing.append(f"{it.get('item_name')} ({code})")
     out["C6"] = _result([f"no action on the stock position of {m}" for m in missing],
-                        "each Critical item has one" if critical_items(items) else "no Critical items")
+                        "each Critical item has one" if critical_items(final) else "no Critical items")
 
     # C7 the summary names every Critical item; C8 its length
     summary = str(obj.get("summary") or "").strip()
-    unnamed = [f"{it.get('item_name')} ({it.get('item_code')})" for it in critical_items(items)
+    unnamed = [f"{it.get('item_name')} ({it.get('item_code')})" for it in critical_items(final)
                if _norm(it.get("item_name")) not in _norm(summary)]
     out["C7"] = _result([f"the summary does not name {u}" for u in unnamed],
-                        "names every Critical item" if critical_items(items) else "no Critical items")
+                        "names every Critical item" if critical_items(final) else "no Critical items")
     words = len(summary.split())
     out["C8"] = _result([f"{words} words"] if words > SUMMARY_WORDS else [], f"{words} words")
 
@@ -303,7 +324,36 @@ def code_checks(items: list[dict[str, Any]], analysis: Any,
     wrong = [f"{a} → {b}" for a, b in arrows_in(analysis_text(obj)) if (a, b) not in allowed]
     out["C9"] = _result([f"not a proposed change: {w}" for w in wrong],
                         "every arrow matches a change" if allowed else "no changes proposed")
+
+    # C10 the figures the analysis worked out at each item's final lead time are those the rules
+    # give (code recalculates them the same way; the report's tables use code's)
+    by_code = {str(it.get("item_code")): it for it in final}
+    changed = {str(c) for e in lt_changes for c in e.get("items") or []}
+    stated = {str(e.get("item_code")): e for e in _entries(obj, "figures_after_changes")}
+    problems = [f"no figures after the change for {c}" for c in sorted(changed) if c not in stated and c in by_code]
+    for code, e in stated.items():
+        want = by_code.get(code)
+        if want is None or code not in changed:
+            problems.append(f"figures given for {code}, which has no lead-time change")
+            continue
+        # the analysis's names (new_*) are kept apart from the input's, which hold the 18-week figures
+        for field, rule in (("new_lead_time_weeks", "lead_time_weeks"), ("new_risk_level", "risk_level"),
+                            ("new_gap_weeks", "expected_stockout_weeks"), ("new_latest_po_date", "recommended_latest_po_date")):
+            got, exp = e.get(field), want.get(rule)
+            if (_figure(got) if field != "new_risk_level" else got) != (_figure(exp) if field != "new_risk_level" else exp):
+                problems.append(f"{code} {field} {got}, by the rules {exp}")
+    out["C10"] = _result(problems, "the figures follow the rules" if changed else "no lead-time change")
+
     return out
+
+
+def figures_after_changes(items: list[dict[str, Any]], analysis: dict, snapshot_date: str | None) -> list[dict[str, Any]]:
+    """Each item's figures after the proposed lead-time and quantity changes, by the pipeline's
+    rules (services/documents.py); the pipeline's figures when there are none or no snapshot date."""
+    if not snapshot_date or not isinstance(analysis, dict):
+        return items
+    from services.documents import items_after_changes
+    return items_after_changes(items, analysis, snapshot_date)
 
 
 ARROW = re.compile(r"(\d{4}-\d{2}-\d{2}|\d[\d,]*(?:\.\d+)?)\s*(?:→|->)\s*(\d{4}-\d{2}-\d{2}|\d[\d,]*(?:\.\d+)?)")
@@ -321,8 +371,9 @@ def _figure(v: Any) -> str:
 
 def change_pairs(obj: dict) -> set[tuple[str, str]]:
     """(pipeline value, proposed value) of every proposed change."""
-    pairs = {(_figure(c.get("original_po_date")), _figure(c.get("proposed_po_date")))
-             for c in _entries(obj, "po_date_changes")}
+    pairs = {(_figure(DEFAULT_LEAD_WEEKS), _figure(c.get("lead_time_weeks"))) for c in _entries(obj, "lead_time_changes")}
+    if isinstance(obj.get("supplier_lead_time"), dict):
+        pairs.add((_figure(DEFAULT_LEAD_WEEKS), _figure(obj["supplier_lead_time"].get("lead_time_weeks"))))
     pairs |= {(_figure(c.get("original_quantity")), _figure(c.get("proposed_quantity")))
               for c in _entries(obj, "quantity_changes")}
     return pairs
@@ -338,7 +389,9 @@ def analysis_text(obj: dict) -> str:
     parts += [str(f.get("text") or "") for f in _entries(obj, "findings")]
     parts += [str(q.get("question") or "") for q in _entries(obj, "critical_questions")]
     parts += [str(a.get("action") or "") for a in _entries(obj, "recommended_actions")]
-    parts += [str(c.get("reason") or "") for f in ("po_date_changes", "quantity_changes") for c in _entries(obj, f)]
+    parts += [str(c.get("reason") or "") for f in ("lead_time_changes", "quantity_changes") for c in _entries(obj, f)]
+    if isinstance(obj.get("supplier_lead_time"), dict):
+        parts.append(str(obj["supplier_lead_time"].get("reason") or ""))
     return "\n".join(parts)
 
 
@@ -356,8 +409,8 @@ def applicable_judge_checks(items: list[dict[str, Any]], history_docs: list[dict
     hi = any(d.get("items") or d.get("item_codes") for d in docs)
     obj = _as_obj(analysis) or {}
     checks = ["J1a", "J1b", "J1c", "J2c", "J7a"]
-    if _entries(obj, "po_date_changes") or _entries(obj, "quantity_changes"):
-        checks += ["J6a", "J6b", "J6c", "J7b"]
+    if _entries(obj, "lead_time_changes") or _entries(obj, "quantity_changes") or isinstance(obj.get("supplier_lead_time"), dict):
+        checks += ["J6a", "J6b", "J6c"]
     if any(q.get("ask") == "supplier" for q in _entries(obj, "critical_questions")):
         checks.append("J8")
     if _entries(obj, "critical_questions") or _entries(obj, "recommended_actions"):
@@ -382,8 +435,10 @@ def applicable_judge_checks(items: list[dict[str, Any]], history_docs: list[dict
 def unused_documents(obj: dict, docs: list[dict[str, Any]]) -> list[int]:
     """History documents (by number) behind no question, proposed change or action: cited by no
     finding, or only by findings that no judgement cites."""
-    cited = {i for kind in ("critical_questions", "recommended_actions", "po_date_changes", "quantity_changes")
+    cited = {i for kind in ("critical_questions", "recommended_actions", "lead_time_changes", "quantity_changes")
              for e in _entries(obj, kind) for i in (e.get("findings") or [])}
+    if isinstance(obj.get("supplier_lead_time"), dict):
+        cited |= set(obj["supplier_lead_time"].get("findings") or [])
     used = {d for f in _entries(obj, "findings") if f.get("id") in cited
             for d in ((f.get("basis") or {}).get("documents") or []) if isinstance(f.get("basis"), dict)}
     return [n for n in range(1, len(docs or []) + 1) if n not in used]
@@ -422,13 +477,26 @@ def history_block(history_docs: list[dict[str, Any]]) -> str:
     return "\n\n".join(out)
 
 
+AFTER_FIELDS = ("item_code", "item_name", "lead_time_weeks", "risk_level", "expected_stockout_weeks",
+                "suggested_quantity", "recommended_latest_po_date", "recommended_latest_delivery_date")
+
+
 def judge_prompt(supplier: str, items: list[dict[str, Any]], history_docs: list[dict[str, Any]],
-                 analysis: Any, checks: list[str], labelled: bool) -> str:
+                 analysis: Any, checks: list[str], labelled: bool, after: list[dict[str, Any]] | None = None) -> str:
+    """items are the pipeline's figures (18 weeks), as the analysis received them; after, when the
+    analysis proposes changes, each item's figures after them, worked out by the pipeline. Both are
+    shown, apart: the changes are judged against the first (J6), the text's figures against the
+    second (J7a). Shown only after, the judge read the new lead time as the input's and passed a
+    lead-time change it should have failed (2026-10-24)."""
     lines = [f"- {c}: {check_text(c, items, labelled, analysis, history_docs)}" for c in checks]
+    shown_after = (f"Figures after the proposed changes (worked out by the pipeline from the proposed lead times "
+                   f"and quantities): {json.dumps([{k: it.get(k) for k in AFTER_FIELDS} for it in after], ensure_ascii=False)}\n"
+                   if after is not None and after != items else "")
     return (
         "INPUTS\n"
         f"Supplier: {supplier}\n"
-        f"Items: {json.dumps(items, ensure_ascii=False)}\n"
+        f"Items (the pipeline's figures, at a lead time of 18 weeks, as the AI received them): {json.dumps(items, ensure_ascii=False)}\n"
+        + shown_after +
         f"History documents:\n{history_block(history_docs)}\n\n"
         "AI OUTPUT\n"
         f"{json.dumps(analysis, ensure_ascii=False, indent=2) if isinstance(analysis, dict) else analysis}\n\n"
@@ -623,12 +691,14 @@ def evaluate_analysis(supplier: str, items: list[dict[str, Any]], analysis: Any,
                       snapshot_date: str | None = None, retries: int = 2) -> dict[str, Any]:
     """
     All applicable checks for one analysis. The verdict is decided in code: the analysis is
-    ready only if every check passed, and a check the judge could not answer counts as failed.
+    ready only if every blocking check passed, and a check the judge could not answer counts as
+    failed. The judge compares the text with each item's figures after the proposed changes.
     """
     code = code_checks(items, analysis, history_docs, snapshot_date)
     checks = applicable_judge_checks(items, history_docs, analysis=analysis)
-    judged = run_judge(judge, judge_prompt(supplier, items, history_docs,
-                                           analysis, checks, labelled=False), checks, retries=retries)
+    final = figures_after_changes(items, _as_obj(analysis) or {}, snapshot_date)
+    judged = run_judge(judge, judge_prompt(supplier, items, history_docs, analysis, checks, labelled=False,
+                                           after=final), checks, retries=retries)
     results = {**{k: {"pass": v["pass"], "detail": v["detail"]} for k, v in code.items()},
                **{k: {"pass": v["pass"], "detail": v["evidence"], "note": v.get("note", "")}
                   for k, v in judged.items()}}

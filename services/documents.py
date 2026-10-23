@@ -22,8 +22,8 @@ from datetime import date, timedelta
 from typing import Any
 
 from config import run_date
-from services.item_grouping import DATA_ISSUES_HEADING, RISK_ORDER, TOTAL_LEAD_WEEKS
-from services.vector_store import history_key
+from services.item_grouping import (DATA_ISSUES_HEADING, RISK_ORDER, TOTAL_LEAD_WEEKS,
+                                    _build_timing_label_from_weeks, risk_level_from_weeks)
 
 REQUESTED_RISKS = ("Critical", "High", "Medium")  # Low is not requested; order dates are months away
 APPROVERS = ("Purchasing Manager", "Operations Director", "Finance Officer")
@@ -68,10 +68,15 @@ def _codes(entry: dict) -> list[str]:
     return [str(c) for c in _list(entry.get("items"))]
 
 
+def _risk_of(it: dict) -> str:
+    """The item's risk level after any lead-time change (its pipeline level otherwise)."""
+    return it.get("risk_new") or it.get("risk_level")
+
+
 def ordered_items(items: list[dict]) -> list[dict]:
-    """Most urgent first: by risk level, then by weeks to stockout."""
+    """Most urgent first: by risk level (after any lead-time change), then by weeks to stockout."""
     def key(it: dict):
-        level = it.get("risk_level")
+        level = _risk_of(it)
         wks = it.get("wks_to_oos")
         return (RISK_ORDER.index(level) if level in RISK_ORDER else len(RISK_ORDER),
                 wks if isinstance(wks, (int, float)) else math.inf)
@@ -79,16 +84,15 @@ def ordered_items(items: list[dict]) -> list[dict]:
 
 
 def requested_items(items: list[dict]) -> list[dict]:
-    return [it for it in ordered_items(items) if it.get("risk_level") in REQUESTED_RISKS]
+    return [it for it in ordered_items(items) if _risk_of(it) in REQUESTED_RISKS]
 
 
 def changes_by_item(analysis: dict) -> dict[str, dict[str, dict]]:
-    """{item_code: {"po": change, "qty": change}}; the first change per item and kind counts."""
+    """{item_code: {"qty": change}}; the first quantity change per item counts."""
     out: dict[str, dict[str, dict]] = {}
-    for kind, field in (("po", "po_date_changes"), ("qty", "quantity_changes")):
-        for ch in _list(analysis.get(field)):
-            if isinstance(ch, dict) and ch.get("item_code") is not None:
-                out.setdefault(str(ch["item_code"]), {}).setdefault(kind, ch)
+    for ch in _list(analysis.get("quantity_changes")):
+        if isinstance(ch, dict) and ch.get("item_code") is not None:
+            out.setdefault(str(ch["item_code"]), {}).setdefault("qty", ch)
     return out
 
 
@@ -96,21 +100,117 @@ def _proposed_quantity(item: dict, ch: dict) -> Any:
     return ch.get("qty", {}).get("proposed_quantity", item.get("suggested_quantity")) if ch.get("qty") else item.get("suggested_quantity")
 
 
+# ----------------------------------------------------------------------------- lead times
+
+def lead_time_entries(analysis: dict) -> dict[str, dict]:
+    """{item_code: its lead_time_changes entry}; an item's first entry counts (two are a check failure)."""
+    out: dict[str, dict] = {}
+    for e in _list((analysis or {}).get("lead_time_changes")):
+        if isinstance(e, dict):
+            for code in _codes(e):
+                out.setdefault(code, e)
+    return out
+
+
+def _weeks(v: Any) -> float | None:
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0 else None
+
+
+def with_lead_times(items: list[dict], analysis: dict, snapshot_date: str | None) -> list[dict]:
+    """Each item with its final lead time and what follows from it, calculated here: the risk
+    level (Critical below the lead time, High below lead time + 8, Medium below lead time + 17)
+    and the latest order date (latest delivery date minus the lead time). Weeks to stockout, the
+    latest delivery date and the suggested quantity do not change. An order date that would fall
+    on or before the snapshot date is set to the snapshot date and marked, with the date it should
+    have been placed by."""
+    entries = lead_time_entries(analysis)
+    out = []
+    for it in items:
+        e = dict(it)
+        entry = entries.get(str(it.get("item_code")))
+        lead = _weeks((entry or {}).get("lead_time_weeks")) or TOTAL_LEAD_WEEKS
+        e["lead_time_weeks"] = lead
+        if lead != TOTAL_LEAD_WEEKS:
+            e["lead_time_changed"] = True
+            new_risk = risk_level_from_weeks(it.get("wks_to_oos"), lead)
+            if new_risk != it.get("risk_level") and new_risk != "N/A":
+                e["risk_new"] = new_risk
+            delivery = it.get("recommended_latest_delivery_date")
+            if snapshot_date and delivery and delivery != "N/A":
+                new_po = date.fromisoformat(delivery) - timedelta(days=round(lead * 7))
+                snap = date.fromisoformat(snapshot_date)
+                if new_po <= snap:
+                    e["po_new"], e["po_should_have"] = snap.isoformat(), new_po.isoformat()
+                    e["po_timing_new"] = "overdue"
+                else:
+                    e["po_new"] = new_po.isoformat()
+                    e["po_timing_new"] = _build_timing_label_from_weeks((new_po - snap).days / 7)
+        out.append(e)
+    return out
+
+
+def items_after_changes(items: list[dict], changes: dict, snapshot_date: str | None) -> list[dict]:
+    """The items as the second analysis step sees them: the figures after the first step's
+    changes, in the same fields as the pipeline's (lead time, risk level, latest order date and
+    its timing, the gap, and the proposed quantity where one was proposed)."""
+    qty = changes_by_item(changes)
+    out = []
+    for it in with_lead_times(items, changes, snapshot_date):
+        e = {k: v for k, v in it.items()
+             if k not in ("risk_new", "po_new", "po_should_have", "po_timing_new", "lead_time_changed")}
+        e["risk_level"] = _risk_of(it)
+        if it.get("po_new"):
+            e["recommended_latest_po_date"] = it["po_new"]
+            e["recommended_latest_po_timing"] = it.get("po_timing_new") or it.get("recommended_latest_po_timing")
+        wks = it.get("wks_to_oos")
+        if isinstance(wks, (int, float)) and not isinstance(wks, bool):
+            e["expected_stockout_weeks"] = round(max(0.0, it["lead_time_weeks"] - wks), 1)
+        ch = qty.get(str(it.get("item_code")))
+        if ch:
+            e["suggested_quantity"] = _proposed_quantity(it, ch)
+        out.append(e)
+    return out
+
+
+# The asterisk that marks an order date set to the snapshot date. A plain "*" is the italic mark
+# of utils/docx_utils.py, so the asterisk operator (U+2217), which looks the same, is used.
+OVERDUE_MARK = "∗"
+
+
+def _risk_cell(it: dict) -> str:
+    if it.get("risk_new"):
+        return f"=={_risk(it.get('risk_level'))} → {_risk(it['risk_new'])}=="
+    return _risk(it.get("risk_level"))
+
+
+def _lead_cell(it: dict) -> str:
+    lead = it.get("lead_time_weeks") or TOTAL_LEAD_WEEKS
+    if it.get("lead_time_changed"):
+        return f"=={_num(TOTAL_LEAD_WEEKS)} → {_num(lead)} weeks=="
+    return f"{_num(lead)} weeks"
+
+
+def _overdue_notes(items: list[dict]) -> list[str]:
+    """In red, below a table: the date an order should have been placed by, when the lead time
+    makes it fall on or before the snapshot date."""
+    return [_red(f"{OVERDUE_MARK} {it.get('item_name')} should have been ordered by {it['po_should_have']} "
+                 f"(lead time {_num(it.get('lead_time_weeks'))} weeks); it is overdue.")
+            for it in items if it.get("po_should_have")]
+
+
 # ----------------------------------------------------------------------------- findings
-
-def _doc_names_item(doc: dict, item: dict) -> bool:
-    keys = {history_key(v) for v in (doc.get("items") or []) + (doc.get("item_codes") or [])}
-    return bool(keys & {history_key(item.get("item_code")), history_key(item.get("item_name"))})
-
 
 def number_findings(analysis: dict, items: list[dict], history_docs: list[dict], supplier: str) -> list[dict]:
     """
-    The findings as the report shows them, numbered F1, F2, …: findings about the supplier as
-    a whole first, then items most urgent first, each item's findings in the order written.
-    Code adds "<item> — no documents on this item." for an item no document names.
-    Each entry: {label, id (the model's id, or None), items, text, documents, stock, code}.
+    The findings as the report shows them, numbered F1, F2, … in two groups: those from the
+    documents first, then those from the stock figures; in each, findings about the supplier as a
+    whole first, then items most urgent first (by risk after any lead-time change), each item's
+    findings in the order written.
+    Findings are the facts worth reporting; an item no document names gets no line saying so
+    (removed 2026-10-24: it repeated one sentence per item and was not a finding).
+    Each entry: {label, id (the model's id), items, text, documents, stock, code}.
     """
-    order = {str(it.get("item_code")): n for n, it in enumerate(ordered_items(items))}
+    order = {str(it.get("item_code")): n for n, it in enumerate(ordered_items(with_lead_times(items, analysis, None)))}
     names = {str(it.get("item_code")): str(it.get("item_name")) for it in items}
     entries = []
     for n, f in enumerate(_list(analysis.get("findings"))):
@@ -122,27 +222,33 @@ def number_findings(analysis: dict, items: list[dict], history_docs: list[dict],
                         "documents": [d for d in _list(basis.get("documents")) if isinstance(d, int)],
                         "stock": bool(basis.get("stock")), "code": False,
                         "_group": min((order[c] for c in codes), default=-1), "_n": n})
-    for it in items:
-        if not any(_doc_names_item(d, it) for d in history_docs):
-            code = str(it.get("item_code"))
-            entries.append({"id": None, "items": [code], "text": "no documents on this item.",
-                            "documents": [], "stock": False, "code": True,
-                            "_group": order[code], "_n": 10_000})
-    entries.sort(key=lambda e: (e["_group"], e["_n"]))
+    entries.sort(key=lambda e: (e["stock"], e["_group"], e["_n"]))
     for k, e in enumerate(entries, 1):
         e["label"] = f"F{k}"
         subject = ", ".join(names[c] for c in e["items"]) if e["items"] else supplier
         text = e["text"]
         if text.lower().startswith(subject.lower() + " "):
             text = text[len(subject) + 1:]
-        source = "".join(f"[{d}]" for d in e["documents"])
-        if e["stock"]:
-            source = (source + " " if source else "") + "(stock position)"
+        source = "".join(f"[{d}]" for d in e["documents"])  # the group heading says when it is the stock figures
         text = _highlight_changes(text, analysis)
         e["subject"], e["body"] = subject, text
         e["line"] = f"{subject} — {text}" + (f" {source}" if source else "")
         del e["_group"], e["_n"]
     return entries
+
+
+def _findings_lines(numbered: list[dict], analysis: dict) -> list[str]:
+    """The report's Findings: the facts from the documents, then those from the stock figures (after
+    the proposed changes, when there are any), each under its own heading; an empty group is left out."""
+    changed = bool(_list(analysis.get("lead_time_changes")) or _list(analysis.get("quantity_changes")))
+    groups = (("From the documents", [e for e in numbered if not e["stock"]]),
+              ("From the stock figures" + (" (after the proposed changes)" if changed else ""),
+               [e for e in numbered if e["stock"]]))
+    out = []
+    for title, entries in groups:
+        if entries:
+            out += [f"### {title}", ""] + [f"{e['label']}. {e['line']}" for e in entries] + [""]
+    return out or ["No findings.", ""]
 
 
 def _labels(numbered: list[dict]) -> dict[Any, str]:
@@ -194,34 +300,46 @@ def _actions_lines(analysis: dict, labels: dict, keep=None, cite: bool = True) -
             for n, a in enumerate(acts, 1)]
 
 
-def _proposal_lines(items: list[dict], analysis: dict, labels: dict) -> list[str]:
-    lines, n = [], 0
+def _proposal_lines(items: list[dict], analysis: dict, labels: dict, supplier: str = "") -> list[str]:
+    """Lead times (the supplier's expected one, then each item's final one) and quantity changes."""
+    lines, names = [], {str(it.get("item_code")): it.get("item_name") for it in items}
+
+    def add(text: str) -> None:
+        lines.append(f"{len(lines) + 1}. {text}")
+
+    sl = analysis.get("supplier_lead_time")
+    if isinstance(sl, dict) and _weeks(sl.get("lead_time_weeks")):
+        add(f"Lead time, {supplier} overall (expected): =={_num(TOTAL_LEAD_WEEKS)} → {_num(sl['lead_time_weeks'])} weeks==: "
+            f"{_highlight_changes(str(sl.get('reason') or '').strip(), analysis)}{_cites(sl, labels)}")
+    for e in _list(analysis.get("lead_time_changes")):
+        if not isinstance(e, dict) or not _weeks(e.get("lead_time_weeks")):
+            continue
+        who = ", ".join(str(names.get(c, c)) for c in _codes(e))
+        weeks = e["lead_time_weeks"]
+        shown = (f"{_num(weeks)} weeks (unchanged)" if weeks == TOTAL_LEAD_WEEKS
+                 else f"=={_num(TOTAL_LEAD_WEEKS)} → {_num(weeks)} weeks==")
+        add(f"Lead time, {who}: {shown}: {_highlight_changes(str(e.get('reason') or '').strip(), analysis)}{_cites(e, labels)}")
     for it in ordered_items(items):
         ch = changes_by_item(analysis).get(str(it.get("item_code")), {})
-        name = it.get("item_name")
-        if ch.get("po"):
-            c = ch["po"]
-            shift = c.get("shift_weeks")
-            way = ("earlier" if shift < 0 else "later") if isinstance(shift, (int, float)) else ""
-            weeks = f"{abs(shift):g} week{'s' if abs(shift) != 1 else ''} {way}" if way else "shift not given"
-            n += 1
-            lines.append(f"{n}. {name} order date {_changed(c.get('original_po_date'), c.get('proposed_po_date'))} "
-                         f"({weeks}): {_highlight_changes(str(c.get('reason') or '').strip(), analysis)}{_cites(c, labels)}")
         if ch.get("qty"):
             c = ch["qty"]
             factor = c.get("factor")
             times = f" (×{factor:g})" if isinstance(factor, (int, float)) else ""
-            n += 1
-            lines.append(f"{n}. {name} quantity {_changed(c.get('original_quantity'), c.get('proposed_quantity'))}"
-                         f"{times}: {_highlight_changes(str(c.get('reason') or '').strip(), analysis)}{_cites(c, labels)}")
+            add(f"{it.get('item_name')} quantity {_changed(c.get('original_quantity'), c.get('proposed_quantity'))}"
+                f"{times}: {_highlight_changes(str(c.get('reason') or '').strip(), analysis)}{_cites(c, labels)}")
     return lines
 
 
-def _order_by(it: dict, ch: dict) -> str:
-    if ch.get("po"):
-        return _changed(ch["po"].get("original_po_date"), ch["po"].get("proposed_po_date"))
-    value = it.get("recommended_latest_po_date") or "N/A"
-    return f"{value} (overdue)" if it.get("recommended_latest_po_timing") == "overdue" else value
+def _order_by(it: dict, ch: dict | None = None) -> str:
+    """The latest order date: after a lead-time change "old → new", highlighted; a date on or
+    before the snapshot date shown as the snapshot date with an asterisk (see _overdue_notes)."""
+    old = it.get("recommended_latest_po_date") or "N/A"
+    if it.get("po_new"):
+        star = OVERDUE_MARK if it.get("po_should_have") else ""
+        if old == it["po_new"]:
+            return f"=={old}{star}=="
+        return f"=={old} → {it['po_new']}{star}=="
+    return f"{old} (overdue)" if it.get("recommended_latest_po_timing") == "overdue" else old
 
 
 def _quantity(it: dict, ch: dict) -> str:
@@ -255,11 +373,12 @@ _PLAIN_CODE = {
     "C2": "An item that is not part of this order is named",
     "C3": "A proposed change does not start from the calculated figure",
     "C4": "A statement rests on a source that does not support it",
-    "C5": "A proposed change does not add up",
+    "C5": "A proposed change is incomplete or does not add up",
     "C6": "No action is given for an item that will run out before a new order can arrive",
     "C7": "The summary does not name every item that will run out before a new order can arrive",
     "C8": "The summary is longer than intended",
     "C9": "A changed figure in the text does not match the proposed change",
+    "C10": "A figure worked out after a lead-time change is wrong",
     "P2": "Purpose or Justification is longer than intended",
     "P3": "Justification cites a document that was not given",
 }
@@ -275,7 +394,6 @@ _PLAIN_AREA = {
     "J6b": "Whether each proposed change is the right size",
     "J6c": "Whether the same change was left out for an item it also applies to",
     "J7a": "The stock figures quoted in the text",
-    "J7b": "How changed figures are written in the text",
     "J8": "Whether the questions for the supplier reveal anything internal",
     "J9": "Whether each question and action follows from its reasons",
     "J10": "Whether a document with a problem for this order was left unused",
@@ -336,37 +454,40 @@ def render_analysis_report(supplier: str, snapshot_date: str, items: list[dict],
     numbered = number_findings(analysis, items, history_docs, supplier)
     labels = _labels(numbered)
     changes = changes_by_item(analysis)
+    items = with_lead_times(items, analysis, snapshot_date)
     out = [f"# Purchasing Analysis — {supplier}", "", *_date_header(snapshot_date), ""]
     if data_issue_lines:
         out += [DATA_ISSUES_HEADING, *[f"- {ln}" for ln in data_issue_lines], ""]
     out += ["## Summary", "", _highlight_changes(str(analysis.get("summary") or "(no summary was returned)").strip(),
                                                  analysis), ""]
 
-    out += ["## Items", "", "| Item | Risk | Weeks to stockout | Order by | Quantity |", "| --- | --- | --- | --- | --- |"]
+    out += ["## Items", "", "| Item | Risk | Weeks to stockout | Lead time | Order by | Quantity |",
+            "| --- | --- | --- | --- | --- | --- |"]
     for it in ordered_items(items):
         ch = changes.get(str(it.get("item_code")), {})
-        out.append(f"| {_cell(it.get('item_name'))} ({it.get('item_code')}) | {_risk(it.get('risk_level'))} | "
-                   f"{_num(it.get('wks_to_oos'))} | {_order_by(it, ch)} | {_quantity(it, ch)} |")
-    out.append("")
+        out.append(f"| {_cell(it.get('item_name'))} ({it.get('item_code')}) | {_risk_cell(it)} | "
+                   f"{_num(it.get('wks_to_oos'))} | {_lead_cell(it)} | {_order_by(it)} | {_quantity(it, ch)} |")
+    out += [""] + _overdue_notes(ordered_items(items)) + ([""] if _overdue_notes(items) else [])
 
-    out += ["## Findings", ""] + [f"{e['label']}. {e['line']}" for e in numbered] + [""]
+    out += ["## Findings", ""] + _findings_lines(numbered, analysis)
     out += ["## Critical Questions", ""] + (_questions_lines(analysis, supplier, labels)
                                             or ["No open questions for this order."]) + [""]
-    out += ["## Proposals", ""] + (_proposal_lines(items, analysis, labels) or ["No changes proposed."]) + [""]
+    out += ["## Proposals", ""] + (_proposal_lines(items, analysis, labels, supplier) or ["No changes proposed."]) + [""]
     out += ["## Recommended Actions", ""] + (_actions_lines(analysis, labels)
                                              or ["No action needed beyond ordering by the recommended dates."]) + [""]
 
     out += ["## Item Details", ""]
     for it in ordered_items(items):
         ch = changes.get(str(it.get("item_code")), {})
-        out += [f"### {it.get('item_name')} ({it.get('item_code')}) — {_risk(it.get('risk_level'))}", "",
+        out += [f"### {it.get('item_name')} ({it.get('item_code')}) — {_risk_cell(it)}", "",
                 "| Measure | Value |", "| --- | --- |",
                 f"| Available stock | {_num(it.get('available_stock'))} |",
                 f"| Weeks to stockout | {_num(it.get('wks_to_oos'))} |",
-                f"| Lead time | {TOTAL_LEAD_WEEKS} weeks |",
-                f"| Order by | {_order_by(it, ch)} |",
+                f"| Lead time | {_lead_cell(it)} |",
+                f"| Order by | {_order_by(it)} |",
                 f"| Deliver by | {it.get('recommended_latest_delivery_date') or 'N/A'} |",
-                f"| Suggested quantity | {_quantity(it, ch)} |", ""]
+                f"| Suggested quantity | {_quantity(it, ch)} |", ""] + _overdue_notes([it]) + (
+                [""] if it.get("po_should_have") else [])
 
     out += ["## Referenced Documents", ""]
     if window:
@@ -389,22 +510,27 @@ def _concerns(entry_codes: list[str], codes: set[str]) -> bool:
     return not entry_codes or bool(set(entry_codes) & codes)
 
 
-def approval_input(supplier: str, items: list[dict], analysis: dict, history_docs: list[dict]) -> dict:
+def approval_input(supplier: str, items: list[dict], analysis: dict, history_docs: list[dict],
+                   snapshot_date: str | None = None) -> dict:
     """What the approval agent receives: the requested items with their figures, and the
     findings, changes and actions about them or about the supplier as a whole. Findings carry
-    the numbers of their documents, which Justification cites."""
+    the numbers of their documents, which Justification cites. Figures are after any lead-time
+    change."""
+    numbered = number_findings(analysis, items, history_docs, supplier)
+    items = with_lead_times(items, analysis, snapshot_date)
     req = requested_items(items)
     codes = {str(it.get("item_code")) for it in req}
-    numbered = number_findings(analysis, items, history_docs, supplier)
     findings = [{"about": e["subject"], "text": e["body"], "documents": e["documents"]}
                 for e in numbered if not e["code"] and _concerns(e["items"], codes)]
     changes = []
+    entries = lead_time_entries(analysis)
     for it in req:
         ch = changes_by_item(analysis).get(str(it.get("item_code")), {})
-        if ch.get("po"):
-            changes.append({"item": it.get("item_name"), "what": "order date",
-                            "from": ch["po"].get("original_po_date"), "to": ch["po"].get("proposed_po_date"),
-                            "reason": ch["po"].get("reason")})
+        if it.get("lead_time_changed"):
+            changes.append({"item": it.get("item_name"), "what": "lead time (weeks)",
+                            "from": TOTAL_LEAD_WEEKS, "to": it.get("lead_time_weeks"),
+                            "reason": entries.get(str(it.get("item_code")), {}).get("reason"),
+                            "order_by": {"from": it.get("recommended_latest_po_date"), "to": it.get("po_new")}})
         if ch.get("qty"):
             changes.append({"item": it.get("item_name"), "what": "quantity",
                             "from": ch["qty"].get("original_quantity"), "to": ch["qty"].get("proposed_quantity"),
@@ -414,11 +540,13 @@ def approval_input(supplier: str, items: list[dict], analysis: dict, history_doc
     return {
         "supplier": supplier,
         "items": [{"item_name": it.get("item_name"), "item_code": it.get("item_code"),
-                   "risk_level": it.get("risk_level"), "weeks_to_stockout": it.get("wks_to_oos"),
-                   "expected_stockout_weeks": it.get("expected_stockout_weeks"),
+                   "risk_level": _risk_of(it), "weeks_to_stockout": it.get("wks_to_oos"),
+                   "lead_time_weeks": it.get("lead_time_weeks"),
+                   "expected_stockout_weeks": max(0, it.get("lead_time_weeks") - it["wks_to_oos"])
+                   if isinstance(it.get("wks_to_oos"), (int, float)) else it.get("expected_stockout_weeks"),
                    "suggested_quantity": it.get("suggested_quantity"),
-                   "order_by": it.get("recommended_latest_po_date"),
-                   "order_by_timing": it.get("recommended_latest_po_timing"),  # e.g. "overdue"
+                   "order_by": it.get("po_new") or it.get("recommended_latest_po_date"),
+                   "order_by_timing": it.get("po_timing_new") or it.get("recommended_latest_po_timing"),
                    "deliver_by": it.get("recommended_latest_delivery_date")} for it in req],
         "findings": findings,
         "changes": changes,
@@ -455,9 +583,10 @@ def render_purchase_request(supplier: str, snapshot_date: str, items: list[dict]
                             history_docs: list[dict], approval: dict | None, run_id: str) -> tuple[str, list[str]]:
     """The purchase request draft. Returns (markdown, problems found in the approval text)."""
     analysis = analysis if isinstance(analysis, dict) else {}
+    labels = _labels(number_findings(analysis, items, history_docs, supplier))
+    items = with_lead_times(items, analysis, snapshot_date)
     req = requested_items(items)
     codes = {str(it.get("item_code")) for it in req}
-    labels = _labels(number_findings(analysis, items, history_docs, supplier))
     keep = lambda e: _concerns(_codes(e), codes)
     out = [_red(PR_NOTE), "", CHECK_NOTES]
     questions = _questions_lines(analysis, supplier, labels, keep=keep, cite=False)
@@ -479,14 +608,15 @@ def render_purchase_request(supplier: str, snapshot_date: str, items: list[dict]
             "## Justification", "", justification.strip() or "(not written)", ""]
     changes = changes_by_item(analysis)
     out += [f"## Items Requested (snapshot {snapshot_date})", "",
-            "| Item | Code | Risk | Weeks to stockout | Quantity | Order by | Deliver by |",
-            "| --- | --- | --- | --- | --- | --- | --- |"]
+            "| Item | Code | Risk | Weeks to stockout | Lead time | Quantity | Order by | Deliver by |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- |"]
     for it in req:
         ch = changes.get(str(it.get("item_code")), {})
-        out.append(f"| {_cell(it.get('item_name'))} | {it.get('item_code')} | {_risk(it.get('risk_level'))} | "
-                   f"{_num(it.get('wks_to_oos'))} | {_quantity(it, ch)} | {_order_by(it, ch)} | "
+        out.append(f"| {_cell(it.get('item_name'))} | {it.get('item_code')} | {_risk_cell(it)} | "
+                   f"{_num(it.get('wks_to_oos'))} | {_lead_cell(it)} | {_quantity(it, ch)} | {_order_by(it)} | "
                    f"{it.get('recommended_latest_delivery_date') or 'N/A'} |")
-    out += ["", "Unit price and total: to be confirmed with the supplier.", ""]
+    out += [""] + _overdue_notes(req) + ([""] if _overdue_notes(req) else [])
+    out += ["Unit price and total: to be confirmed with the supplier.", ""]
     if cited:
         out += ["## Supporting Documents", ""] + _docs_table([(n, history_docs[d - 1]) for n, d in enumerate(cited, 1)]) + [""]
     out += ["## Approval", "", "| Role | Name | Signature | Date |", "| --- | --- | --- | --- |"]
@@ -501,6 +631,7 @@ def email_input(snapshot_date: str, supplier: str, items: list[dict], analysis: 
     proposed change, requested delivery date), the questions for the supplier, and the
     Critical items for which it also asks the earliest dispatch date. No stock figures, risk
     levels, findings or internal questions."""
+    items = with_lead_times(items, analysis, snapshot_date)
     req = requested_items(items)
     changes = changes_by_item(analysis)
     return {  # no snapshot date: when the company reviewed its stock is internal
@@ -510,7 +641,7 @@ def email_input(snapshot_date: str, supplier: str, items: list[dict], analysis: 
                    "requested_delivery_date": it.get("recommended_latest_delivery_date")} for it in req],
         "points_to_clarify": [str(q.get("question")).strip() for q in _list(analysis.get("critical_questions"))
                                if isinstance(q, dict) and q.get("ask") == "supplier" and q.get("question")],
-        "ask_earliest_dispatch": [it.get("item_name") for it in req if it.get("risk_level") == "Critical"],
+        "ask_earliest_dispatch": [it.get("item_name") for it in req if _risk_of(it) == "Critical"],
         # named so the agent can leave them out where a point mentions them
         "other_items": [it.get("item_name") for it in ordered_items(items) if it not in req],
     }
@@ -518,6 +649,7 @@ def email_input(snapshot_date: str, supplier: str, items: list[dict], analysis: 
 
 def email_item_lines(items: list[dict], analysis: dict) -> list[str]:
     changes = changes_by_item(analysis)
+    items = with_lead_times(items, analysis, None)  # which items are requested; dates do not change
     lines = []
     for it in requested_items(items):
         ch = changes.get(str(it.get("item_code")), {})

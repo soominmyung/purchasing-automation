@@ -43,7 +43,9 @@ from services.run_record import instrument
 
 # Model per agent, recorded with every run (services/run_record.py).
 AGENT_MODELS = {
-    "analysis": "gpt-4o",
+    # chosen 2026-10-24 over gpt-4o, gpt-6-luna and claude-sonnet-5-5 on the same prompt and cases
+    # (docs/analysis_model_comparison.md): the most specific questions and actions from the history
+    "analysis": "gpt-6.1-sol",
     "approval": "gpt-4o",
     # gpt-4o-mini and gpt-4o both carried the analyst's wording into the email, naming the
     # supplier's past problem; gpt-5.4-mini followed the rules (prompts/CHANGES.md, v5)
@@ -54,9 +56,23 @@ AGENT_MODELS = {
 }
 
 
-def _llm(model: str = "gpt-4o") -> ChatOpenAI:
-    # gpt-5 models take only their default temperature
-    kwargs = {} if model.startswith("gpt-5") else {"temperature": 0}
+def _llm(model: str = "gpt-4o"):
+    """A chat model by name: OpenAI by default, Anthropic for "claude-..." (or "anthropic:..."),
+    Google for "gemini-..."."""
+    if model.startswith("gemini-"):
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        from services.quality_checks import _key
+        return ChatGoogleGenerativeAI(model=model, google_api_key=_key("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+                                      temperature=0, timeout=settings.llm_timeout_seconds,
+                                      max_retries=settings.llm_retries)
+    if model.startswith(("claude-", "anthropic:")):
+        from langchain_anthropic import ChatAnthropic
+        from services.quality_checks import _key
+        return ChatAnthropic(model=model.removeprefix("anthropic:"), api_key=_key("ANTHROPIC_API_KEY", "CLAUDE_API_KEY"),
+                             max_tokens=16000, timeout=settings.llm_timeout_seconds,  # thinking counts; default temperature only
+                             max_retries=settings.llm_retries)
+    # gpt-5 and later reasoning models take only their default temperature
+    kwargs = {} if model.startswith(("gpt-5", "gpt-6")) else {"temperature": 0}
     return ChatOpenAI(model=model, api_key=settings.openai_api_key,
                       timeout=settings.llm_timeout_seconds, max_retries=settings.llm_retries, **kwargs)
 
@@ -120,6 +136,63 @@ def document_references(docs: list[dict[str, Any]]) -> list[dict[str, str]]:
              "date": d.get("date") or ""} for d in docs]
 
 
+# ----- The analysis -----
+# One call, its output fields in the order the model is to work in: the findings from the
+# documents, the changes, each changed item's figures after them, the stock findings, then the
+# questions, actions and summary written from those figures. The report is assembled in code, so
+# the order of the fields does not have to follow the report's.
+
+def analysis_history(input_json: dict[str, Any], history_override: list[dict[str, Any]] | None = None,
+                     supplier_history_override: str | None = None,
+                     item_history_override: str | None = None) -> tuple[list[dict[str, Any]], dict | None]:
+    """The history documents for the analysis: retrieved in code, or supplied for evaluation and
+    training (history_override as documents, or the two earlier free-text fields)."""
+    supplier, items = str(input_json.get("supplier") or ""), input_json.get("items", [])
+    if history_override is not None:
+        return history_override, None
+    if supplier_history_override or item_history_override:
+        return legacy_history_docs(supplier, items, supplier_history_override, item_history_override), None
+    return retrieve_history(supplier, items, str(input_json.get("snapshot_date") or ""))
+
+
+def from_model(out: dict[str, Any]) -> dict[str, Any]:
+    """The model writes the stock findings in their own field, after the changes; the rest of the
+    pipeline takes all findings from "findings"."""
+    if not isinstance(out, dict) or "unparsed_output" in out:
+        return out
+    out = dict(out)
+    stock = out.pop("stock_findings", None)
+    if isinstance(stock, list) and isinstance(out.get("findings"), list):
+        out["findings"] = out["findings"] + stock
+    return out
+
+
+def to_model(analysis: dict[str, Any]) -> dict[str, Any]:
+    """An analysis as the model wrote it, for a rewrite: stock findings back in their own field and
+    the fields in the model's order."""
+    found = [f for f in analysis.get("findings") or [] if isinstance(f, dict)]
+    stock = [f for f in found if isinstance(f.get("basis"), dict) and f["basis"].get("stock")]
+    shown = {"findings": [f for f in found if f not in stock]}
+    for k in ("supplier_lead_time", "lead_time_changes", "quantity_changes", "figures_after_changes"):
+        shown[k] = analysis.get(k)
+    shown["stock_findings"] = stock
+    for k in ("critical_questions", "recommended_actions", "summary"):
+        shown[k] = analysis.get(k)
+    return {**shown, **{k: v for k, v in analysis.items() if k not in shown and k not in ("references",)}}
+
+
+def _analysis_call(messages: list[BaseMessage]) -> dict[str, Any]:
+    answer = _llm(AGENT_MODELS["analysis"]).invoke(messages)
+    # .text joins the text blocks; Claude models with thinking return a list of blocks as content
+    text = answer.text if hasattr(answer, "text") else str(answer)
+    try:
+        out = _extract_json_from_text(text)
+    except Exception:
+        out = None
+    # not JSON: kept for the run record; the format check (C1) fails it
+    return from_model(out) if isinstance(out, dict) else {"unparsed_output": text}
+
+
 def run_analysis_agent(
     input_json: dict[str, Any],
     history_override: list[dict[str, Any]] | None = None,
@@ -128,34 +201,14 @@ def run_analysis_agent(
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """
     Analysis Agent: input = { snapshot_date, supplier, items[] }.
-    History is retrieved in code (or supplied for evaluation and training: history_override
-    as documents, or the two earlier free-text fields) and passed with the items in one call.
-    Returns (analysis, history_docs): the documents exactly as the model was given them,
-    for the evaluation node.
+    History is retrieved in code (or supplied for evaluation and training) and passed with the
+    items in one call. Returns (analysis, history_docs): the documents exactly as the model was
+    given them, for the evaluation node.
     """
-    supplier = str(input_json.get("supplier") or "")
-    items = input_json.get("items", [])
-    window = None
-    if history_override is not None:
-        docs = history_override
-    elif supplier_history_override or item_history_override:
-        docs = legacy_history_docs(supplier, items, supplier_history_override, item_history_override)
-    else:
-        docs, window = retrieve_history(supplier, items, str(input_json.get("snapshot_date") or ""))
-
+    docs, window = analysis_history(input_json, history_override, supplier_history_override, item_history_override)
     user_text = json.dumps({**input_json, "history": history_for_model(docs)}, ensure_ascii=False)
-    final_response = _llm(AGENT_MODELS["analysis"]).invoke([
-        SystemMessage(content=ANALYSIS_AGENT_SYSTEM),
-        HumanMessage(content=user_text),
-    ])
-
-    final_text = final_response.content if hasattr(final_response, "content") else str(final_response)
-    try:
-        analysis = _extract_json_from_text(final_text)
-    except Exception:
-        # not JSON: kept for the run record; the format check (C1) fails it
-        analysis = {"unparsed_output": final_text}
-    if isinstance(analysis, dict):
+    analysis = _analysis_call([SystemMessage(content=ANALYSIS_AGENT_SYSTEM), HumanMessage(content=user_text)])
+    if "unparsed_output" not in analysis:
         analysis["references"] = {"documents": document_references(docs), "window": window}
     return analysis, docs
 
@@ -310,19 +363,13 @@ def run_analysis_rewrite(input_json: dict[str, Any], docs: list[dict[str, Any]],
     changes and actions, so correcting one part alone can leave the citations pointing at the wrong
     finding (tried on 2026-10-23 and dropped). The references carry over."""
     user_text = json.dumps({**input_json, "history": history_for_model(docs)}, ensure_ascii=False)
-    shown = {k: v for k, v in previous.items() if k != "references"}
-    answer = _llm(AGENT_MODELS["analysis"]).invoke([
+    out = _analysis_call([
         SystemMessage(content=ANALYSIS_AGENT_SYSTEM),
         HumanMessage(content=user_text),
-        AIMessage(content=json.dumps(shown, ensure_ascii=False)),
+        AIMessage(content=json.dumps(to_model(previous), ensure_ascii=False)),
         HumanMessage(content=feedback),
     ])
-    text = answer.content if hasattr(answer, "content") else str(answer)
-    try:
-        out = _extract_json_from_text(text)
-    except Exception:
-        out = None
-    if not isinstance(out, dict):
+    if "unparsed_output" in out:
         return previous  # an answer that is not JSON changes nothing; the checks still fail
     out["references"] = previous.get("references")
     return out
@@ -398,7 +445,7 @@ def approval_node(state: PurchasingState):
     analysis, items, docs = state["analysis_output"], state["items"], state.get("history_docs") or []
     approval, payload = None, {}
     if documents.requested_items(items):
-        payload = documents.approval_input(state["supplier"], items, analysis, docs)
+        payload = documents.approval_input(state["supplier"], items, analysis, docs, state["snapshot_date"])
         approval = run_approval_agent(payload)
     md, problems = documents.render_purchase_request(
         state["supplier"], state["snapshot_date"], items, analysis, docs, approval, state.get("run_id") or "")
@@ -555,6 +602,7 @@ workflow.add_node("documents", documents_node)
 workflow.add_node("finish", finish_node)
 workflow.set_entry_point("analysis")
 workflow.add_edge("analysis", "evaluation")
+# a blocking failure, code or judge, sends the analysis back before any document is written
 # a blocking failure, code or judge, sends the analysis back before any document is written
 workflow.add_conditional_edges("evaluation", after_evaluation, {"rewrite": "rewrite", "documents": "documents"})
 workflow.add_edge("rewrite", "evaluation")

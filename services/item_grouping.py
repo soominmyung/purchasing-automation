@@ -38,6 +38,11 @@ COVERAGE_WEEKS_AFTER_DELIVERY = 26
 #   Low       8 months or more
 RISK_HIGH_BELOW_WEEKS = 26
 RISK_MEDIUM_BELOW_WEEKS = 35
+# The same thresholds as margins over the lead time, so they move with it when the analysis
+# finds a lead time other than 18 weeks: Critical below the lead time, High below lead time + 8,
+# Medium below lead time + 17 (changelog item 21).
+HIGH_MARGIN_WEEKS = RISK_HIGH_BELOW_WEEKS - TOTAL_LEAD_WEEKS
+MEDIUM_MARGIN_WEEKS = RISK_MEDIUM_BELOW_WEEKS - TOTAL_LEAD_WEEKS
 RISK_ORDER = ["Critical", "High", "Medium", "Low"]
 
 # Figures beyond these are treated as input errors, never clipped to a bound.
@@ -121,16 +126,17 @@ def _build_timing_label_from_weeks(weeks_diff: float) -> str:
     return f"within {round(weeks_diff)} weeks"
 
 
-def risk_level_from_weeks(wks_to_oos_raw: Any) -> str:
-    """Critical / High / Medium / Low from weeks-to-stockout; N/A when missing or invalid."""
+def risk_level_from_weeks(wks_to_oos_raw: Any, lead_weeks: float = TOTAL_LEAD_WEEKS) -> str:
+    """Critical / High / Medium / Low from weeks-to-stockout and the lead time; N/A when the
+    weeks are missing or invalid."""
     wks = _wks(wks_to_oos_raw)
     if wks is None:
         return "N/A"
-    if wks < TOTAL_LEAD_WEEKS:
+    if wks < lead_weeks:
         return "Critical"
-    if wks < RISK_HIGH_BELOW_WEEKS:
+    if wks < lead_weeks + HIGH_MARGIN_WEEKS:
         return "High"
-    if wks < RISK_MEDIUM_BELOW_WEEKS:
+    if wks < lead_weeks + MEDIUM_MARGIN_WEEKS:
         return "Medium"
     return "Low"
 

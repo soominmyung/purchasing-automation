@@ -25,7 +25,7 @@ def load_prompt(name: str, version: str = PROMPT_VERSION) -> str:
 
 
 ANALYSIS_AGENT_SYSTEM = load_prompt("analysis")
-# Sent back with the failures when the analysis fails a blocking code check ({failures}).
+# Sent back with the failures when the analysis fails a blocking check ({failures}).
 ANALYSIS_REVISION_REQUEST = load_prompt("analysis_revision_request")
 # From v5 the reports are assembled in code; one agent writes the purchase request's narrative.
 APPROVAL_AGENT_SYSTEM = load_prompt("approval_request")

@@ -117,7 +117,11 @@ def main() -> None:
     ap.add_argument("--label", required=True, help="what was changed before this run")
     ap.add_argument("--email-only", type=int, default=0, metavar="N")
     ap.add_argument("--from", dest="earlier", type=Path, help="run folder whose analysis the email uses")
+    ap.add_argument("--analysis-model", help="analysis agent's model for this run (its rewrites too), "
+                                             "e.g. gpt-6.1-sol or claude-sonnet-5-5")
     args = ap.parse_args()
+    if args.analysis_model:
+        AGENT_MODELS["analysis"] = args.analysis_model  # recorded in the run's "models"
     case, group = load_case(args.case)
     folder = new_folder(args.label)
     record = {"label": args.label, "case": case["name"], "started": datetime.now().isoformat(timespec="seconds"),
