@@ -265,15 +265,24 @@ _PLAIN_CODE = {
 }
 # What a judge check looks at, for when the judge could not answer.
 _PLAIN_AREA = {
-    "J1": "What the analysis says about past documents",
+    "J1a": "What the analysis says about past documents",
+    "J1b": "Whether the analysis reports past documents as they are",
+    "J1c": "Whether past documents are applied to the right supplier and items",
     "J2a": "Whether the supplier's problems are raised as questions",
     "J2b": "Whether the items' problems are raised as questions",
     "J2c": "Whether a question assumes a problem the documents do not show",
-    "J7": "The stock figures quoted in the text",
     "J6a": "Whether each proposed change goes the way its reasons point",
     "J6b": "Whether each proposed change is the right size",
     "J6c": "Whether the same change was left out for an item it also applies to",
-    "P1": "Purpose and Justification",
+    "J7a": "The stock figures quoted in the text",
+    "J7b": "How changed figures are written in the text",
+    "J8": "Whether the questions for the supplier reveal anything internal",
+    "J9": "Whether each question and action follows from its reasons",
+    "J10": "Whether a document with a problem for this order was left unused",
+    "J11": "Whether the findings state facts only",
+    "P1a": "Purpose and Justification",
+    "P1b": "The figures in Purpose and Justification",
+    "P1c": "The wording of Purpose and Justification",
 }
 
 

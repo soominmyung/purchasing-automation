@@ -259,6 +259,7 @@ class PurchasingState(TypedDict):
     analysis_attempts: Annotated[list[dict], operator.add]
     analysis_feedback: str
     analysis_rewrites_done: int
+    analysis_used_attempt: int          # set when an earlier attempt is used for the documents
 
 def apply_system_notes(analysis: Any, items: list[dict]) -> Any:
     """
@@ -305,7 +306,9 @@ def _blocking_failures(checks: dict[str, dict[str, Any]]) -> list[str]:
 def run_analysis_rewrite(input_json: dict[str, Any], docs: list[dict[str, Any]], previous: dict[str, Any],
                          feedback: str) -> dict[str, Any]:
     """The analysis agent corrects its own output: the same input, its previous answer, and the
-    checks it failed. The references (which documents it was given) carry over."""
+    checks it failed. It returns the whole analysis again: findings are cited by the questions,
+    changes and actions, so correcting one part alone can leave the citations pointing at the wrong
+    finding (tried on 2026-10-23 and dropped). The references carry over."""
     user_text = json.dumps({**input_json, "history": history_for_model(docs)}, ensure_ascii=False)
     shown = {k: v for k, v in previous.items() if k != "references"}
     answer = _llm(AGENT_MODELS["analysis"]).invoke([
@@ -323,6 +326,7 @@ def run_analysis_rewrite(input_json: dict[str, Any], docs: list[dict[str, Any]],
         return previous  # an answer that is not JSON changes nothing; the checks still fail
     out["references"] = previous.get("references")
     return out
+
 
 def evaluation_node(state: PurchasingState):
     """Checks the analysis; a blocking failure sends it back for a rewrite (up to
@@ -345,11 +349,22 @@ def evaluation_node(state: PurchasingState):
     feedback = (ANALYSIS_REVISION_REQUEST.replace("{failures}", "\n".join(f"- {line}" for line in failed))
                 if failed and rewrite_left else "")
     attempt = {"attempt": state.get("analysis_rewrites_done", 0) + 1, "output": copy.deepcopy(analysis),
+               "blocking_failed": len(failed),
                "checks": checks, "judged": judged, "feedback": feedback or None,
                "seconds": round(time.perf_counter() - started, 2)}
     update = {"analysis_attempts": [attempt], "analysis_feedback": feedback}
     if result is not None:
         update.update({"evaluation_md": report, "evaluation_result": result})
+    if not feedback and failed:
+        # Rewrites used up and still failing: the documents use the attempt with the fewest blocking
+        # failures (a later one can be worse, for example findings renumbered and citations broken).
+        tried = (state.get("analysis_attempts") or []) + [attempt]
+        best = min(tried, key=lambda a: (a.get("blocking_failed", 99), a["attempt"]))
+        if best["attempt"] != attempt["attempt"]:
+            best_report, best_result = run_evaluation_agent(state["supplier"], items, best["output"],
+                                                            history_docs=docs, snapshot_date=snapshot)
+            update.update({"analysis_output": best["output"], "analysis_used_attempt": best["attempt"],
+                           "evaluation_md": best_report, "evaluation_result": best_result})
     return update
 
 
@@ -410,8 +425,14 @@ def finish_node(state: PurchasingState):
     request's checks."""
     update = {"pr_md": documents.fill_check_notes(
         state.get("pr_md") or "", [state.get("evaluation_result") or {}, state.get("approval_check") or {}])}
-    if state.get("approval_check"):
-        update["evaluation_md"] = (state.get("evaluation_md") or "") + approval_markdown(state["approval_check"])
+    if state.get("evaluation_result"):
+        md = evaluation_markdown(state["supplier"], state["evaluation_result"], run_id=state.get("run_id") or "",
+                                 snapshot_date=state.get("snapshot_date") or "",
+                                 attempts=state.get("analysis_attempts") or [],
+                                 used_attempt=state.get("analysis_used_attempt"))
+        if state.get("approval_check"):
+            md += approval_markdown(state["approval_check"])
+        update["evaluation_md"] = md
     return update
 
 def email_draft_node(state: PurchasingState):

@@ -534,6 +534,18 @@ English or Korean).
   snapshot date (C5) was corrected on the second attempt each time, the other changes kept; a
   stand-in judge failing J6b once sent the analysis back with the judge's reason and the next
   attempt passed; a whole run took 34.4 s.
+- **The rewrite returns the whole analysis, not only the parts to correct (decided 2026-10-23
+  after a trial).** Returning only the fields it changes was tried: each rewrite took 1.4-3.5 s
+  instead of 4.9-7.3 s, so about 3-4 s were saved per rewrite. But the findings are what the
+  questions, changes and actions cite: in `nordic_fasteners` the third attempt rewrote the
+  findings alone, the citations then pointed at the wrong findings, and three blocking checks
+  failed (C4, C6, J6a) where the first attempt had failed one. Keeping parts consistent would
+  have needed a rule for every failure saying which fields to rewrite with it, and would still
+  have carried the risk. A few seconds per rewrite were not worth that, so the rewrite returns the
+  whole analysis again (`dev/runs/2026-10-23_173030_*`, `173106_*`, `173433_*`).
+- **When the rewrites are used up and it still fails, the documents use the attempt with the
+  fewest blocking failures**, not the last one, since a later attempt can be worse.
+
 - **What is still wrong goes in the purchase request's red draft note, in plain words.** Once every
   check has run, the note lists "Must be corrected before use" (blocking checks not passed) and
   "Please check" (warnings), without check ids: a fixed sentence per code check, and for judge
@@ -704,7 +716,12 @@ to be written after testing in Claude Desktop.
     is kept in the run record. The same pattern as the email's check-and-rewrite loop.
     Severity decides a rewrite, not who checks: blocking code and judge checks both do, warnings
     never do. The cheap code checks run first, so the judge is not called on an analysis that is
-    about to change. A whole run with one rewrite took 34.4 s.
+    about to change. A whole run with one rewrite took 34.4 s. A faster variant was measured and
+    rejected on purpose — worth telling: rewriting only the failing parts saved about 3-4 s per
+    rewrite but broke the citations between findings and the judgements that rest on them (three
+    blocking failures instead of one in a test), and would have needed a rule per failure for which
+    parts to rewrite together; a few seconds were not worth a report that can contradict itself.
+    If rewrites run out, the attempt with the fewest blocking failures is used, not the last.
   - What stayed with LLMs, and why: findings, judgements and the summary (analysis); the
     approvers' Purpose and Justification; the supplier email's wording; and the judge, for what
     needs reading: whether findings are faithful to their documents (J1); whether each

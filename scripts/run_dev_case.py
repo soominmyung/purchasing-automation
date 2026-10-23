@@ -90,6 +90,7 @@ def full_run(case: dict, group: dict, folder: Path) -> dict:
         "evaluation": state.get("evaluation_result"),
         "approval_check": state.get("approval_check"),
         "analysis_attempts": state.get("analysis_attempts"),
+        "analysis_used_attempt": state.get("analysis_used_attempt"),
         "email_validation": state.get("validation_log"),
         "document_issues": state.get("document_issues"),
     }

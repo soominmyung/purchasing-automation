@@ -33,14 +33,21 @@ CHECK_NAMES = {
     "C7": "Summary names every Critical item",
     "C8": "Summary within about 100 words",
     "C9": "Arrows in the text match the proposed changes",
-    "J1": "No invented or distorted history",
+    "J1a": "History statements found in the documents",
+    "J1b": "History not distorted",
+    "J1c": "History not attributed to what it does not name",
     "J2a": "Supplier problem raised as a question",
     "J2b": "Item problem raised as a question",
     "J2c": "No question presumes a problem the data does not show",
-    "J7": "Stock figures quoted match the input",
     "J6a": "Each proposed change goes the way its findings point",
     "J6b": "Each proposed change is the size its findings support",
     "J6c": "No item the same reason applies to is left out",
+    "J7a": "Stock figures quoted match the input",
+    "J7b": "Changed figures written as pipeline value and proposed value",
+    "J8": "Questions marked for the supplier reveal nothing internal",
+    "J9": "Each question and action follows from its findings",
+    "J10": "No document with a problem for this order left unused",
+    "J11": "Findings state facts only",
 }
 
 # Blocking: the analysis must not be used as it is if this fails; the verdict follows these
@@ -49,16 +56,28 @@ BLOCKING, WARNING = "blocking", "warning"
 SEVERITY = {
     "C1": BLOCKING, "C2": BLOCKING, "C3": BLOCKING, "C4": BLOCKING, "C5": BLOCKING, "C6": BLOCKING,
     "C7": WARNING, "C8": WARNING, "C9": BLOCKING,
-    "J1": BLOCKING,
-    "J2a": WARNING, "J2b": WARNING,  # until replaced by the check on documents left unused
+    "J1a": BLOCKING, "J1b": BLOCKING, "J1c": BLOCKING,
+    "J2a": WARNING, "J2b": WARNING,  # until J10 has shown it can replace them
     "J2c": WARNING,
-    "J7": BLOCKING,
     "J6a": BLOCKING, "J6b": BLOCKING, "J6c": BLOCKING,  # J6: whether the proposed changes hold
-    "P1": WARNING, "P2": WARNING, "P3": BLOCKING,
+    "J7a": BLOCKING, "J7b": BLOCKING,
+    "J8": BLOCKING,
+    "J9": WARNING, "J10": WARNING, "J11": WARNING,
+    "P1a": WARNING, "P1b": WARNING, "P1c": WARNING, "P2": WARNING, "P3": BLOCKING,
 }
 SUMMARY_WORDS = 100
 
 _JUDGE_TEXT = {
+    # J1: the history as the documents give it
+    "J1a": "Every statement the analysis makes about supplier or item history (incidents, trends, "
+           "reliability) is found in the history documents given; none is invented.",
+    "J1b": "No statement about the history distorts what a document says: nothing is made stronger, "
+           "weaker or different (for example, 'high demand' reported as 'medium demand').",
+    "J1c": "No document's content is attributed to a supplier or item the document does not name (for "
+           "example, a supplier-wide quality note presented as a problem of one particular item).",
+    "J2c": "No critical question presumes a supplier or item problem that the inputs do not show. "
+           "Neutral questions that assume no problem, such as asking whether anything is about to "
+           "change, pass. Questions about problems the inputs do show also pass.",
     # J6: whether the proposed order-date and quantity changes hold (applies when there are any)
     "J6a": "Each proposed change in po_date_changes and quantity_changes follows from the findings it "
            "cites: what those findings say is a reason to move that item's order date or quantity in the "
@@ -68,22 +87,29 @@ _JUDGE_TEXT = {
     "J6c": "No item that the same reason applies to is left without the same kind of change, except an "
            "item whose change cannot be made (an order date that cannot move earlier than the snapshot "
            "date). If there is no such item, this check passes.",
-    "J7": "Every figure from the stock data that the analysis quotes in its prose (the summary, the "
-          "findings' text, the questions, the actions and the changes' reasons; not the values in the "
-          "change fields themselves) matches the input for that item exactly: available stock, weeks "
-          "to stockout, expected stockout weeks (the gap), suggested quantity, recommended order and "
-          "delivery dates. For an item with a proposed change in po_date_changes or quantity_changes, "
-          "the changed figure (its order date or its quantity) is written as '<pipeline value> → "
-          "<proposed value>' wherever the prose mentions it; writing only one of the two fails. Figures "
-          "that come from the history documents are not judged here.",
-    "J1": "Every statement the analysis makes about supplier or item history (incidents, trends, "
-          "reliability) is supported by the history documents given, none of them is distorted (for "
-          "example, 'high demand' reported as 'medium demand'), and none is attributed to a supplier or "
-          "item its document does not name (for example, a supplier-wide quality note presented as a "
-          "problem of one particular item).",
-    "J2c": "No critical question presumes a supplier or item problem that the inputs do not show. "
-           "Neutral questions that assume no problem, such as asking whether anything is about to "
-           "change, pass. Questions about problems the inputs do show also pass.",
+    # J7: stock figures in the prose (the summary, the findings' text, the questions, the actions and
+    # the changes' reasons; not the values in the change fields)
+    "J7a": "Every figure from the stock data quoted in the prose (the summary, the findings' text, the "
+           "questions, the actions and the changes' reasons; not the values in the change fields) matches "
+           "the input for that item exactly: available stock, weeks to stockout, expected stockout weeks "
+           "(the gap), suggested quantity, recommended order and delivery dates. Figures that come from "
+           "the history documents are not judged here.",
+    "J7b": "For an item with a proposed change in po_date_changes or quantity_changes, the changed figure "
+           "(its order date or its quantity) is written as '<pipeline value> → <proposed value>' wherever "
+           "the prose mentions it; writing only one of the two fails. If the prose does not mention a "
+           "changed figure, this check passes.",
+    "J8": "No critical question marked 'supplier' reveals anything internal to the company: its stock "
+          "levels or weeks to stockout, that stock is short or the order urgent, its budget, or its own "
+          "analysis or plans. What the supplier itself did or announced is not internal.",
+    "J9": "Each critical question and recommended action follows from the findings it cites: what those "
+          "findings say is a reason to ask that question or take that action. (Proposed changes are "
+          "judged in J6.)",
+    "J10": "These documents are behind no question, proposed change or action: {unused}. None of them "
+           "describes a problem that matters for this order and calls for a question, a change or an "
+           "action; if one does, this check fails.",
+    "J11": "Every finding states only facts from its documents or from the stock figures, with no "
+           "judgement of what they mean for this order (that belongs in the questions, changes and "
+           "actions).",
 }
 # J2a / J2b: offline the label guarantees a problem exists; in production the judge decides.
 _J2_LABELLED = {
@@ -328,10 +354,18 @@ def applicable_judge_checks(items: list[dict[str, Any]], history_docs: list[dict
     docs = history_docs or []
     hs = any(d.get("supplier") for d in docs)
     hi = any(d.get("items") or d.get("item_codes") for d in docs)
-    checks = ["J1", "J2c", "J7"]
     obj = _as_obj(analysis) or {}
+    checks = ["J1a", "J1b", "J1c", "J2c", "J7a"]
     if _entries(obj, "po_date_changes") or _entries(obj, "quantity_changes"):
-        checks += ["J6a", "J6b", "J6c"]
+        checks += ["J6a", "J6b", "J6c", "J7b"]
+    if any(q.get("ask") == "supplier" for q in _entries(obj, "critical_questions")):
+        checks.append("J8")
+    if _entries(obj, "critical_questions") or _entries(obj, "recommended_actions"):
+        checks.append("J9")
+    if unused_documents(obj, docs):
+        checks.append("J10")
+    if _entries(obj, "findings"):
+        checks.append("J11")
     if labels is not None:
         if labels.get("supplier_issue") == "material":
             checks.append("J2a")
@@ -345,12 +379,22 @@ def applicable_judge_checks(items: list[dict[str, Any]], history_docs: list[dict
     return checks
 
 
-def check_text(check: str, items: list[dict[str, Any]], labelled: bool) -> str:
+def unused_documents(obj: dict, docs: list[dict[str, Any]]) -> list[int]:
+    """History documents (by number) behind no question, proposed change or action: cited by no
+    finding, or only by findings that no judgement cites."""
+    cited = {i for kind in ("critical_questions", "recommended_actions", "po_date_changes", "quantity_changes")
+             for e in _entries(obj, kind) for i in (e.get("findings") or [])}
+    used = {d for f in _entries(obj, "findings") if f.get("id") in cited
+            for d in ((f.get("basis") or {}).get("documents") or []) if isinstance(f.get("basis"), dict)}
+    return [n for n in range(1, len(docs or []) + 1) if n not in used]
+
+
+def check_text(check: str, items: list[dict[str, Any]], labelled: bool, analysis: Any = None,
+               history_docs: list[dict[str, Any]] | None = None) -> str:
     if check in ("J2a", "J2b"):
         return (_J2_LABELLED if labelled else _J2_UNLABELLED)[check]
-    crit = ", ".join(f"{it.get('item_name')} ({it.get('item_code')}): expected stockout "
-                     f"{it.get('expected_stockout_weeks')} weeks" for it in critical_items(items))
-    return _JUDGE_TEXT[check].format(critical=crit or "none")
+    unused = ", ".join(f"[{n}]" for n in unused_documents(_as_obj(analysis) or {}, history_docs or []))
+    return _JUDGE_TEXT[check].format(unused=unused or "none")
 
 
 JUDGE_SYSTEM = (
@@ -380,7 +424,7 @@ def history_block(history_docs: list[dict[str, Any]]) -> str:
 
 def judge_prompt(supplier: str, items: list[dict[str, Any]], history_docs: list[dict[str, Any]],
                  analysis: Any, checks: list[str], labelled: bool) -> str:
-    lines = [f"- {c}: {check_text(c, items, labelled)}" for c in checks]
+    lines = [f"- {c}: {check_text(c, items, labelled, analysis, history_docs)}" for c in checks]
     return (
         "INPUTS\n"
         f"Supplier: {supplier}\n"
@@ -427,7 +471,7 @@ def _usage(input_tokens: int | None, output_tokens: int | None) -> dict[str, int
     return {"input_tokens": i, "output_tokens": o, "total_tokens": i + o}
 
 
-def _call_openai(model: str, system: str, user: str) -> tuple[str, dict[str, int]]:
+def _call_openai(model: str, system: str, user: str, checks: list[str] | None = None) -> tuple[str, dict[str, int]]:
     from openai import OpenAI
     from config import settings
     client = OpenAI(api_key=settings.openai_api_key or _key("OPENAI_API_KEY"),
@@ -439,17 +483,20 @@ def _call_openai(model: str, system: str, user: str) -> tuple[str, dict[str, int
     return resp.choices[0].message.content, _usage(getattr(u, "prompt_tokens", 0), getattr(u, "completion_tokens", 0))
 
 
-def _call_anthropic(model: str, system: str, user: str) -> tuple[str, dict[str, int]]:
+def _call_anthropic(model: str, system: str, user: str, checks: list[str] | None = None) -> tuple[str, dict[str, int]]:
     import anthropic
     client = anthropic.Anthropic(api_key=_key("ANTHROPIC_API_KEY", "CLAUDE_API_KEY"),
                                  timeout=_judge_timeout(), max_retries=0)
+    # One named property per check, each an object with the evidence first: with open property
+    # names Haiku sometimes put every verdict into one field as a string.
+    verdict = {"type": "object",
+               "properties": {"evidence": {"type": "string"}, "pass": {"type": "boolean"},
+                              "note": {"type": "string"}},
+               "required": ["evidence", "pass"]}
     tool = {"name": "record_verdicts",
-            "description": "Record one verdict per check id.",
-            "input_schema": {"type": "object", "additionalProperties": {
-                "type": "object",
-                "properties": {"evidence": {"type": "string"}, "pass": {"type": "boolean"},
-                               "note": {"type": "string"}},
-                "required": ["evidence", "pass"]}}}
+            "description": "Record one verdict for each check id.",
+            "input_schema": ({"type": "object", "properties": {c: verdict for c in checks}, "required": list(checks)}
+                             if checks else {"type": "object", "additionalProperties": verdict})}
     resp = client.messages.create(model=model, max_tokens=2000, system=system,
                                   messages=[{"role": "user", "content": user}],
                                   tools=[tool], tool_choice={"type": "tool", "name": "record_verdicts"})
@@ -459,7 +506,7 @@ def _call_anthropic(model: str, system: str, user: str) -> tuple[str, dict[str, 
     return text, _usage(resp.usage.input_tokens, resp.usage.output_tokens)
 
 
-def _call_gemini(model: str, system: str, user: str) -> tuple[str, dict[str, int]]:
+def _call_gemini(model: str, system: str, user: str, checks: list[str] | None = None) -> tuple[str, dict[str, int]]:
     from google import genai
     client = genai.Client(api_key=_key("GEMINI_API_KEY", "GOOGLE_API_KEY"),
                           http_options={"timeout": int(_judge_timeout() * 1000)})  # milliseconds
@@ -476,10 +523,10 @@ PROVIDERS = {"openai": _call_openai, "anthropic": _call_anthropic, "gemini": _ca
 
 
 @traceable(run_type="llm", name="Judge_LLM")
-def _judge_call(provider: str, model: str, system: str, user: str) -> dict[str, Any]:
+def _judge_call(provider: str, model: str, system: str, user: str, checks: list[str] | None = None) -> dict[str, Any]:
     """One judge request. Traced in LangSmith (when tracing is on) with its prompt, answer
     and token usage, under the evaluation node that made it."""
-    text, usage = PROVIDERS[provider](model, system, user)
+    text, usage = PROVIDERS[provider](model, system, user, checks)
     from services.run_record import note_usage  # the judge's tokens, in the run record
     note_usage(f"{provider}:{model}", usage["input_tokens"], usage["output_tokens"])
     return {"output": text, "usage_metadata": usage}
@@ -491,7 +538,7 @@ def run_judge(spec: str, prompt: str, checks: list[str], retries: int = 2) -> di
     provider, model = spec.split(":", 1)
     for attempt in range(retries + 1):
         try:
-            raw = _judge_call(provider, model, JUDGE_SYSTEM, prompt,
+            raw = _judge_call(provider, model, JUDGE_SYSTEM, prompt, checks,
                               langsmith_extra={"metadata": {"ls_provider": provider, "ls_model_name": model,
                                                             "checks": checks, "attempt": attempt + 1}})["output"]
             m = re.search(r"\{[\s\S]*\}", raw or "")
@@ -507,6 +554,8 @@ def run_judge(spec: str, prompt: str, checks: list[str], retries: int = 2) -> di
                 v = v if isinstance(v, dict) else {}
                 if "pass" not in v and isinstance(v.get(c), dict):  # wrapped once more
                     v = v[c]
+                if "pass" not in v:  # keep what came back, to see why
+                    v = {"evidence": f"no verdict for {c} in the judge's answer: {str(raw)[:300]}"}
                 p = v.get("pass")
                 result[c] = {"pass": p if isinstance(p, bool) else None, "evidence": v.get("evidence", ""),
                              "note": v.get("note", "") if p is False else ""}
@@ -520,16 +569,21 @@ def run_judge(spec: str, prompt: str, checks: list[str], retries: int = 2) -> di
 # ----------------------------------------------------------------------------- purchase request text
 
 APPROVAL_CHECK_NAMES = {
-    "P1": "Purchase request adds nothing to its input",
+    "P1a": "Purchase request adds nothing to its input",
+    "P1b": "Purchase request quotes figures as given",
+    "P1c": "Purchase request keeps the input's meaning",
     "P2": "Purchase request paragraphs within length",
     "P3": "Purchase request cites only documents given",
 }
-_P1_TEXT = ("Every fact in purpose and justification is supported by the input: no fact, risk or "
-            "assessment is added that the input does not give, figures are quoted exactly with no word "
-            "that judges them (for example calling a stated duration quick or slow), and a word used in "
-            "place of the input's does not change the meaning. Saying why an action from the input "
-            "matters passes when the findings behind it support it, and so does writing a check to be "
-            "done before ordering as a condition the request rests on.")
+_P1_TEXT = {
+    "P1a": "Purpose and Justification add no fact, risk or assessment that their input does not give. "
+           "Saying why an action from the input matters passes when the findings behind it support it, "
+           "and so does writing a check to be done before ordering as a condition the request rests on.",
+    "P1b": "Figures are quoted exactly as the input gives them, with no word that judges them (for "
+           "example calling a stated duration quick or slow).",
+    "P1c": "Where a word other than the input's is used, the meaning does not change (for example "
+           "'about 60%' written as '60%').",
+}
 
 
 def _sentences(text: str) -> int:
@@ -538,7 +592,7 @@ def _sentences(text: str) -> int:
 
 def approval_checks(payload: dict[str, Any], approval: dict[str, Any], citation_problems: list[str],
                     judge: str, retries: int = 2) -> dict[str, Any]:
-    """Checks on the approval agent's text: P1 by the judge against the agent's input, P2 and P3
+    """Checks on the approval agent's text: P1a-c by the judge against the agent's input, P2 and P3
     in code. Same verdict rule as the analysis checks."""
     purpose, justification = str(approval.get("purpose") or ""), str(approval.get("justification") or "")
     p, j = _sentences(purpose), _sentences(justification)
@@ -548,12 +602,12 @@ def approval_checks(payload: dict[str, Any], approval: dict[str, Any], citation_
                "P3": {"pass": not citation_problems, "detail": "; ".join(citation_problems) or "all cited documents given"}}
     prompt = ("INPUT GIVEN TO THE WRITER\n" + json.dumps(payload, ensure_ascii=False, indent=2) + "\n\n"
               "TEXT WRITTEN\n" + json.dumps({"purpose": purpose, "justification": justification}, ensure_ascii=False, indent=2)
-              + "\n\nCHECKS\n- P1: " + _P1_TEXT + "\n\n"
-              'Return JSON only: {"P1": {"evidence": "<short quote or reason>", "pass": true|false, '
-              '"note": "<only if it fails: one plain sentence for the buyer>"}}')
-    judged = run_judge(judge, prompt, ["P1"], retries=retries)
-    results = {"P1": {"pass": judged["P1"]["pass"], "detail": judged["P1"]["evidence"],
-                      "note": judged["P1"].get("note", "")}, **results}
+              + "\n\nCHECKS\n" + "\n".join(f"- {c}: {t}" for c, t in _P1_TEXT.items()) + "\n\n"
+              'Return JSON only: {"<check id>": {"evidence": "<short quote or reason>", "pass": true|false, '
+              '"note": "<only if it fails: one plain sentence for the buyer>"}, ...} with one entry per check.')
+    judged = run_judge(judge, prompt, list(_P1_TEXT), retries=retries)
+    results = {**{c: {"pass": v["pass"], "detail": v["evidence"], "note": v.get("note", "")}
+                  for c, v in judged.items()}, **results}
     return {**verdict(results), "checks": results, "judge": judge}
 
 
@@ -610,11 +664,29 @@ def checks_table(result: dict[str, Any], names: dict[str, str]) -> str:
     return "| Check | Severity | Result | Detail |\n| --- | --- | --- | --- |\n" + "\n".join(rows) + "\n"
 
 
-def evaluation_markdown(supplier: str, result: dict[str, Any]) -> str:
-    return (
-        "# Analysis Quality Check\n\n"
-        f"**Supplier:** {supplier}  \n"
-        f"**Result:** {verdict_sentence(result)}  \n"
-        f"**Checked by:** code, and `{result['judge']}` for the judgement checks\n\n"
-        + checks_table(result, CHECK_NAMES)
-    )
+def evaluation_markdown(supplier: str, result: dict[str, Any], run_id: str = "", snapshot_date: str = "",
+                        attempts: list[dict] | None = None, used_attempt: int | None = None) -> str:
+    """The quality-check document: a checklist with the reason for each result, the run it belongs
+    to, and how the analysis got there (each attempt, what failed, whether it was sent back)."""
+    head = ["# Analysis Quality Check", "", f"**Supplier:** {supplier}  "]
+    if run_id:
+        head.append(f"**Run id:** {run_id}  ")
+    if snapshot_date:
+        head.append(f"**Snapshot date:** {snapshot_date}  ")
+    head += [f"**Result:** {verdict_sentence(result)}  ",
+             f"**Checked by:** code, and `{result['judge']}` for the judgement checks", ""]
+    if attempts:
+        head += ["## Attempts", "", "| Attempt | Judge run | Blocking checks failed | Sent back for a rewrite |",
+                 "| --- | --- | --- | --- |"]
+        for a in attempts:
+            failed = [f"{k} ({CHECK_NAMES.get(k, k)}): {str(v.get('detail') or '')}" for k, v in a["checks"].items()
+                      if SEVERITY.get(k) == BLOCKING and v.get("pass") is False]
+            cell = "; ".join(failed).replace("|", "/").replace("\n", " ") or "none"
+            judged = "yes" if a.get("judged") else "no (a code check failed first)"
+            head.append(f"| {a['attempt']} | {judged} | {cell} | {'yes' if a.get('feedback') else 'no'} |")
+        head.append("")
+        if used_attempt:
+            head += [f"The rewrites were used up; the documents are built from attempt {used_attempt}, the one "
+                     "with the fewest blocking failures.", ""]
+    head += ["## Analysis Checks", ""]
+    return "\n".join(head) + "\n" + checks_table(result, CHECK_NAMES)
