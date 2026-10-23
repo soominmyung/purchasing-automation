@@ -74,7 +74,7 @@ def full_run(case: dict, group: dict, folder: Path) -> dict:
         for node, update in event.items():
             print(f"{time.perf_counter() - started:6.1f}s  {node} done", flush=True)
             for k, v in (update or {}).items():
-                if k in ("validation_log", "document_issues"):
+                if k in ("validation_log", "document_issues", "analysis_attempts"):
                     state.setdefault(k, []).extend(v)
                 else:
                     state[k] = v
@@ -90,7 +90,6 @@ def full_run(case: dict, group: dict, folder: Path) -> dict:
         "evaluation": state.get("evaluation_result"),
         "approval_check": state.get("approval_check"),
         "analysis_attempts": state.get("analysis_attempts"),
-        "analysis_not_passed": state.get("analysis_not_passed"),
         "email_validation": state.get("validation_log"),
         "document_issues": state.get("document_issues"),
     }

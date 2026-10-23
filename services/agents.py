@@ -254,10 +254,11 @@ class PurchasingState(TypedDict):
 
     # History documents the Analysis Agent was given, passed to the evaluation node
     history_docs: list[dict]
-    # Every analysis attempt (output, code checks, the feedback sent), and the blocking code
-    # checks the final analysis still fails (the documents' red notes come from the evaluation)
-    analysis_attempts: list[dict]
-    analysis_not_passed: list[str]
+    # The analysis rewrite loop: every attempt (output, checks, the feedback sent), the feedback
+    # waiting for the next rewrite, and how many rewrites have been made
+    analysis_attempts: Annotated[list[dict], operator.add]
+    analysis_feedback: str
+    analysis_rewrites_done: int
 
 def apply_system_notes(analysis: Any, items: list[dict]) -> Any:
     """
@@ -285,30 +286,20 @@ def analysis_node(state: PurchasingState):
         "supplier": state["supplier"],
         "items": state["items"],
     }
-    started = time.perf_counter()
     out, history_docs = run_analysis_agent(
         input_json,
         history_override=state.get("history_override"),
         supplier_history_override=state.get("supplier_history_override"),
         item_history_override=state.get("item_history_override"),
     )
-    # Blocking code checks decide a rewrite: exact and instant, so a rewrite costs one more
-    # analysis call. The judge's checks run later, beside the documents.
-    attempts, not_passed = [], []
-    for n in range(settings.analysis_rewrites + 1):
-        checks = code_checks(state["items"], out, history_docs, state["snapshot_date"])
-        failed = {k: v for k, v in checks.items() if SEVERITY.get(k) == BLOCKING and v["pass"] is not True}
-        not_passed = [f"{k} ({CHECK_NAMES.get(k, k)}): {v['detail']}" for k, v in failed.items()]
-        feedback = (ANALYSIS_REVISION_REQUEST.replace("{failures}", "\n".join(f"- {line}" for line in not_passed))
-                    if failed and n < settings.analysis_rewrites else None)
-        attempts.append({"attempt": n + 1, "output": copy.deepcopy(out), "code_checks": checks,
-                         "feedback": feedback, "seconds": round(time.perf_counter() - started, 2)})
-        if feedback is None:
-            break
-        started = time.perf_counter()
-        out = run_analysis_rewrite(input_json, history_docs, out, feedback)
-    return {"analysis_output": out, "history_docs": history_docs,
-            "analysis_attempts": attempts, "analysis_not_passed": not_passed}
+    return {"analysis_output": out, "history_docs": history_docs, "analysis_rewrites_done": 0}
+
+
+def _blocking_failures(checks: dict[str, dict[str, Any]]) -> list[str]:
+    """Blocking checks that failed, as lines for the rewrite request. A check the judge could
+    not answer is not one: there is nothing to correct."""
+    return [f"{k} ({CHECK_NAMES.get(k, k)}): {v.get('detail') or ''}" for k, v in checks.items()
+            if SEVERITY.get(k) == BLOCKING and v.get("pass") is False]
 
 
 def run_analysis_rewrite(input_json: dict[str, Any], docs: list[dict[str, Any]], previous: dict[str, Any],
@@ -334,16 +325,45 @@ def run_analysis_rewrite(input_json: dict[str, Any], docs: list[dict[str, Any]],
     return out
 
 def evaluation_node(state: PurchasingState):
-    """Node that evaluates the quality of analysis output."""
-    out = run_evaluation_agent(
-        state["supplier"],
-        state["items"],
-        state["analysis_output"],
-        history_docs=state.get("history_docs") or [],
-        snapshot_date=state["snapshot_date"],
-    )
-    report, result = out
-    return {"evaluation_md": report, "evaluation_result": result}
+    """Checks the analysis; a blocking failure sends it back for a rewrite (up to
+    analysis_rewrites). Code checks come first: if one fails and a rewrite is still possible, the
+    judge is not called, as the analysis will change. Otherwise the judge's checks run too, and a
+    blocking one that fails also sends the analysis back."""
+    analysis, items = state["analysis_output"], state["items"]
+    docs, snapshot = state.get("history_docs") or [], state["snapshot_date"]
+    started = time.perf_counter()
+    rewrite_left = state.get("analysis_rewrites_done", 0) < settings.analysis_rewrites
+    code = code_checks(items, analysis, docs, snapshot)
+    code_failed = _blocking_failures(code)
+    if code_failed and rewrite_left:
+        checks, failed, judged = code, code_failed, False
+        result = None
+    else:
+        report, result = run_evaluation_agent(state["supplier"], items, analysis, history_docs=docs,
+                                              snapshot_date=snapshot)
+        checks, failed, judged = result["checks"], _blocking_failures(result["checks"]), True
+    feedback = (ANALYSIS_REVISION_REQUEST.replace("{failures}", "\n".join(f"- {line}" for line in failed))
+                if failed and rewrite_left else "")
+    attempt = {"attempt": state.get("analysis_rewrites_done", 0) + 1, "output": copy.deepcopy(analysis),
+               "checks": checks, "judged": judged, "feedback": feedback or None,
+               "seconds": round(time.perf_counter() - started, 2)}
+    update = {"analysis_attempts": [attempt], "analysis_feedback": feedback}
+    if result is not None:
+        update.update({"evaluation_md": report, "evaluation_result": result})
+    return update
+
+
+def rewrite_node(state: PurchasingState):
+    """The analysis agent corrects what the checks found."""
+    out = run_analysis_rewrite({"snapshot_date": state["snapshot_date"], "supplier": state["supplier"],
+                                "items": state["items"]}, state.get("history_docs") or [],
+                               state["analysis_output"], state["analysis_feedback"])
+    return {"analysis_output": out, "analysis_rewrites_done": state.get("analysis_rewrites_done", 0) + 1}
+
+
+def after_evaluation(state: PurchasingState):
+    return "rewrite" if state.get("analysis_feedback") else "documents"
+
 
 def report_node(state: PurchasingState):
     """The analysis report, assembled in code."""
@@ -462,9 +482,10 @@ def email_doc_node(state: PurchasingState):
     return {"email_md": md, "document_issues": [f"email: {p}" for p in problems]}
 
 # Build the graph.
-# LangGraph moves in steps: a step ends only when every node in it has finished. So the
-# documents are one node of the main graph, a graph of their own inside it, and run beside
-# the evaluation (nothing in the documents uses its result) instead of waiting for it.
+# The analysis is checked, and rewritten on a blocking failure (code or judge), before any
+# document is written, so the documents come only from an analysis that passed or used up its
+# rewrites. The documents are one node of the main graph, a graph of their own inside it
+# (report, then the purchase request, then its check beside the email steps).
 
 # The documents: report, then the purchase request, then its check beside the email steps.
 documents_flow = StateGraph(PurchasingState)
@@ -508,12 +529,15 @@ def documents_node(state: PurchasingState):
 workflow = StateGraph(PurchasingState)
 workflow.add_node("analysis", instrument("analysis", analysis_node))
 workflow.add_node("evaluation", instrument("evaluation", evaluation_node))
+workflow.add_node("rewrite", instrument("rewrite", rewrite_node))
 workflow.add_node("documents", documents_node)
 workflow.add_node("finish", finish_node)
 workflow.set_entry_point("analysis")
 workflow.add_edge("analysis", "evaluation")
-workflow.add_edge("analysis", "documents")
-workflow.add_edge(["evaluation", "documents"], "finish")
+# a blocking failure, code or judge, sends the analysis back before any document is written
+workflow.add_conditional_edges("evaluation", after_evaluation, {"rewrite": "rewrite", "documents": "documents"})
+workflow.add_edge("rewrite", "evaluation")
+workflow.add_edge("documents", "finish")
 workflow.add_edge("finish", END)
 
 purchasing_graph = workflow.compile()

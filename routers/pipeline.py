@@ -149,7 +149,7 @@ def _run_pipeline_inner(
             
                 # 마지막 상태를 계속 업데이트
                 for k, v in event[node_name].items():
-                    if k in ("validation_log", "document_issues"):  # accumulated; keep them all
+                    if k in ("validation_log", "document_issues", "analysis_attempts"):  # accumulated
                         final_state.setdefault(k, []).extend(v)
                     else:
                         final_state[k] = v

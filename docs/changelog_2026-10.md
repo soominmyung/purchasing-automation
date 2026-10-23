@@ -495,6 +495,9 @@ English or Korean).
   quality-check document. Measured with a 20-second stand-in for the judge: documents done at
   11.0 s, evaluation at 26.5 s. The run still returns when the evaluation is done; sending the
   documents first needs a change to the API and the web page (in "Still to do").
+  *Superseded the same day (item 20):* once a blocking judge check could send the analysis back
+  for a rewrite, the documents had to wait for the evaluation again; with the judge now taking
+  about 9 s, a whole run took 34.4 s.
 - **Every model call has a time limit** (`config.py`): analysis, approval and email agents 60 s
   with one retry (`llm_timeout_seconds`, `llm_retries`); judge requests 90 s with one retry
   (`judge_timeout_seconds`, `judge_retries`), after which the checks are recorded as "Not
@@ -516,14 +519,21 @@ English or Korean).
 
 ### 20. Analysis rewrite loop; check notes in the draft; J6 *(2026-10-23)*
 
-- **The analysis is corrected before any document is written.** If it fails a blocking code check
-  (C1-C6, C9), the analysis agent gets its output and the failures
-  (`prompts/v5/analysis_revision_request.md`) and corrects only those, up to `analysis_rewrites`
-  (2) times. Only code checks decide a rewrite: exact and instant, so a rewrite costs one more
-  analysis call; the judge's checks still run beside the documents. Every attempt, its checks and
-  the feedback are kept in the run record (`analysis_attempts`). First runs (`kestrel_components`):
-  an order date moved before the snapshot date (C5) was corrected on the second attempt each time,
-  the other changes kept.
+- **The analysis is corrected before any document is written.** If it fails a blocking check, the
+  analysis agent gets its output and the failures (`prompts/v5/analysis_revision_request.md`;
+  for a judge check, the judge's evidence) and corrects only those, up to `analysis_rewrites` (2)
+  times in all. The severity decides, not who checks: a blocking code check (C1-C6, C9) or a
+  blocking judge check (J1, J6a-c, J7) that fails sends the analysis back; a warning never does;
+  a judge check that could not be answered does not either (there is nothing to correct). Code
+  checks run first: while one fails and a rewrite is left, the judge is not called, as the
+  analysis will change. In the graph: analysis → evaluation → (rewrite → evaluation)* →
+  documents → finish. Every attempt, its checks, whether the judge ran and the feedback are kept
+  in the run record (`analysis_attempts`). (A first version, the same day, let only code checks
+  decide, so that the documents need not wait for the judge; it was changed once the judge,
+  Claude Haiku, took about 9 s.) Runs (`kestrel_components`): an order date moved before the
+  snapshot date (C5) was corrected on the second attempt each time, the other changes kept; a
+  stand-in judge failing J6b once sent the analysis back with the judge's reason and the next
+  attempt passed; a whole run took 34.4 s.
 - **What is still wrong goes in the purchase request's red draft note, in plain words.** Once every
   check has run, the note lists "Must be corrected before use" (blocking checks not passed) and
   "Please check" (warnings), without check ids: a fixed sentence per code check, and for judge
@@ -682,18 +692,19 @@ to be written after testing in Claude Desktop.
     model. The same idea: `other_items` names the items outside the email to leave out, and the
     snapshot date is not passed at all. Where: `services/documents.py`, `email_input`.
   - **Failures are fixed before the documents, and what cannot be fixed is shown, not hidden**
-    (designed 2026-10-23, to be built and tested; also for the README and portfolio). When the
-    analysis fails a blocking code check (for example an order date moved before the snapshot
-    date, C5), the analysis agent is sent its output and the failures and asked to correct only
-    those, up to a fixed number of times, before any document is written, so the purchase request
-    and the email are built only from an analysis that passed. If it still fails, the documents
+    (built and tested 2026-10-23, changelog item 20; also for the README and portfolio). When the
+    analysis fails a blocking check (for example an order date moved before the snapshot date,
+    C5, or a change the judge finds the wrong size, J6b), the analysis agent is sent its output
+    and the failures and asked to correct only those, up to a fixed number of times, before any
+    document is written, so the purchase request and the email are built only from an analysis
+    that passed. If it still fails, the documents
     are written anyway and the red draft note lists the checks not passed ("Not passed: C5 — …"):
     the draft note, already the place for what the buyer must settle before submitting, also
     carries what the pipeline could not settle. Every attempt (output, checks, the feedback sent)
     is kept in the run record. The same pattern as the email's check-and-rewrite loop.
-    Only the code checks decide a rewrite: they are exact and take no time, so a rewrite costs one
-    more analysis call (about 6 s); the judge checks, slow and less consistent, run beside the
-    documents and are reported in the verdict and the draft note instead of holding them up.
+    Severity decides a rewrite, not who checks: blocking code and judge checks both do, warnings
+    never do. The cheap code checks run first, so the judge is not called on an analysis that is
+    about to change. A whole run with one rewrite took 34.4 s.
   - What stayed with LLMs, and why: findings, judgements and the summary (analysis); the
     approvers' Purpose and Justification; the supplier email's wording; and the judge, for what
     needs reading: whether findings are faithful to their documents (J1); whether each
