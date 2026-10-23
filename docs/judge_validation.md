@@ -41,6 +41,15 @@ How the faults are made:
   attaches the fixed no-history sentence to items with history in about ten of its 25
   outputs, so J1b faults go only to outputs that do not already do this.
 
+**To add when the set is rebuilt for prompt v5** (decided 2026-10-24): faults for J7a in which
+a lead time changes and the text keeps a figure from before the change, since only the judge
+checks figures in prose. From real runs: the summary and an action keeping the 18-week gap after
+the lead time went to 22 weeks ("6-week gap" for 10, `dev/runs/2026-10-23_182404_…`); a stock
+finding keeping a 22-week gap after the change was withdrawn ("WasherSteel runs out 2 weeks before
+a new order can arrive", `dev/runs/2026-10-24_011306_…`); a risk level or order date at 18 weeks in
+an action. Seed them in each prose part (stock finding, summary, question, action), and in wordings
+a pattern would miss ("a ten-week gap", "a shortfall of 10 weeks").
+
 Stored in `eval_data/judge_calibration.jsonl`: an id, the scenario, the targeted check, the
 expected verdict, a one-line description of the change, and the full modified output.
 

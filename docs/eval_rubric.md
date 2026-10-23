@@ -108,15 +108,16 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 
 | ID | Passes when | Severity |
 |---|---|---|
-| C1 | The output parses and has `summary`, `findings`, `critical_questions`, `po_date_changes`, `quantity_changes` and `recommended_actions` with the right types | Blocking |
+| C1 | The output parses and has `summary`, `findings`, `critical_questions`, `lead_time_changes`, `quantity_changes`, `figures_after_changes` and `recommended_actions` with the right types, and `supplier_lead_time` is an object or null | Blocking |
 | C2 | Every item code it names is in the input | Blocking |
-| C3 | Each proposed change starts from the pipeline's figure (the item's recommended order date, or its suggested quantity) | Blocking |
+| C3 | Each quantity change starts from the pipeline's suggested quantity (order dates are calculated by code from the lead time) | Blocking |
 | C4 | Every finding rests on documents that were given and apply to what it is about, or on the stock position; every question, change and action cites at least one finding that exists and concerns its items or the supplier as a whole | Blocking |
-| C5 | Each change adds up (the date moved by the stated weeks; the quantity times the factor, rounded up), and no proposed order date is before the snapshot date | Blocking |
+| C5 | The changes are well formed: a lead time in weeks above 0, not 18 weeks unless the supplier's lead time changes, each item at most once, every item given a final lead time when `supplier_lead_time` is set; the quantity times the factor, rounded up, with a factor above 0 and not 1 | Blocking |
 | C6 | Each Critical item has an action that cites a stock finding about it | Blocking |
 | C7 | The summary names every Critical item | Warning |
 | C8 | The summary is within about 100 words | Warning |
 | C9 | Every "<pipeline value> → <proposed value>" written in the text is one of the proposed changes | Blocking |
+| C10 | `figures_after_changes` has every item with a lead-time change, and its new lead time, risk level, gap and latest order date are those the pipeline's rules give (code works them out the same way) | Blocking |
 
 ### Judge checks — yes or no
 
@@ -126,10 +127,10 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 | J2a | At least one critical question addresses the supplier's problem | `supplier_issue = material` | Warning |
 | J2b | At least one critical question addresses an item's problem | `item_issue = material` | Warning |
 | J2c | No critical question presumes a supplier or item problem that the inputs do not show. Neutral questions that assume no problem pass | All | Warning |
-| J6a | Each proposed change follows from the findings it cites: they are a reason to move that item's order date or quantity in the direction proposed | Any change proposed | Blocking |
-| J6b | The size of each change (weeks or factor) fits what the cited findings say, and its reason explains that size | Any change proposed | Blocking |
-| J6c | No item the same reason applies to is left without the same kind of change, except where the change cannot be made (an order date that cannot move earlier than the snapshot date) | Any change proposed | Blocking |
-| J7 | Every figure from the stock data quoted in the prose (summary, findings' text, questions, actions, changes' reasons; not the values in the change fields) matches the input for that item. A figure that a change proposes is written as "<pipeline value> → <proposed value>"; writing only one of the two fails. Figures from the history documents are J1's | All | Blocking |
+| J6a | Each proposed change follows from the findings it cites: they are a reason for the lead time to be longer or shorter than 18 weeks, or the quantity larger or smaller, as proposed | Any change proposed | Blocking |
+| J6b | The size of each change (lead time, factor) fits what the cited findings say, and its reason explains that size, including whether a supplier-wide and an item's own reason were rightly added or taken as one | Any change proposed | Blocking |
+| J6c | No item a reason applies to is left without it (an item kept at 18 weeks while the supplier's lead time changes, or one that misses a change others get for the same reason, needs a reason the findings support) | Any change proposed | Blocking |
+| J7a | Every figure from the stock data quoted in the prose (summary, findings' text, questions, actions, changes' reasons; not the values in the change fields) matches that item's figures after the proposed changes (the judge is given those). Figures from the history documents are J1's. (J7b, the "pipeline value → proposed value" form, was dropped on 2026-10-23: the text is written from the figures after the changes) | All | Blocking |
 
 ### Checks on the purchase request text (production)
 
@@ -152,7 +153,7 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 
 | ID | Check | Why |
 |---|---|---|
-| J1b | Does not attach the fixed "no history" sentence to an item a document applies to | Code now writes the "no documents" findings; the model never writes that sentence. Claiming that history is absent when it is not is a distortion, under J1 |
+| J1b | Does not attach the fixed "no history" sentence to an item a document applies to | The model is told not to write that an item has no documents (code wrote such lines until 2026-10-24, then they were dropped). Claiming that history is absent when it is not is a distortion, under J1 |
 | J3 | States that no history is available when there is none | Written by code, as above |
 | J5 | The summary names each Critical item with its gap and recommends a mitigation | The v5 summary leaves actions to their own section. Split into C7 (Critical items named in the summary) and C6 (an action on each Critical item's stock position) |
 

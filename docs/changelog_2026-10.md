@@ -619,9 +619,191 @@ English or Korean).
   (C3 and C5 for order dates) are no longer needed: the dates are calculated by code from the lead
   time, so they cannot be wrong, and a proposed date before the snapshot date or a change of 0
   weeks can no longer come from the model.
-- Still to decide: overlapping changes for one item (a supplier-wide change and an item's own);
-  how the proposals list shows an order-date change (only "old → new", or with the lead time as its
-  cause); whether the quantity line keeps "(×1.5)", which was added in code without being asked for.
+- **The ways it could have been solved, and the one chosen** (for the README and portfolio):
+  1. Let the model keep moving order dates and add rules: no date before the snapshot date, no
+     change of 0 weeks. Each rule patches one symptom; the model still does date arithmetic, the
+     judge still has to follow it, and the risk levels still ignore the delay.
+  2. Keep the dates as they are and have the model say in an action that an overdue item's gap
+     grows. Simple, but the tables and risk levels stay as if nothing changed, and the reader has
+     to work out the effect.
+  3. Have the model propose the new risk levels as well. More for the model to get right and the
+     judge to check, and risk levels are a formula, not a judgement.
+  4. **Chosen:** the model judges one thing, the lead time (the supplier's expected one and each
+     item's final one); code derives the order dates and risk levels from it with the same formula
+     the pipeline already uses. The judgement is narrower and easier to check, the figures are exact
+     by construction, a date in the past or a change of nothing cannot come from the model, and the
+     report shows the cause (the lead time) next to its effects (risk, order date).
+- Each item's final lead time weighs the supplier-wide reason with the item's own and says whether
+  they add up or are one; it is written per item (items with the same value may share an entry),
+  and every item gets one when the supplier's lead time changes, so no item is passed over.
+- **J7b no longer judges the changes' reasons** (decided 2026-10-23). In the Kestrel run the
+  judge failed J7b although the prose named neither 22 weeks nor 7,800 (it mentioned only "4
+  weeks" and "50%"); the rewrite then appended "(18 → 22 weeks)" and "(5200 → 7800)" to the
+  reasons, and each proposal line showed the pair twice, once from code
+  ("GasketKit quantity 5,200 → 7,800 (×1.5): ...") and once in the reason. A reason is always
+  printed right after the pair code writes, so asking for the pair there only adds a duplicate;
+  the summary, findings, questions and actions are still judged. C9 (arrows match the proposed
+  changes) still reads the reasons.
+  The analysis prompt's pair rule was narrowed to the same parts, saying the reason needs no pair.
+- **An order date on the snapshot date counts as overdue** (decided 2026-10-23): the footnote stays
+  "it is overdue" whether the date is before the snapshot date or on it, since an order due the
+  day of the analysis leaves no time to negotiate with the supplier or get the request approved.
+- **The quantity line keeps "(×factor)"** (decided 2026-10-23): it is printed by code from the
+  factor the analysis already writes (and C5 already checks), so it costs no model output or check.
+- **Fixed: the purchase request input's order timing** now follows the new order date. It had kept
+  the timing worked out at 18 weeks ("within 4–8 weeks" for GasketKit, whose order date had moved
+  to two weeks after the snapshot date), which sat beside the new date in the agent's input; the
+  Kestrel request then called GasketKit's order overdue.
+- Still to decide: how the proposals list shows an order-date change (only "old → new", or with the lead time as its
+  cause).
+
+### 22. The analysis in two steps: the changes, then the text from the figures after them *(built and tested 2026-10-23; replaced by item 23 on 2026-10-24)*
+
+- **What led here.** After item 21 the analysis judged the lead time and code recalculated the
+  figures, but the same answer had already written its text with the figures at 18 weeks. In the
+  Kestrel run (`dev/runs/2026-10-23_182404_…`) the model set the lead time to 22 weeks and, in the
+  same answer, wrote "the gap is 6 weeks" (18 − 12) in the stock finding, the summary and the
+  action that bridges it; at 22 weeks the gap is 10 weeks. Code then gave the purchase request's
+  agent the recalculated items (gap 10) beside the finding's "6 weeks", and the Justification
+  wrote "a 6-week stockout gap caused by a 4-week extension". The checks could not catch it: J7a
+  compared the 6 with the 18-week input and found it right, and P1a found the 6 in its input.
+- **Not caused by item 21; shown by it.** Before item 21 nothing was recalculated, so the tables,
+  the text and the request all said 6 weeks: consistent, and wrong. Recalculating in code made
+  the old figure contradict the new one. The cause is the order: the text that rests on a
+  judgement was written before the figures the judgement changes existed.
+- **The decision: two calls, in the order the judgements depend on each other.**
+  1. Step 1 (`prompts/v5/analysis_changes.md`): the pipeline's figures and the history
+     documents in; the findings from the documents and the changes out (`supplier_lead_time`,
+     `lead_time_changes`, `quantity_changes`).
+  2. Code: each item's figures after the changes (`documents.items_after_changes`: lead time,
+     risk level, latest order date and its timing, gap, proposed quantity).
+  3. Step 2 (`prompts/v5/analysis_actions.md`): those figures, step 1's findings and changes in
+     (not the documents: the findings are its only source of history); the stock findings, the
+     questions, the actions and the summary out, numbering its findings on from step 1's.
+  The two outputs are joined into one analysis (`quality_checks.merge_steps`), so the documents
+  are built as before.
+- **Checks per step**, each step with its own rewrite loop (up to `analysis_rewrites` each); step 2
+  is written only once step 1 has passed or used up its rewrites:
+  - Step 1: C1 (its fields), C2, C3, C4, C5, C9; judge J1a-c, J6a-c, J7a (figures in the reasons,
+    against the pipeline's figures), J11.
+  - Step 2: C1 (its fields), C2, C4 (also: no finding id already used), C6, C7, C8, C9; judge
+    J1a-c, J2a-c, J7a (against the figures after the changes), J8, J9, J10, J11. The judge is
+    shown step 1's output as context and told to judge only what step 2 wrote.
+  - The quality-check document has a checklist per step and a Step column in the Attempts table;
+    the purchase request's red note takes both steps' results.
+- **J7b dropped.** It asked for a changed figure to be written as "pipeline value → proposed
+  value", because the text was written from the pipeline's figures and the reader could not tell
+  which one a figure was. Step 2 writes from the figures after the changes, which are those in the
+  tables, so a lead time of 22 weeks or a quantity of 7,800 in the text is simply right, and J7a
+  checks it against them. A stray figure is still caught: J7a compares every stock figure with
+  the figures after the changes. This also ends the J7b judgement that went wrong (item 21: a
+  change's size, "4 weeks", read as a changed figure).
+- **Results** (one run each, `dev/runs/2026-10-23_190749_…` Kestrel, `…_190825_…` Nordic):
+  - Kestrel: the gap is 10 weeks in F2, the summary and the action; both steps passed at the
+    first attempt; ready, one warning (J2b: the GasketKit demand rise gave an action, not a
+    question). 29.1 s in all (37.6 s with one call, which also had a rewrite).
+  - Nordic: step 1's first attempt set every lead time to 22 weeks for a customs hold that the
+    supplier says it has fixed; J6b failed it ("a one-off with a stated fix, added fully to
+    every item"), and the rewrite dropped the change. Step 2 passed at once; ready, no warnings.
+    33.4 s with that rewrite.
+  - Cost per supplier: step 1 about 2.9k input and 0.5k output tokens, step 2 about 3.3k and
+    0.35k (one call was 3.9k and 0.85k), and two judge calls instead of one (about 4.2k + 5.2k
+    input tokens instead of 5.8k). Each call is shorter, so the time did not grow.
+- **Still open** (not changed):
+  - The purchase request: Kestrel's Justification still called GasketKit's order overdue (its
+    input says "within 2 weeks") and wrote "a 10-week stockout gap caused by a supplier-wide lead
+    time increase of four weeks" (6 of the 10 weeks were there at 18 weeks). Its input is now
+    consistent, so this is the approval agent's own error; P1a flagged it as a warning.
+  - Step 2 recommends reviewing a quantity that step 1 has already raised ("Review the GasketKit
+    order size to ensure it meets the increased demand"; Nordic: "evaluate whether the WasherSteel
+    order should be adjusted further").
+
+### 23. One call again, the work in the order of the fields, and a newer analysis model *(2026-10-24)*
+
+- **Why the two steps were dropped.** They added a judge call (J1, J7a and J11 judged twice, about
+  60% more judge input), lost context between the calls (step 2 asked to review a quantity step 1
+  had already raised) and still gave the model a smaller view than one call. The cause of the stale
+  "6-week gap" (item 22) was in the one-call prompt itself: it told the model to quote the input's
+  figures and "not figures you calculate", and the summary came first in the output, before the
+  lead time was decided.
+- **The prompt** (`prompts/v5/analysis.md`):
+  - the output fields in the order of the work: findings from the documents, the changes,
+    `figures_after_changes`, `stock_findings`, questions, actions, summary last (the report is
+    assembled in code, so the field order need not follow it; code joins `stock_findings` into
+    `findings`, `services/agents.py` `from_model` / `to_model`);
+  - a change's consequences stated as such: a changed lead time changes that item's risk level, gap
+    and latest order date; the input's 18-week figures no longer hold for it; work them out again
+    and use them in everything written after the changes;
+  - the new figures under their own names (`new_lead_time_weeks`, `new_risk_level`, `new_gap_weeks`,
+    `new_latest_po_date`), apart from the input's fields;
+  - the order-date rule names the fields it uses.
+- **C10 (blocking, new):** code works out the same figures by the same rules and compares them one by
+  one. J7a compares the text with the figures after the changes.
+- **What GPT-4o did** (Kestrel, four prompt revisions, one run each): wrong first answers every time
+  (7, 4, 4, 8 of 20 values), mostly order dates; right after one or two rewrites, but only because
+  C10's message gives the right values. Naming the fields and separating the names did not help. A
+  probe showed it understood the rule and failed at writing the date without working
+  (`docs/analysis_model_comparison.md`).
+- **The model comparison** (`docs/analysis_model_comparison.md`): the same prompt with
+  `gpt-6.1-sol`, `gpt-6-luna` and `claude-sonnet-5-5` on both cases: every figure right at first, no
+  rewrites, the fixed customs hold not taken as a longer lead time, the defective batch raised.
+  Luna costs about 1/25 of GPT-4o per analysis. After a second round (seven-item Kestrel and
+  Nordic, two runs each), **`gpt-6.1-sol` was chosen (2026-10-24)**: the three newer models were
+  equally accurate once the judge's errors are set aside, and Sol's questions and actions were the
+  most specific, with dates and deadlines, which is what the analysis is for; it costs about ten
+  times Luna and two thirds of GPT-4o.
+- **No more "no documents on this item" lines in Findings** (decided 2026-10-24). Findings are the
+  meaningful, important facts taken from the documents searched; that an item has no documents is
+  not one. Code had added the line for every item no document names (three of eleven findings in
+  Kestrel, each with its own number), whatever the model. Removed from `documents.number_findings`
+  and from the analysis prompt. Findings that a document reports nothing wrong (steady demand) stay.
+- **Stock findings only where a question or action rests on them** (2026-10-24). Sol wrote one for
+  every item, including those with nothing to report ("OilSeal ... remains Low risk with no projected
+  gap"), repeating the Items table. The rule now says so plainly and that an item whose figures call
+  for nothing gets none. One run each with Sol (`dev/runs/2026-10-24_020443_...`, `_020540_...`):
+  Kestrel 7 -> 3 stock findings (BearingCap, ThrustWasher, ValveSeat due today), Nordic 2 -> 1, every
+  one cited by an action; both ready at the first answer; questions and actions as specific as
+  before. Kestrel's internal question on whether the GasketKit forecast already includes the
+  contract's demand, asked in three of the four second-round runs, did not appear (Nordic's did);
+  one run cannot tell whether that follows from the change. Dates in the text: either form is fine as
+  long as the text is consistent in itself (the user, 2026-10-24).
+- **A supplier may be asked about expedited or partial delivery** (decided 2026-10-24). J8 failed a
+  Sol question asking what partial-delivery and expedited-shipping options the supplier could offer
+  for BearingCap and ThrustWasher, "with quantities and arrival dates", as revealing that the order
+  is urgent. When an item will run out before a new order can arrive, asking whether it can come
+  sooner is unavoidable, since not asking risks a larger loss; and asking it says that much by
+  itself. J8 and the analysis prompt now allow it; stock levels, weeks to stockout, how short stock
+  is, budget and the analysis stay internal.
+- **Findings in two groups** (decided 2026-10-24): "From the documents", then "From the stock figures
+  (after the proposed changes)", each sorted supplier first, then items by risk after any lead-time
+  change; numbering runs on across both, so citations stay unique; "(stock position)" after each
+  stock finding is dropped, the heading says it. Before, stock findings sat among the document
+  findings of the same item.
+- **C11 tried and dropped (2026-10-24): figures in prose stay the judge's (J7a).** C11 had code read
+  the stock findings' risk level, gap, lead time, weeks to stockout and dates with patterns and
+  compare them with the figures after the changes. It caught GPT-4o's "GasketKit gap is 2 weeks"
+  (0 after the change), but it reads free text by guessing from wording: it misread "runs out 2
+  weeks before a new order" as weeks to stockout and sent the analysis back for nothing, and it
+  passes any wording it has no pattern for ("a ten-week gap", "a shortfall of 10 weeks"). Which
+  figures to check cannot be told from wording reliably, the same is true of every prose part
+  (summary, questions, actions), and a pattern list cannot be shown to be complete. So all figures
+  in prose are J7a's, as designed; the judge's reliability on them is measured in judge validation
+  with seeded faults (`docs/judge_validation.md`). C10 stays: it compares fixed fields, not prose.
+- **Kestrel case: two items whose risk rises with the lead time** (ThrustWasher, High at 18 weeks and
+  Critical at 22; SpringClip, Medium and High). In the five-item case every item had the same risk at
+  18 and 22 weeks, so a risk worked out at 18 weeks could not show. Runs before 2026-10-24 01:09 have
+  five items.
+- **Fixed: the judge saw only the figures after the changes** (introduced with C10 for J7a). It then
+  read the proposed lead time as the input's and passed GPT-4o's 22-week lead time for Nordic's fixed
+  customs hold ("the input lead times are 22 for all items, consistent with the input", J6b). It is
+  now shown the pipeline's 18-week figures and, apart, those after the changes; on the rerun J6b
+  failed the change as it should.
+- **GPT-4o on the seven-item Kestrel and on Nordic** (`dev/runs/2026-10-24_011224_…`, `_011306_…`):
+  Kestrel ready after one rewrite (first answer: ThrustWasher's risk and gap at 18 weeks, four order
+  dates wrong). Nordic needs review: the first two answers raised every lead time to 22 weeks for the
+  fixed customs hold; the third dropped the change but kept "WasherSteel runs out 2 weeks before a new
+  order can arrive", a figure at 22 weeks, caught by J7a (and by C11, since dropped) with no rewrite
+  left.
 
 ## Evaluation
 
@@ -792,6 +974,18 @@ to be written after testing in Claude Desktop.
     lead time, so its judgement is simpler and easier to check; the judge checks only whether
     that figure is justified, and code calculates the order dates and risk levels from it, so the
     order-date arithmetic needs no check at all.
+    Tell it as a choice among ways it could have been solved (item 21): patching the model's date
+    arithmetic with more rules, only mentioning the effect in an action, or having the model also
+    propose risk levels; instead the model judges the one figure that causes the rest, and code
+    derives the rest with the formula.
+  - **The analysis in two calls, in the order its judgements depend on each other** (item 22; for
+    the README, the portfolio and the base documents). The changes first; code recalculates the
+    figures; then the text that rests on them. In one call the model wrote "6-week gap" in the
+    same answer that made it 10 weeks, and the wrong figure reached the purchase request; every
+    check downstream compared it with an input that said the same. The point to make: a check
+    can only compare with what it is given, so the fix was the order of the calls, not another
+    check, and it also removed a check (J7b) and a rule. Cost: a second, shorter call and a
+    second judge call; the time did not grow (29-33 s per supplier).
   - What stayed with LLMs, and why: findings, judgements and the summary (analysis); the
     approvers' Purpose and Justification; the supplier email's wording; and the judge, for what
     needs reading: whether findings are faithful to their documents (J1); whether each
@@ -804,6 +998,14 @@ to be written after testing in Claude Desktop.
   - The effect: v4's report was written twice by LLMs with figures passing through both; v5
     removed three agents (about 10-14 s per supplier) and every figure is now exact by
     construction (`prompts/CHANGES.md`, v5).
+- **README and portfolio: the analysis model was chosen by measurement** (item 23,
+  `docs/analysis_model_comparison.md`). The point to make: the same prompt and cases on four models,
+  with quality (blocking checks, first-answer figure errors, rewrites, what each analysis raised),
+  cost per analysis and time measured together; GPT-4o needed rewrites on every case and missed a
+  quality incident, while the newer models were right at first, and the cheapest of them costs
+  about 1/25 as much. Also the lesson behind it: several prompt revisions did not fix one model's
+  date arithmetic; changing the model did, so the choice of model was tested before more prompt
+  work.
 - README and portfolio: explain what is hidden from LangSmith and what is still sent, from
   the summary at the top of `docs/observability.md`.
 - Return the documents as soon as they are ready, before the evaluation finishes (item 19):

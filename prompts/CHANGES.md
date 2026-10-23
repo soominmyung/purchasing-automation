@@ -40,9 +40,18 @@ The email check and rewrite prompts were written inline in `services/agents.py` 
 
 ## v5 — 2026-10-22 (current)
 
-Design and the reasons for each decision: `docs/changelog_2026-10.md`, items 16 and 19.
+Design and the reasons for each decision: `docs/changelog_2026-10.md`, items 16 and 19-22.
 
 **What changed**
+- (2026-10-24, item 23) `analysis.md`, one call: the output fields in the order of the work
+  (findings, changes, `figures_after_changes`, `stock_findings`, questions, actions, summary); a
+  change's consequences stated (a changed lead time changes the item's risk, gap and order date,
+  worked out again and used in all text after it); the new figures under `new_*` names; the rule
+  asking for "pipeline value → proposed value" in the text gone with J7b; a change's reason needs no
+  figures, as code prints them beside it. (On 2026-10-23 it had been split into two calls,
+  `analysis_changes.md` and `analysis_actions.md`; item 22, replaced.)
+- (2026-10-23, item 21) Order-date changes are replaced by lead-time changes; code calculates the
+  order dates and risk levels from the lead time.
 - The analysis agent returns fields and no report: a summary; numbered findings, each a fact
   from the history documents or the stock figures, with its source; critical questions marked
   `supplier` or `internal`; proposed order-date and quantity changes (pipeline value, shift or
