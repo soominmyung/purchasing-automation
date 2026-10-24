@@ -73,9 +73,17 @@ against themselves.
 | Model | Price (input / output, $ per 1M) | Role |
 |---|---|---|
 | `claude-haiku-5-5` | 0.10 / 0.50 | production candidate (the current judge) |
-| Gemini Flash (`gemini-3.8-flash`, or `gemini-3.6-flash` when 3.8 does not answer) | 0.75 / 3.75 | production candidate; its availability is measured too (no-answer rate) |
-| `claude-sonnet-5-5` | 2.00 / 10.00 | accuracy reference: whether a dearer judge is more accurate; not a production candidate on cost |
+| `gemini-3.1-flash-lite` | 0.25 / 1.50 | production candidate; no thinking tokens; its availability is measured too (no-answer rate) |
 | `gpt-6-luna` | 0.10 / 0.50 | for reference only: of the analysis model's family, so not a production candidate |
+
+Left out after a first look (2026-10-24): `claude-sonnet-5-5` (2 / 10) and Gemini Flash
+(`gemini-3.8-flash`, 0.75 / 3.75 plus about 800 thinking tokens per call) on cost: as the judge
+they would add about 125% and 60% to a supplier's total cost, against about 6% for Haiku (judge
+cost per 1,000 supplier analyses, estimated: Haiku $2.5, Luna $3, Flash $24, Sonnet $50, against
+about $40 for the whole pipeline with Sol); Flash also on availability. Sonnet was first kept as an
+accuracy reference but also refuses the judge's forced tool call (it thinks by default), and with
+the tool left to its choice it broke the verdict format. `gemini-3.1-flash-lite` answered a test
+judgement of fourteen checks in 2.6 s and caught the seeded fault.
 
 **How they were chosen:**
 1. **Not the analysis model, and not its family, for the production judge.** LLM judges favour
@@ -108,8 +116,9 @@ preference decides a comparison.
 Each candidate judges every calibration output **three times**, with the same prompt the
 production evaluation node uses (`services/quality_checks.py`), in two ways: all of an output's
 checks in one call, as now, and one call per group of checks (J1-J2, J6-J7a, J8-J11, P1) made at
-the same time, which could cut the judge's time by about half for about 1.7 times its cost
-(+3% of a supplier's total).
+the same time, which could cut the judge's time for about 1.7 times its cost (+3% of a
+supplier's total). Run plan, settings and every verdict: `scripts/run_judge_validation.py`,
+`eval_results/judge_validation_v5_settings.json`, `eval_results/judge_validation_v5_runs.jsonl`.
 
 ## Metrics
 

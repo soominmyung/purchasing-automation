@@ -40,16 +40,16 @@ CALIBRATION = ROOT / "eval_data" / "judge_calibration_v5.jsonl"
 SETTINGS = ROOT / "eval_results" / "judge_validation_v5_settings.json"
 RUNS = ROOT / "eval_results" / "judge_validation_v5_runs.jsonl"
 
-# The plan agreed on 2026-10-24 (docs/judge_validation.md, Candidates): Haiku is the production
-# candidate, Luna a reference of the analysis model's family, Sonnet the accuracy reference in
-# single mode once; Gemini Flash left out on cost and availability.
+# The plan agreed on 2026-10-24 (docs/judge_validation.md, Candidates): Haiku and Gemini 3.1
+# Flash-Lite are the production candidates, Luna a reference of the analysis model's family.
+# Sonnet and Gemini Flash are left out on cost (and Flash on availability).
 PLAN = [
     {"model": "anthropic:claude-haiku-5-5", "modes": ["single", "split"], "reps": 3},
+    {"model": "gemini:gemini-3.1-flash-lite", "modes": ["single", "split"], "reps": 3},
     {"model": "openai:gpt-6-luna", "modes": ["single", "split"], "reps": 3},
-    {"model": "anthropic:claude-sonnet-5-5", "modes": ["single"], "reps": 1},
 ]
-PRICES = {"anthropic:claude-haiku-5-5": (0.10, 0.50), "openai:gpt-6-luna": (0.10, 0.50),
-          "anthropic:claude-sonnet-5-5": (2.00, 10.00)}  # $ per 1M tokens, input / output
+PRICES = {"anthropic:claude-haiku-5-5": (0.10, 0.50), "gemini:gemini-3.1-flash-lite": (0.25, 1.50),
+          "openai:gpt-6-luna": (0.10, 0.50)}  # $ per 1M tokens, input / output
 GROUPS = [["J1a", "J1b", "J1c", "J2a", "J2b", "J2c"], ["J6a", "J6b", "J6c", "J7a"], ["J8", "J9", "J10", "J11"]]
 WORKERS = 4
 
