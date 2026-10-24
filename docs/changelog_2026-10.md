@@ -1018,6 +1018,32 @@ to be written after testing in Claude Desktop.
   about 1/25 as much. Also the lesson behind it: several prompt revisions did not fix one model's
   date arithmetic; changing the model did, so the choice of model was tested before more prompt
   work.
+- **README and portfolio: a person checked every model comparison (human in the loop).** No model was
+  chosen on automated scores alone; at each step the user read the actual outputs and the automated
+  reading was corrected where it was wrong. To tell with examples:
+  - Analysis models: the outputs of every model read side by side
+    (`dev/runs/…model-comparison-round-2…`), which set the deciding criterion, the specificity of the
+    questions and actions, and led to Sol over the cheaper, equally accurate Luna
+    (`docs/analysis_model_selection.md`). The user caught that failures caused by judge errors had
+    been counted against Luna and Sonnet ("judge errors set aside: 4 of 4"), that Gemini had to be
+    compared at its Flash tier, not Flash-Lite, and that each model's effort had been left at a
+    different default (Sonnet high, the others medium), which led to the third round.
+  - Approval agent: the four models' purchase requests annotated one by one
+    (`eval_results/approval_model_comparison.md`), which overturned the choice the metrics pointed to
+    (gpt-5.4-mini kept the length rule best but wrote system terms, false statements and empty
+    placeholders into the approvers' text).
+  - Judge: the user saw that a forced tool call kept Haiku from thinking while Luna reasoned, so
+    round 1 was unfair to Haiku; round 2 with thinking raised its detection from 83.7% to 93.9%. The
+    false-alarm test rests on 89 verdicts the user scored by hand
+    (`eval_data/hand_scoring_sheet_v5.md`), with the calls left to the practitioner noted (an added
+    assessment of the supplier is a fail but only a warning: the buyer may keep it).
+- **README and portfolio: the judge favours recall over precision** (`docs/judge_selection.md`).
+  The judge (Haiku, thinking at high effort) was chosen by detection on 51 seeded faults (93.9%),
+  flip and false alarms on 89 hand-scored verdicts (8.0%). Its remaining false alarms are stricter
+  readings than a person's, and they were kept by choice: the purchase request checks are warnings in
+  the draft's red note, so a false alarm costs the buyer one look, while a missed fault reaches the
+  approvers. More false positives for fewer false negatives (sensitivity over specificity), because
+  the two errors do not cost the same.
 - README and portfolio: explain what is hidden from LangSmith and what is still sent, from
   the summary at the top of `docs/observability.md`.
 - Return the documents as soon as they are ready, before the evaluation finishes (item 19):

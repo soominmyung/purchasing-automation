@@ -70,7 +70,7 @@ Bold: the figure after the proposed changes (worked out by the pipeline).
 
 | Check | What it asks | Verdict | Reason |
 |---|---|---|---|
-| P1a | Purpose and Justification add no fact, risk or assessment that their input does not give. Saying why an action from the input matters passes when the findings behind it support it, and so does writing a check to be done before ordering as a condition the request rests on.<br>*Purpose와 Justification이 입력에 없는 사실, 위험, 평가를 보태지 않는다. 액션이 왜 중요한지 말하는 것과 발주 전 확인을 조건으로 쓰는 것은 허용.* | pass | Scored by the user (2026-10-24). |
+| P1a | Purpose and Justification add no fact, risk or assessment that their input does not give. Saying why an action from the input matters passes when the findings behind it support it, and so does writing a check to be done before ordering as a condition the request rests on.<br>*Purpose와 Justification이 입력에 없는 사실, 위험, 평가를 보태지 않는다. 액션이 왜 중요한지 말하는 것과 발주 전 확인을 조건으로 쓰는 것은 허용.* | pass | Scored by the user (2026-10-24); "a proven track record of timely deliveries" summarises the document, not an added assessment. |
 | P1b | Figures are quoted exactly as the input gives them, with no word that judges them (for example calling a stated duration quick or slow).<br>*수치를 입력 그대로 쓰고, 수치를 평가하는 말을 붙이지 않는다.* | pass | Scored by the user (2026-10-24). |
 | P1c | Where a word other than the input's is used, the meaning does not change (for example 'about 60%' written as '60%').<br>*입력과 다른 단어를 써도 뜻이 바뀌지 않는다 (예: 'about 60%'를 '60%'로 쓰면 실패).* | pass | Scored by the user (2026-10-24). |
 
@@ -132,7 +132,7 @@ Bold: the figure after the proposed changes (worked out by the pipeline).
 
 | Check | What it asks | Verdict | Reason |
 |---|---|---|---|
-| P1a | Purpose and Justification add no fact, risk or assessment that their input does not give. Saying why an action from the input matters passes when the findings behind it support it, and so does writing a check to be done before ordering as a condition the request rests on.<br>*Purpose와 Justification이 입력에 없는 사실, 위험, 평가를 보태지 않는다. 액션이 왜 중요한지 말하는 것과 발주 전 확인을 조건으로 쓰는 것은 허용.* | pass | Scored by the user (2026-10-24). |
+| P1a | Purpose and Justification add no fact, risk or assessment that their input does not give. Saying why an action from the input matters passes when the findings behind it support it, and so does writing a check to be done before ordering as a condition the request rests on.<br>*Purpose와 Justification이 입력에 없는 사실, 위험, 평가를 보태지 않는다. 액션이 왜 중요한지 말하는 것과 발주 전 확인을 조건으로 쓰는 것은 허용.* | pass | Scored by the user (2026-10-24); confirmed pass after reading the judge's objection to "aligning with its 18-week lead time". |
 | P1b | Figures are quoted exactly as the input gives them, with no word that judges them (for example calling a stated duration quick or slow).<br>*수치를 입력 그대로 쓰고, 수치를 평가하는 말을 붙이지 않는다.* | pass | Scored by the user (2026-10-24). |
 | P1c | Where a word other than the input's is used, the meaning does not change (for example 'about 60%' written as '60%').<br>*입력과 다른 단어를 써도 뜻이 바뀌지 않는다 (예: 'about 60%'를 '60%'로 쓰면 실패).* | pass | Scored by the user (2026-10-24). |
 

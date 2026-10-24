@@ -18,7 +18,9 @@ class Settings(BaseSettings):
     # author or a model of the same family. Provisional until judge validation: Claude Haiku
     # since 2026-10-23, after gemini-3.7-flash took 30-109 s per call and then returned 504,
     # 503 and 429. Needs CLAUDE_API_KEY (or ANTHROPIC_API_KEY).
-    evaluator_model: str = "anthropic:claude-haiku-5-5"
+    # chosen by judge validation, 2026-10-24 (docs/judge_validation.md, docs/judge_selection.md): Haiku
+    # thinking at high effort, its answer shaped like the scoring sheet; one call per output
+    evaluator_model: str = "anthropic:claude-haiku-5-5?effort=high&format=schema"
     # An analysis that fails a blocking code check is sent back to the analysis agent with the
     # failures, up to this many times, before any document is written (services/agents.py).
     analysis_rewrites: int = 2

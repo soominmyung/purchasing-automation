@@ -690,6 +690,8 @@ APPROVAL_CHECK_NAMES = {
 }
 _P1_TEXT = {
     "P1a": "Purpose and Justification add no fact, risk or assessment that their input does not give. "
+           "Stating a conclusion that the input does not draw, such as saying that a supplier's record "
+           "supports the decision to buy from it, adds an assessment. "
            "Saying why an action from the input matters passes when the findings behind it support it, "
            "and so does writing a check to be done before ordering as a condition the request rests on.",
     "P1b": "Figures are quoted exactly as the input gives them, with no word that judges them (for "

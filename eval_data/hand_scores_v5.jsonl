@@ -9,7 +9,7 @@
 {"scenario_id": "eval_02", "check": "J9", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
 {"scenario_id": "eval_02", "check": "J10", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
 {"scenario_id": "eval_02", "check": "J11", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_02", "check": "P1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "P1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24); \"a proven track record of timely deliveries\" summarises the document, not an added assessment."}
 {"scenario_id": "eval_02", "check": "P1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
 {"scenario_id": "eval_02", "check": "P1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
 {"scenario_id": "eval_06", "check": "J1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
@@ -20,7 +20,7 @@
 {"scenario_id": "eval_06", "check": "J8", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
 {"scenario_id": "eval_06", "check": "J9", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
 {"scenario_id": "eval_06", "check": "J11", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_06", "check": "P1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
+{"scenario_id": "eval_06", "check": "P1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24); confirmed pass after reading the judge's objection to \"aligning with its 18-week lead time\"."}
 {"scenario_id": "eval_06", "check": "P1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
 {"scenario_id": "eval_06", "check": "P1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
 {"scenario_id": "eval_08", "check": "J1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}

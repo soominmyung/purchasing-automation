@@ -1,0 +1,11 @@
+{
+  "judge": "anthropic:claude-haiku-5-5?effort=high&format=schema",
+  "p1_wording": {
+    "P1a": "Purpose and Justification add no fact, risk or assessment that their input does not give. Stating a conclusion that the input does not draw, such as saying that a supplier's record supports the decision to buy from it, adds an assessment. Saying why an action from the input matters passes when the findings behind it support it, and so does writing a check to be done before ordering as a condition the request rests on.",
+    "P1b": "Figures are quoted exactly as the input gives them, with no word that judges them (for example calling a stated duration quick or slow).",
+    "P1c": "Where a word other than the input's is used, the meaning does not change (for example 'about 60%' written as '60%')."
+  },
+  "judge_system": "You audit a purchasing analysis written by an AI for a buyer. You are given the exact inputs the AI received and its output. For each check, first write the evidence (the part of the output that decides it), then give the verdict, true or false, that the evidence supports. Judge only what the check asks; do not reward length or style. When a check fails, also write a note: one plain sentence for the buyer, saying which part of the output may be wrong and how, with no check ids or technical terms.",
+  "quality_checks_sha256": "496d8bd40c28ca4ef1fbe42beaf937699ae99424f3878cec2305abf8562ce8b9",
+  "started": "2026-10-24T19:37:48"
+}

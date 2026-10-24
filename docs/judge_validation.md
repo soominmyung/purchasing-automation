@@ -257,12 +257,60 @@ mode is worse at both efforts (flip 9.3%) and costs more, so single mode stays. 
 and J10 (two or three misses each); and false alarms are measured only on two passing samples, which
 the hand-scored outputs are to settle.
 
+### The false-alarm test, 2026-10-24
+
+Six unmodified base outputs (eval_02, eval_06, eval_08, eval_11, eval_14, H2: one of each kind of
+scenario) were scored by the user on every applicable check, 89 verdicts
+(`eval_data/hand_scoring_sheet_v5.md`, `eval_data/hand_scores_v5.jsonl`): 88 pass, and one fail,
+eval_14 P1a, where the purchase request adds "supporting the decision to proceed with this supplier"
+(a warning: the buyer may keep it). Four judge settings scored the six outputs three times each
+(`scripts/run_judge_false_alarm.py`, `eval_results/judge_false_alarm_v5_runs.jsonl`, $0.18):
+
+| Judge | False alarms (judge fails what the person passed) | Caught eval_14 P1a | Flip | Cost per output | Time |
+|---|---:|---|---:|---:|---:|
+| Haiku, thinking, high | 21/264 = 8.0% | 0/3 | 6.7% | $0.0035 | 24.8 s |
+| Haiku, thinking, medium | 25/264 = 9.5% | 0/3 | 9.0% | $0.0026 | 18.7 s |
+| Haiku, forced tool, no thinking | 7/262 = 2.7% | 0/3 | 6.7% | $0.0018 | 11.8 s |
+| `gpt-6-luna` | 45/264 = 17.0% | 1/3 | 19.1% | $0.0020 | 34.3 s |
+
+Most of Haiku-high's 21 were stricter readings, not mistakes: "only 5 weeks to stockout" as a word
+judging a figure (P1b, 12); eval_08's "PrecisionPartsIntl reports that ..." where the document names
+no reporter (J1b, 2); H2's "imminent stockout risks" for an item 19 weeks from stockout (P1c, 2). On
+the analysis checks alone it raised 5 false alarms in 222 (2.3%). No setting caught eval_14's added
+assessment.
+
+**P1a reworded.** The judge read "a proven track record ..., supporting the decision to proceed with
+this supplier" as restating the supplier findings. A first rewording ("Drawing a conclusion that the
+input does not draw from one of its findings, such as that a supplier's record supports the decision
+to buy from it, adds an assessment") caught it 3/3 but also failed eval_02's "a proven track record
+of timely deliveries" 3/3, a summary of the document the user scored pass
+(`eval_results/judge_p1_rewording_v1_runs.jsonl`). The wording kept: **"Stating a conclusion that the
+input does not draw, such as saying that a supplier's record supports the decision to buy from it,
+adds an assessment."** Measured again on P1 only (`eval_results/judge_p1_rewording_runs.jsonl`):
+eval_14 caught 3/3, eval_02 passed 3/3, seeded P1 faults 23/24. Purchase-request false alarms 16 in
+51, all stricter readings: "only N weeks" (P1b, 10), eval_06's "22 weeks to stockout, aligning with
+its 18-week lead time" read as an added comparison (P1a, 3; passed before the rewording; the user
+scored it pass), "imminent" (P1c, 3).
+
+**Favouring recall over precision.** These are left as they are. The purchase request checks are
+warnings: one that fires puts a line in the draft's red note for the buyer to settle, and a buyer who
+finds the wording fine keeps it. A missed fault reaches the approvers unnoticed; a false alarm costs the
+buyer one look. With error costs that unequal, a judge that flags somewhat more than a person would
+is preferred to one that misses what a person would catch (more false positives for fewer false
+negatives; in screening terms, sensitivity over specificity).
+
 ### Decision
 
-**Provisional: `claude-haiku-5-5`, effort high, the scoring-sheet format, one call per output**
-(`anthropic:claude-haiku-5-5?effort=high&format=schema`), pending the hand-scored false-alarm test.
-Its cost per judgement is $0.0024 (about $0.003 per supplier with the purchase request's check,
-against $0.0025 before) and it takes about 16 s, against about 6 s for the forced-tool judge.
+**`claude-haiku-5-5`, thinking at high effort, the answer shaped like the scoring sheet (structured
+outputs), one call per output: `anthropic:claude-haiku-5-5?effort=high&format=schema`, decided
+2026-10-24** (`evaluator_model` in `config.py`). The summary to cite: `docs/judge_selection.md`.
+- Detection 93.9% and flip 3.9% on the 51 calibration samples; 8.0% false alarms on the hand-scored
+  outputs, most of them stricter readings, kept by choice (above).
+- Of a different family from the analysis model (`gpt-6.1-sol`).
+- About $0.0035 per supplier (analysis and purchase request judged), against $0.0018 for the
+  forced-tool judge, and about 25 s against 12 s.
+- Still weak: J2a, J6b and J10 on seeded faults (two or three misses each); flip on the hand-scored
+  outputs 6.7%, on borderline wording.
 
 ## Change log
 

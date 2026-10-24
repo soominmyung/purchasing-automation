@@ -136,7 +136,7 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 
 | ID | Passes when | By | Severity |
 |---|---|---|---|
-| P1 | Purpose and Justification add no fact, risk or assessment their input does not give, quote figures exactly with no word that judges them, and change no meaning; saying why an input action matters passes when its findings support it | Judge | Warning |
+| P1 | Purpose and Justification add no fact, risk or assessment their input does not give (stating a conclusion the input does not draw, such as saying that a supplier's record supports buying from it, adds an assessment), quote figures exactly with no word that judges them, and change no meaning; saying why an input action matters passes when its findings support it | Judge | Warning |
 | P2 | Purpose has 1-2 sentences, Justification 2-4 | Code | Warning |
 | P3 | Every cited document number was given | Code | Blocking |
 
