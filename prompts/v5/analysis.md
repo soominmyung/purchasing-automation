@@ -124,8 +124,14 @@ Rules:
 - recommended_actions: every action the buyer should take — as many as are needed, each once,
   most urgent first. items lists the codes of the items an action concerns: one, several, or none
   for an action about the supplier as a whole. Every Critical item needs at least one action that
-  bridges its gap (expedited shipping, an alternative source, a partial delivery). [] only if
-  nothing is needed beyond ordering by the recommended dates.
+  bridges its gap (expedited shipping, an alternative source, a partial delivery). An action that
+  checks, confirms or obtains something must make clear when it is done relative to the order.
+  Judge this realistically against the item's latest order date (new_latest_po_date where you
+  changed the lead time, otherwise recommended_latest_po_date): whether there is time to do it
+  before the order, or it has to run alongside or after the order so that the order is not late.
+  Where the action already makes its timing clear (a date, a deadline, "immediately"), leave it
+  as it is; never drop a date or deadline the action needs. [] only if nothing is needed beyond
+  ordering by the recommended dates.
 - summary: for the buyer, most urgent first, at most about 100 words. If any item is Critical,
   the first sentence names every Critical item (a supplier has at most seven items) and the
   longest gap. Then the most important supplier or item problems from the history. Leave
@@ -167,7 +173,7 @@ Output:
   "recommended_actions": [
     {"action": "Ask AcmeParts for expedited shipping of WidgetX, or cover it from an alternative source, to bridge the 14-week gap.", "items": ["200100"], "findings": [4]},
     {"action": "Confirm delivery dates for this order with AcmeParts before placing it, given last year's port delay.", "items": [], "findings": [1]},
-    {"action": "Check whether the GadgetY order should be larger than suggested, since the suggestion is based on demand before the promotion.", "items": ["200101"], "findings": [2]} ],
+    {"action": "Check whether the GadgetY order should be larger than suggested before placing it, since the suggestion is based on demand before the promotion.", "items": ["200101"], "findings": [2]} ],
   "summary": "WidgetX will run out before a new order can arrive and faces a 14-week gap, so it has to be bridged now. GadgetY demand has risen sharply since a retailer promotion, and AcmeParts has had a port-related delivery delay, so delivery dates are worth confirming."
 }
 

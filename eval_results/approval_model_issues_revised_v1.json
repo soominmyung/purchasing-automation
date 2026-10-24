@@ -1,0 +1,35 @@
+{
+  "_about": "Issues found by reading the purchase requests written with the revised prompt (2026-10-24), by Claude, before the judge's verdicts were seen; the same reading as approval_model_issues_effort.json. Item codes in brackets are noted but not counted as an issue. Empty: no issue found.",
+  "gpt-6-luna?effort=none": {
+    "eval_01": "", "eval_02": "", "eval_03": "", "eval_04": "", "eval_05": "",
+    "eval_06": "Placeholder left in the text: \"[No document reference: stock figures.]\".",
+    "eval_07": "Comments on its input: \"no changes to the lead time or quantity are recorded\"; meaning changed: \"The request is being made within 10 weeks\" (the order is due within 10 weeks); item code.",
+    "eval_08": "Attribution shifted: \"The supplier has reported occasional discrepancies in product standards\" (quality inspections found them).",
+    "eval_09": "Comments on its input: \"The requested quantities and order dates are those listed, with no changes recorded\".",
+    "eval_10": "Meaning changed: confirming whether the offered lots are affected placed \"before releasing the order\" (the action places it before shipment).",
+    "eval_11": "", "eval_12": "", "eval_13": "", "eval_14": "", "eval_15": "",
+    "eval_16": "Field value carried over: \"an expected stockout gap of 0 weeks\".",
+    "eval_17": "",
+    "eval_18": "Field value carried over: \"a gap of 0.0 weeks\".",
+    "eval_19": "", "eval_20": "",
+    "H1": "Unusable: the JSON breaks off (no closing quote or brace), so the request has no text.",
+    "H2": "", "H3": "", "H4": "", "H5": ""
+  },
+  "gpt-6.1-sol": {
+    "eval_01": "", "eval_02": "", "eval_03": "", "eval_04": "", "eval_05": "", "eval_06": "", "eval_07": "",
+    "eval_08": "", "eval_09": "", "eval_10": "", "eval_11": "", "eval_12": "",
+    "eval_13": "Meaning changed: the strike and backlog update to be obtained \"before placing the order\" (the action does not tie it to the order); item code.",
+    "eval_14": "", "eval_15": "", "eval_16": "", "eval_17": "", "eval_18": "", "eval_19": "", "eval_20": "",
+    "H1": "", "H2": "", "H3": "", "H4": "", "H5": ""
+  },
+  "gpt-6.1-sol?effort=low": {
+    "eval_01": "", "eval_02": "", "eval_03": "", "eval_04": "", "eval_05": "", "eval_06": "", "eval_07": "",
+    "eval_08": "Meaning changed: lead times to be confirmed \"before order placement\" (the actions are to order now and confirm after).",
+    "eval_09": "", "eval_10": "", "eval_11": "",
+    "eval_12": "Meaning changed: delivery commitments and a recovery plan to be obtained \"before order placement\" (the actions are to release the orders now).",
+    "eval_13": "Meaning changed: the strike and backlog update and the recalculated deadline to come \"before placement\" (the action does not tie them to the order).",
+    "eval_14": "", "eval_15": "", "eval_16": "", "eval_17": "", "eval_18": "", "eval_19": "", "eval_20": "",
+    "H1": "Meaning changed: delivery commitments to be confirmed \"before ordering\" (the actions do not hold the overdue WidgetX order back).",
+    "H2": "", "H3": "", "H4": "", "H5": ""
+  }
+}

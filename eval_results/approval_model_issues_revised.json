@@ -1,0 +1,34 @@
+{
+  "_about": "Issues found by reading the purchase requests written with the revised prompt, second wording (2026-10-24: the clause asking to name the current stock position taken out), by Claude, before the judge's verdicts were seen; the same reading as approval_model_issues_revised_v1.json. Item codes in brackets are noted but not counted. Empty: no issue found.",
+  "gpt-6-luna?effort=none": {
+    "eval_01": "", "eval_02": "", "eval_03": "", "eval_04": "",
+    "eval_05": "Wrong citation: [1] after the stock figures; comments on its input: \"no changes are recorded\".",
+    "eval_06": "",
+    "eval_07": "Meaning changed: \"The request is being submitted within 10 weeks of the latest order date\" (the order is due within 10 weeks).",
+    "eval_08": "Attribution shifted: \"The supplier reports occasional discrepancies in product standards\" (quality inspections found them).",
+    "eval_09": "",
+    "eval_10": "Meaning changed: the offered lots' exposure to the quality reduction to be confirmed \"before releasing the order\" (the action places it before shipment).",
+    "eval_11": "", "eval_12": "", "eval_13": "", "eval_14": "", "eval_15": "",
+    "eval_16": "Field value carried over: \"a 0.0-week gap\".",
+    "eval_17": "Citation [2] left after a sentence of stock figures.",
+    "eval_18": "Field value carried over: \"a gap of 0.0 weeks\".",
+    "eval_19": "", "eval_20": "", "H1": "", "H2": "", "H3": "", "H4": "", "H5": ""
+  },
+  "gpt-6.1-sol": {
+    "eval_01": "", "eval_02": "", "eval_03": "", "eval_04": "", "eval_05": "", "eval_06": "", "eval_07": "",
+    "eval_08": "Meaning changed: the request made \"conditional on confirming actual lead times before order placement\" (the actions are to order now and confirm after).",
+    "eval_09": "", "eval_10": "", "eval_11": "", "eval_12": "",
+    "eval_13": "Meaning changed: the strike and backlog update to be obtained \"before placing the order\" (the action does not tie it to the order).",
+    "eval_14": "", "eval_15": "", "eval_16": "", "eval_17": "", "eval_18": "", "eval_19": "", "eval_20": "",
+    "H1": "Meaning changed: delivery commitments to be obtained \"before placing the order\" (the actions do not hold the overdue WidgetX order back).",
+    "H2": "", "H3": "", "H4": "", "H5": ""
+  },
+  "gpt-6.1-sol?effort=low": {
+    "eval_01": "", "eval_02": "", "eval_03": "", "eval_04": "", "eval_05": "", "eval_06": "", "eval_07": "",
+    "eval_08": "Meaning changed: the request rests on confirming actual lead times \"before order placement\" (the actions are to order now and confirm after).",
+    "eval_09": "", "eval_10": "", "eval_11": "", "eval_12": "", "eval_13": "", "eval_14": "", "eval_15": "",
+    "eval_16": "", "eval_17": "", "eval_18": "", "eval_19": "", "eval_20": "",
+    "H1": "Meaning changed: \"placement of the order is also conditional on obtaining confirmed delivery commitments\" (the actions do not hold the orders back).",
+    "H2": "", "H3": "", "H4": "", "H5": ""
+  }
+}

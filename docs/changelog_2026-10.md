@@ -817,6 +817,37 @@ English or Korean).
   order can arrive", a figure at 22 weeks, caught by J7a (and by C11, since dropped) with no rewrite
   left.
 
+### 24. The purchase request writer chosen, its prompt revised, and the analysis's actions given a timing *(2026-10-24 to 2026-10-25)*
+
+- **Compared** (`docs/approval_model_comparison.md`, rounds 1–5; summary to cite:
+  `docs/approval_model_selection.md`): `gpt-4o`, `gpt-6-luna`, `gpt-5.4-mini`, `gpt-6.1-sol` on the same
+  25 inputs, each at set efforts, checked by code (P2, P3), the chosen judge (P1a–c) and a reading of
+  every text. `gpt-4o` added assessments of the supplier and got figures wrong; `gpt-5.4-mini` wrote
+  this tool's terms, false statements and placeholders; `gpt-6-luna` misplaced figures and wording at
+  every effort. `gpt-6.1-sol` at medium and at low had no issue in the final round. **Chosen:
+  `gpt-6.1-sol` at effort low** (the user, 2026-10-25: compared on the latest prompts only; less than
+  half the time of medium).
+- **`services/agents.py`, `_llm`:** a gpt-5/6 model at effort none now gets temperature 0, the only
+  effort at which these models accept it (checked against the API; before, temperature 1 even at
+  none).
+- **`prompts/v5/approval_request.md`:** the writer is a purchasing officer putting the request to the
+  approvers for their decision, objectively and neutrally, not arguing for the purchase; "the
+  pipeline" taken out of the prompt; figures in plain words, never field names, no mention of the tool
+  or the input; a finding with empty documents, and the items' figures, take no brackets. "The buyer
+  revises" became "you revise".
+- **`prompts/v5/analysis.md`:** an action that checks, confirms or obtains something makes clear when
+  it is done relative to the order, judged realistically against the item's latest order date; an
+  action whose timing is already clear is left as it is, and no date is dropped. The example's GadgetY
+  action says "before placing it". Dev runs: both cases ready at the first attempt.
+- **Scripts:** `scripts/compare_approval_models.py` (settings per model and effort; `--revised`,
+  `--timing`), `scripts/judge_approval_models.py` (P1a–c, three runs, `--report`, `--sheet`),
+  `scripts/count_action_timing.py`; `scripts/build_v5_base_outputs.py --timing` rebuilds the 25
+  analyses into `eval_results/v5_base_outputs_timing.jsonl`, leaving the judge-validation base as it
+  was.
+- **Seen, for the user to weigh:** the rebuilt analyses proposed provisional quantity uplifts for
+  surges the documents do not size (eval_15 650 → 813, eval_16 1,629 → 2,444, H4 520 → 624), marked as
+  planning allowances; none in the base. Whether the timing rule caused them is not shown.
+
 ## Evaluation
 
 - **Rubric** (`docs/eval_rubric.md`): fixed checklist replacing imitation-of-GPT-4o scoring;
@@ -1031,12 +1062,33 @@ to be written after testing in Claude Desktop.
   - Approval agent: the four models' purchase requests annotated one by one
     (`eval_results/approval_model_comparison.md`), which overturned the choice the metrics pointed to
     (gpt-5.4-mini kept the length rule best but wrote system terms, false statements and empty
-    placeholders into the approvers' text).
+    placeholders into the approvers' text). The user then set the prompt changes the reading called for
+    (a purchasing officer writing neutrally; no field names or tool terms; no brackets for stock
+    figures), traced the checks moved before the order to the analysis agent's actions, set how the
+    analysis should time them (against the latest order date, not by a fixed rule), and asked why Luna
+    had been left out, which led to it being read at every effort.
   - Judge: the user saw that a forced tool call kept Haiku from thinking while Luna reasoned, so
     round 1 was unfair to Haiku; round 2 with thinking raised its detection from 83.7% to 93.9%. The
     false-alarm test rests on 89 verdicts the user scored by hand
     (`eval_data/hand_scoring_sheet_v5.md`), with the calls left to the practitioner noted (an added
     assessment of the supplier is a fail but only a warning: the buyer may keep it).
+- **README and portfolio: the purchase request writer was chosen by reading what it wrote** (item 24,
+  `docs/approval_model_selection.md`). The points to make:
+  - The metrics and the texts disagreed: `gpt-5.4-mini` kept the length rule best (24 of 25) but put
+    "the dates shown in the pipeline", false "revised" claims and empty "[ ]" into the approvers'
+    text; `gpt-4o`, in the role from the start, added "a proven track record, supporting the decision
+    to proceed with this supplier". Read side by side, the choice was clear where the scores were not.
+  - Faults traced to their source rather than patched in the model: "the pipeline" came from the
+    prompt's own wording; "[ ]" from the input's empty document list; checks moved "before placing the
+    order" for overdue items from the analysis agent's actions, which gave no timing. Each was fixed
+    where it arose (the prompt, the analysis prompt), and measured again.
+  - The writer's stance set as a role: a purchasing officer putting the request to the approvers for
+    their decision, neutrally, not arguing for the purchase.
+  - Timing left to the model's judgement, with a reference point instead of a rule: "judge this
+    realistically against the item's latest order date". Overdue items with a check put before their
+    order: 9 → 0 in 25 analyses; dates in actions 38 → 72.
+  - Every setting measured, including the cheapest: Luna at none, low and medium, at the user's
+    question when it had been left out of reading on an earlier impression.
 - **README and portfolio: the judge favours recall over precision** (`docs/judge_selection.md`).
   The judge (Haiku, thinking at high effort) was chosen by detection on 51 seeded faults (93.9%),
   flip and false alarms on 89 hand-scored verdicts (8.0%). Its remaining false alarms are stricter

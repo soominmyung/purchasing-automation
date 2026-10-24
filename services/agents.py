@@ -46,7 +46,9 @@ AGENT_MODELS = {
     # chosen 2026-10-24 over gpt-4o, gpt-6-luna and claude-sonnet-5-5 on the same prompt and cases
     # (docs/analysis_model_comparison.md): the most specific questions and actions from the history
     "analysis": "gpt-6.1-sol",
-    "approval": "gpt-4o",
+    # chosen 2026-10-25 over gpt-4o, gpt-6-luna and gpt-5.4-mini on the same 25 inputs, at set efforts
+    # (docs/approval_model_selection.md): carries facts, figures and wording over without additions
+    "approval": "gpt-6.1-sol",
     # gpt-4o-mini and gpt-4o both carried the analyst's wording into the email, naming the
     # supplier's past problem; gpt-5.4-mini followed the rules (prompts/CHANGES.md, v5)
     "email_draft": "gpt-5.4-mini",
@@ -60,7 +62,7 @@ AGENT_MODELS = {
 # (gpt-4o, gpt-4o-mini) or it is left to the API. Recorded with every run (scripts/run_dev_case.py).
 AGENT_EFFORT = {
     "analysis": "medium",
-    "approval": None,
+    "approval": "low",  # no issue in 25 at low as at medium, in less than half the time
     "email_draft": None,
     "email_rewrite": None,
     "email_validator": None,
@@ -84,10 +86,13 @@ def _llm(model: str = "gpt-4o", effort: str | None = None):
         return ChatAnthropic(model=model.removeprefix("anthropic:"), api_key=_key("ANTHROPIC_API_KEY", "CLAUDE_API_KEY"),
                              max_tokens=16000, timeout=settings.llm_timeout_seconds,  # thinking counts; default temperature only
                              max_retries=settings.llm_retries, **extra)
-    # gpt-5 and later reasoning models take only their default temperature, and an effort
+    # gpt-5 and later reasoning models take an effort, and temperature 0 only at effort "none" (no
+    # reasoning); at any other effort only their default temperature (checked 2026-10-24)
     kwargs = {} if model.startswith(("gpt-5", "gpt-6")) else {"temperature": 0}
     if effort and model.startswith(("gpt-5", "gpt-6")):
         kwargs["reasoning_effort"] = effort
+        if effort == "none":
+            kwargs["temperature"] = 0
     return ChatOpenAI(model=model, api_key=settings.openai_api_key,
                       timeout=settings.llm_timeout_seconds, max_retries=settings.llm_retries, **kwargs)
 
