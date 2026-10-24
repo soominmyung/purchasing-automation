@@ -13,6 +13,8 @@ Run: python scripts/build_v5_base_outputs.py
 Out: eval_results/v5_base_outputs.jsonl (one line per scenario; resumes where it stopped)
   --timing: after the analysis prompt was told to say when each check action comes (before the
   order, alongside it or after it; 2026-10-24): eval_results/v5_base_outputs_timing.jsonl
+  --estimate: after a quantity change was limited to UK demand and an estimated size was asked to
+  say what it is based on (2026-10-25): eval_results/v5_base_outputs_estimate.jsonl
 """
 import json
 import sys
@@ -31,6 +33,8 @@ from services.prompts import ANALYSIS_AGENT_SYSTEM, APPROVAL_AGENT_SYSTEM, PROMP
 OUT_FILE = ROOT / "eval_results" / "v5_base_outputs.jsonl"
 if "--timing" in sys.argv:  # 2026-10-24: analysis prompt asks each check action to say when it comes
     OUT_FILE = ROOT / "eval_results" / "v5_base_outputs_timing.jsonl"
+if "--estimate" in sys.argv:  # 2026-10-25: a quantity change rests only on UK demand; an estimated size says what it is based on
+    OUT_FILE = ROOT / "eval_results" / "v5_base_outputs_estimate.jsonl"
 
 
 def main() -> None:

@@ -846,7 +846,62 @@ English or Korean).
   was.
 - **Seen, for the user to weigh:** the rebuilt analyses proposed provisional quantity uplifts for
   surges the documents do not size (eval_15 650 → 813, eval_16 1,629 → 2,444, H4 520 → 624), marked as
-  planning allowances; none in the base. Whether the timing rule caused them is not shown.
+  planning allowances; none in the base. Whether the timing rule caused them is not shown. Settled in
+  item 25.
+
+### 25. Quantity changes rest on UK demand only; an estimated size says what it is based on *(2026-10-25)*
+
+- **What led here.** Item 24's rebuilt analyses proposed provisional uplifts for surges the documents
+  do not size. The user allowed such estimates, as long as the analysis says why it recommends them
+  and what the size rests on, and raised a second problem: the company imports from Korea and sells in
+  the UK, so a demand rise in Korea is no reason to order more. The prompt said nothing about either:
+  not who the company is, nor whose demand counts.
+- **`prompts/v5/analysis.md`:**
+  - Context: the company imports from overseas suppliers (mostly in Korea) and sells in the UK market;
+    suggested_quantity is planned from its UK sales.
+  - Quantity rule: a quantity change rests only on demand in the UK market; demand in another market,
+    such as Korea, bears on supply (allocation, lead time, price) and is raised as a question or an
+    action; when a document does not make clear which market, the quantity stays and the analysis asks.
+  - Change reasons: when the findings give no size and the size is the analysis's estimate, the reason
+    says what the estimate is based on (how the findings describe the change, e.g. "slight", "sharp",
+    "significant delays") as well as that it is an estimate to be confirmed.
+- **Test case `dev/cases/hanbit_demand_market.json`:** three items with the same figures and the same
+  kind of document, a demand rise of unstated size, differing only in market: not stated, the UK,
+  Korea. Result (`dev/runs/2026-10-25_004717_...`, ready at the first attempt): the UK item got a
+  provisional uplift; the unstated one kept its quantity with "Which market accounts for the reported
+  ... surge"; the Korean one kept its quantity with a supplier question on "allocation, pricing or
+  delivery availability for our UK order" and the action "Use the Korean demand surge to assess
+  supply availability, not to increase the UK order quantity".
+- **25 analyses rebuilt** (`eval_results/v5_base_outputs_estimate.jsonl`): the three quantity uplifts
+  became questions on which market (the evaluation documents never name one). Estimate reasons now
+  name their basis ("based on the description of the backlog as severe", "based on the document
+  describing the increase as slight"); some still only restate the cause ("based on the reported
+  recent delays").
+- **Lead-time changes 7 → 11.** With the estimate rule the analysis also allowed for delays it had
+  only asked about before: eval_09 ("reports of shipment delays", +2 weeks), eval_10 ("occasional
+  delays", +2), H3 ("a significant production halt", +6), H4 ("delivery timeframes sometimes fluctuate",
+  +2); eval_13 went from +4 to +6. The judge passed all five. **Kept by the user:** before, the
+  analysis asked first and kept 18 weeks, so the report's risk levels and order dates assumed no
+  delay; now it asks and also allows for the delay. The same leaning as the judge's recall over
+  precision: ordering a little early costs less than running out.
+- **Tried and not kept: telling the analysis outright to allow for every reported delay.** A sentence
+  in the supplier_lead_time rule ("a reported delay ... is such a reason even when its size is not
+  given or it is described as occasional ... allow for it now") was run on the three dev cases
+  (`dev/runs/2026-10-25_011511_...`, `_011827_...`, `_011957_...`) and on the analyses, stopped by the
+  user after 24 of 25 (H5 not run; `eval_results/v5_base_outputs_delay.jsonl`). The same scenarios
+  changed, but the sizes grew (eval_12 +2 → +4 weeks, eval_13 +6 → +8, H2's "slight" +1 → +2) and H3
+  stacked a second allowance for an item document that reports no delay ("erratic supply timelines").
+  The user kept the version without it.
+- **Why the missing changes were not caught before.** No judge check looks for a delay finding with
+  no change: J6a-c judge the changes proposed, J6c only an item left out of a change that exists, and
+  J10 passes when the document is used in a question or action. The judge calibration seeded no such
+  fault; the hand-scored outputs (eval_02, 06, 08, 11, 14, H2) included none of these scenarios; the
+  analysis model comparison used dev cases whose documents give sizes. Still to do: a judge check (or
+  J6c extended) for a delay or lead-time finding left without a change or a reason, validated on seeded
+  faults.
+- **Still open:** estimated sizes vary from run to run (eval_13: 22, 24, 26 weeks over three runs of
+  the same documents). A company standard allowance by how the documents describe a delay or a rise
+  would make them repeatable; for the user to decide.
 
 ## Evaluation
 

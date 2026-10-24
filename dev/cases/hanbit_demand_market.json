@@ -1,0 +1,32 @@
+{
+ "name": "hanbit_demand_market",
+ "purpose": "Tests whether a quantity change rests only on UK demand (2026-10-25). Three items with the same stock figures and the same kind of document, a demand rise of unstated size since January 2025, differing only in which market the rise is in: not stated (MotorBracket), the UK (CoolingFan), Korea, the supplier's home market (SensorHousing). Expected: MotorBracket keeps its quantity and gets a question on which market; CoolingFan may get a provisional uplift marked as an estimate; SensorHousing keeps its quantity and gets a supply question or action (allocation, lead time, price). No supplier-wide document, so lead times stay at 18 weeks. Not part of the evaluation set.",
+ "known_limits": [],
+ "csv": "SnapshotDate,2025-04-05\n\nItemCode,ItemName,SupplierName,AvailableStock,WksToOOS\n530001,MotorBracket,HanbitIndustrial,2600,26\n530002,CoolingFan,HanbitIndustrial,2600,26\n530003,SensorHousing,HanbitIndustrial,2600,26\n",
+ "history": [
+  {
+   "supplier": "",
+   "items": ["MotorBracket"],
+   "item_codes": ["530001"],
+   "date": "2025-03-12",
+   "source": "motorbracket_demand_note_2025-03.docx",
+   "text": "Demand for MotorBracket has risen sharply since January 2025 after a popular home-improvement video featured it."
+  },
+  {
+   "supplier": "",
+   "items": ["CoolingFan"],
+   "item_codes": ["530002"],
+   "date": "2025-03-12",
+   "source": "coolingfan_uk_sales_2025-03.docx",
+   "text": "UK demand for CoolingFan has risen sharply since January 2025, after two UK retail chains added it to their ranges."
+  },
+  {
+   "supplier": "",
+   "items": ["SensorHousing"],
+   "item_codes": ["530003"],
+   "date": "2025-03-12",
+   "source": "sensorhousing_korea_market_2025-03.docx",
+   "text": "Demand for SensorHousing in Korea has risen sharply since January 2025, as Korean electronics makers increase production."
+  }
+ ]
+}
