@@ -37,17 +37,20 @@ from config import settings  # noqa: E402
 from services import quality_checks as q  # noqa: E402
 
 CALIBRATION = ROOT / "eval_data" / "judge_calibration_v5.jsonl"
-SETTINGS = ROOT / "eval_results" / "judge_validation_v5_settings.json"
-RUNS = ROOT / "eval_results" / "judge_validation_v5_runs.jsonl"
+SETTINGS = RUNS = None  # set by --round: eval_results/judge_validation_v5_round<N>_{settings.json,runs.jsonl}
 
 # The plan agreed on 2026-10-24 (docs/judge_validation.md, Candidates): Haiku and Gemini 3.1
 # Flash-Lite are the production candidates, Luna a reference of the analysis model's family.
 # Sonnet and Gemini Flash are left out on cost (and Flash on availability).
-PLAN = [
-    {"model": "anthropic:claude-haiku-5-5", "modes": ["single", "split"], "reps": 3},
-    {"model": "gemini:gemini-3.1-flash-lite", "modes": ["single", "split"], "reps": 3},
-    {"model": "openai:gpt-6-luna", "modes": ["single", "split"], "reps": 3},
-]
+PLANS = {
+    "1": [{"model": "anthropic:claude-haiku-5-5", "modes": ["single", "split"], "reps": 3},
+          {"model": "gemini:gemini-3.1-flash-lite", "modes": ["single", "split"], "reps": 3},
+          {"model": "openai:gpt-6-luna", "modes": ["single", "split"], "reps": 3}],
+    # round 2 (2026-10-24): Haiku again after temperature 0, verdicts sent as broken strings read,
+    # and every figure in the figures after the changes (docs/judge_validation.md, Results)
+    "2": [{"model": "anthropic:claude-haiku-5-5", "modes": ["single", "split"], "reps": 3}],
+}
+PLAN = None
 PRICES = {"anthropic:claude-haiku-5-5": (0.10, 0.50), "gemini:gemini-3.1-flash-lite": (0.25, 1.50),
           "openai:gpt-6-luna": (0.10, 0.50)}  # $ per 1M tokens, input / output
 GROUPS = [["J1a", "J1b", "J1c", "J2a", "J2b", "J2c"], ["J6a", "J6b", "J6c", "J7a"], ["J8", "J9", "J10", "J11"]]
@@ -200,13 +203,14 @@ def report() -> None:
             det = sum(r["target_pass"] is False for r in fails) / max(1, len(fails))
             fa = sum(r["target_pass"] is False for r in passes) / max(1, len(passes))
             noans = sum(r["target_pass"] is None for r in R) / len(R)
+            missing = sum(any(v.get("pass") is None for v in r["verdicts"].values()) for r in R) / len(R)
             by_sample = {}
             for r in R:
                 by_sample.setdefault(r["sample_id"], set()).add(r["target_pass"])
             flips = sum(len(v) > 1 for v in by_sample.values()) / max(1, len(by_sample)) if p["reps"] > 1 else None
             secs = [r["seconds"] for r in R if r["seconds"]]
             print(f"{p['model']:<30} {mode:<6} n={len(R):>4} detection {det:6.1%} false-alarm(real passes) {fa:6.1%} "
-                  f"flip {('%5.1f%%' % (flips * 100)) if flips is not None else '  n/a'} no-answer {noans:5.1%} "
+                  f"flip {('%5.1f%%' % (flips * 100)) if flips is not None else '  n/a'} no-answer {noans:5.1%} any-check-missing {missing:5.1%} "
                   f"mean ${sum(r['cost'] for r in R) / len(R):.5f} mean {sum(secs) / max(1, len(secs)):.1f}s")
             per = {}
             for r in fails:
@@ -218,5 +222,9 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--report", action="store_true")
+    ap.add_argument("--round", default="2", choices=sorted(PLANS))
     a = ap.parse_args()
+    PLAN = PLANS[a.round]
+    SETTINGS = ROOT / "eval_results" / f"judge_validation_v5_round{a.round}_settings.json"
+    RUNS = ROOT / "eval_results" / f"judge_validation_v5_round{a.round}_runs.jsonl"
     report() if a.report else run(a.smoke)

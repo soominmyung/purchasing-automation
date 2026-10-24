@@ -145,23 +145,76 @@ result is recorded here and the judge prompt is revisited first.
 
 ## Results
 
-*To be filled in after the run.*
+### Round 1, 2026-10-24
 
-### Overall
+Settings: `eval_results/judge_validation_v5_round1_settings.json` (code at commit `5e0c010`);
+verdicts: `eval_results/judge_validation_v5_round1_runs.jsonl`. 51 samples (46 seeded faults, 5 real
+cases, two of them with the verdict "pass"), each judged three times per model and mode: 846
+judgements, $1.08 in all, no run error. "Detection" counts only the targeted check of a fault
+sample; "flip" is the share of samples whose targeted verdict differed across the three runs.
 
-| Model | Detection rate | False alarm rate | Flip rate | No-answer rate | Cost per call | Latency |
-|---|---:|---:|---:|---:|---:|---:|
-| | | | | | | |
+| Model | Mode | Detection | Flip | No answer (targeted check) | Cost per judgement | Time |
+|---|---|---:|---:|---:|---:|---:|
+| `claude-haiku-5-5` | single | 83.7% | 17.6% | 0.0% | $0.0012 | 6.1 s |
+| `claude-haiku-5-5` | split | 83.7% | 16.3% | 0.8% | $0.0023 | 4.2 s |
+| `gemini-3.1-flash-lite` | single | 15.6% | — | 61.4% | $0.0006 | 3.8 s |
+| `gemini-3.1-flash-lite` | split | 6.5% | — | 90.7% | $0.0004 | 4.4 s |
+| `gpt-6-luna` (reference) | single | 89.1% | 7.8% | 0.0% | $0.0013 | 23.6 s |
+| `gpt-6-luna` (reference) | split | 85.4% | 9.3% | 0.0% | $0.0020 | 14.2 s |
 
-### Detection rate by check
+Detection by check, single mode (caught / judgements):
 
-| Model | J1 invented | J1 distorted | J1 misattributed | J1b | J2a | J2b | J2c | J3 | J5 omitted | J5 wrong figure |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| | | | | | | | | | | |
+| Check | Haiku | Luna |
+|---|---|---|
+| J1a invented | 9/9 | 9/9 |
+| J1b distorted | 9/9 | 9/9 |
+| J1c misattributed | 9/9 | 6/9 |
+| J2a supplier problem asked | 6/9 | 8/9 |
+| J2b item problem asked | 6/9 | 5/9 |
+| J2c no presumed problem | 9/9 | 9/9 |
+| J6a direction of a change | 5/9 | 7/9 |
+| J6b size of a change | 3/9 | 3/9 |
+| J6c no item left out | 6/6 | 6/6 |
+| J7a figures in the text | 15/15 | 15/15 |
+| J8 nothing internal to the supplier | 9/9 | 9/9 |
+| J9 judgements follow from findings | 6/6 | 6/6 |
+| J10 no problem document unused | 1/6 (split 4/6) | 6/6 |
+| J11 findings are facts | 9/9 | 9/9 |
+| P1a nothing added | 9/9 | 9/9 |
+| P1b figures as given | 6/6 | 6/6 |
+| P1c meaning kept | 6/9 | 9/9 |
+
+The real cases: GPT-4o's 22-week lead time for a customs hold the supplier says it has fixed
+(expected fail, J6a) was passed by Haiku in all six judgements; Sonnet's correct "ValveSeat's latest
+order date is the snapshot date" (expected pass, J7a) was failed by Haiku and Luna in most.
+
+**Reading.** No candidate met the thresholds (detection ≥ 90%, flip ≤ 5%; false alarms could not be
+measured, with two passing samples). Causes found in the records:
+- **Gemini's no-answers were all 429 RESOURCE_EXHAUSTED** (2,319 checks without a verdict): the run's
+  concurrency (four samples at once, three calls each in split mode) exceeded the account's rate
+  limit. Where it did answer, single-mode detection was 40.4% (57 answered fault samples).
+- **Haiku ran at temperature 1.0**: the Anthropic judge call set no temperature, so the API default
+  applied; for a verdict that should not change from run to run this explains much of the 17.6%
+  flip rate.
+- **Haiku's missing verdicts**: more checks lacked a verdict than the targeted-check figure shows,
+  most often J7a in split mode. Haiku sometimes sent a verdict as a JSON string whose evidence held
+  unescaped quotes, which could not be read, and once or twice left a check out despite the tool
+  schema requiring it.
+- **The figures after the changes given to the judge lacked weeks to stockout and available stock**
+  (they were left out as not depending on the lead time); the judge's evidence repeatedly said so
+  ("the 'figures after changes' list lacks those fields"), which may account for J7a's false alarms.
+
+Changed for round 2: temperature 0 for the Anthropic judge; a verdict sent as a broken string is
+read from its text ("pass": true/false, evidence, note); every figure the text may quote is in the
+figures after the changes.
+
+### Round 2
+
+*Haiku only, both modes, three runs each; to be filled in.*
 
 ### Decision
 
-*Which judges were chosen, and why.*
+*Which judge is chosen, and why.*
 
 ## Change log
 

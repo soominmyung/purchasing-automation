@@ -3,6 +3,7 @@ Vector stores: history, analysis_examples, request_examples, email_examples.
 Corresponds to n8n Vector Store In-Memory + OpenAI Embeddings.
 """
 import re
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,9 @@ _CHROMA_DIR.mkdir(parents=True, exist_ok=True)
 
 _stores: dict[str, Chroma] = {}
 _embeddings = None
+# Opening the Chroma client from several threads at once fails ("Could not connect to tenant
+# default_tenant", seen 2026-10-24 with four approval calls in parallel): one opener at a time.
+_open_lock = threading.Lock()
 
 
 def _get_embeddings():
@@ -33,6 +37,11 @@ def _get_embeddings():
 
 
 def _get_or_create_store(collection_name: str) -> Chroma:
+    with _open_lock:
+        return _open_store(collection_name)
+
+
+def _open_store(collection_name: str) -> Chroma:
     if collection_name not in _stores:
         emb = _get_embeddings()
         if emb is None:

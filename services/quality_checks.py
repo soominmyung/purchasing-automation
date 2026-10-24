@@ -481,8 +481,9 @@ def history_block(history_docs: list[dict[str, Any]]) -> str:
     return "\n\n".join(out)
 
 
-AFTER_FIELDS = ("item_code", "item_name", "lead_time_weeks", "risk_level", "expected_stockout_weeks",
-                "suggested_quantity", "recommended_latest_po_date", "recommended_latest_delivery_date")
+AFTER_FIELDS = ("item_code", "item_name", "available_stock", "wks_to_oos", "lead_time_weeks", "risk_level",
+                "expected_stockout_weeks", "suggested_quantity", "recommended_latest_po_date",
+                "recommended_latest_delivery_date")  # all the figures J7a compares the text with
 
 
 def judge_prompt(supplier: str, items: list[dict[str, Any]], history_docs: list[dict[str, Any]],
@@ -571,7 +572,9 @@ def _call_anthropic(model: str, system: str, user: str, checks: list[str] | None
                              if checks else {"type": "object", "additionalProperties": verdict})}
     # 4000: an output with fourteen checks and their evidence came to about 1,800 tokens on average and some
     # answers stopped at the old limit of 2000, cut off mid-verdict (2026-10-24)
-    resp = client.messages.create(model=model, max_tokens=4000, system=system,
+    # temperature 0: a verdict is to be the same each time; left at the default (1.0), the same output
+    # was failed and passed on different runs (17.6% of samples, judge validation 2026-10-24)
+    resp = client.messages.create(model=model, max_tokens=4000, temperature=0, system=system,
                                   messages=[{"role": "user", "content": user}],
                                   tools=[tool], tool_choice={"type": "tool", "name": "record_verdicts"})
     used = next((b for b in resp.content if getattr(b, "type", "") == "tool_use"), None)
@@ -606,6 +609,18 @@ def _judge_call(provider: str, model: str, system: str, user: str, checks: list[
     return {"output": text, "usage_metadata": usage}
 
 
+def _verdict_from_text(text: str) -> dict:
+    """A verdict the judge wrote as a string that is not valid JSON (quotes in the evidence left
+    unescaped): its pass, evidence and note read from the text itself; no verdict if pass is absent."""
+    m = re.search(r'"pass"\s*:\s*(true|false)', text)
+    if not m:
+        return {}
+    def field(name):
+        f = re.search(r'"' + name + r'"\s*:\s*"(.*?)"\s*(?:,\s*"(?:pass|note|evidence)"|\}\s*$)', text, re.S)
+        return f.group(1) if f else ""
+    return {"pass": m.group(1) == "true", "evidence": field("evidence") or text[:300], "note": field("note")}
+
+
 @traceable(run_type="chain", name="Judge")
 def run_judge(spec: str, prompt: str, checks: list[str], retries: int = 2) -> dict[str, dict[str, Any]]:
     """spec is 'provider:model'. A check the judge could not answer comes back as pass=None."""
@@ -624,7 +639,7 @@ def run_judge(spec: str, prompt: str, checks: list[str], retries: int = 2) -> di
                     try:
                         v = json.loads(v)
                     except ValueError:
-                        v = {}
+                        v = _verdict_from_text(v)
                 v = v if isinstance(v, dict) else {}
                 if "pass" not in v and isinstance(v.get(c), dict):  # wrapped once more
                     v = v[c]
