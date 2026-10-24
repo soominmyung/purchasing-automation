@@ -246,6 +246,26 @@ and resumed after the user added credit.
   and two in v1. Allowed by J6b when marked as an estimate; whether the timing rule caused them is not
   shown.
 
+## Round 6: the chosen setting on the analyses of changelog item 25 (2026-10-25)
+
+After the decision, the analysis prompt changed (changelog item 25: quantity changes on UK demand
+only; an estimated size says what it is based on; lead-time changes in 11 scenarios instead of 7, no
+quantity changes). `gpt-6.1-sol` at low wrote the 25 requests again from those analyses
+(`scripts/compare_approval_models.py --estimate`; `eval_results/approval_model_comparison_estimate.jsonl`,
+judged: `eval_results/approval_model_judged_estimate.jsonl`, $0.07). 6.0 s and $0.0057 per request.
+
+- Judge: P1c failed on 2 of 25, both stricter readings than a person's ("requested quantity" for the
+  input's suggested quantity, eval_19; "in parallel with and without delaying" for "do not delay",
+  eval_20).
+- Reading: no fault of the writer's. The new lead-time changes were carried over with their status
+  ("a provisional analyst estimate increases both lead times from 18 to 20 weeks, pending validation
+  alongside order placement"), and the unknown market as the analysis left it ("although the market
+  concerned is not identified"; "retains 650 units ... with immediate verification of the surge's
+  market, persistence and UK forecast coverage").
+- Carried over from the analysis, not the writer's own: "even if ordered on the snapshot date"
+  (eval_06, eval_20; the analysis's stock findings use the tool's term) and "three weeks of lead-time
+  headroom" (eval_13). For the analysis prompt, if the user wants it changed.
+
 ## Decision
 
 **`gpt-6.1-sol` at effort low, decided by the user on 2026-10-25** (`AGENT_MODELS["approval"]`,

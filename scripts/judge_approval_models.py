@@ -41,6 +41,11 @@ if "--timing" in sys.argv:  # the texts written from the analyses rebuilt after 
     BASE = ROOT / "eval_results" / "v5_base_outputs_timing.jsonl"
     OUT = ROOT / "eval_results" / "approval_model_judged_timing.jsonl"
     SETTINGS = ROOT / "eval_results" / "approval_model_judged_timing_settings.json"
+if "--estimate" in sys.argv:  # the chosen setting on the analyses rebuilt after changelog item 25
+    TEXTS = ROOT / "eval_results" / "approval_model_comparison_estimate.jsonl"
+    BASE = ROOT / "eval_results" / "v5_base_outputs_estimate.jsonl"
+    OUT = ROOT / "eval_results" / "approval_model_judged_estimate.jsonl"
+    SETTINGS = ROOT / "eval_results" / "approval_model_judged_estimate_settings.json"
 JUDGE = settings.evaluator_model
 PRICE = (0.10, 0.50)  # claude-haiku-5-5, per million tokens in / out, as in the judge validation
 REPS = 3

@@ -43,14 +43,19 @@ CONFIGS = [("gpt-4o", None),
            ("gpt-6-luna", None), ("gpt-6-luna", "none"), ("gpt-6-luna", "low"),
            ("gpt-5.4-mini", None), ("gpt-5.4-mini", "none"), ("gpt-5.4-mini", "low"),
            ("gpt-6.1-sol", None), ("gpt-6.1-sol", "low")]
-REVISED = "--revised" in sys.argv or "--timing" in sys.argv
+REVISED = "--revised" in sys.argv or "--timing" in sys.argv or "--estimate" in sys.argv
+if "--estimate" in sys.argv:  # the analyses rebuilt after changelog item 25 (UK demand, estimate basis)
+    BASE = ROOT / "eval_results" / "v5_base_outputs_estimate.jsonl"
 if "--timing" in sys.argv:  # the analyses rebuilt after the action-timing rule (build_v5_base_outputs.py --timing)
     BASE = ROOT / "eval_results" / "v5_base_outputs_timing.jsonl"
 if REVISED:
-    OUT = ROOT / "eval_results" / ("approval_model_comparison_timing.jsonl" if "--timing" in sys.argv
+    OUT = ROOT / "eval_results" / ("approval_model_comparison_estimate.jsonl" if "--estimate" in sys.argv
+                                   else "approval_model_comparison_timing.jsonl" if "--timing" in sys.argv
                                    else "approval_model_comparison_revised.jsonl")
     CONFIGS = [("gpt-6-luna", "none"), ("gpt-6.1-sol", None), ("gpt-6.1-sol", "low")]
-    if "--timing" in sys.argv:  # Luna with reasoning too, at the user's question (2026-10-25)
+    if "--estimate" in sys.argv:  # the chosen setting only, checked on the new analyses
+        CONFIGS = [("gpt-6.1-sol", "low")]
+    elif "--timing" in sys.argv:  # Luna with reasoning too, at the user's question (2026-10-25)
         CONFIGS = [("gpt-6-luna", "none"), ("gpt-6-luna", "low"), ("gpt-6-luna", None),
                    ("gpt-6.1-sol", None), ("gpt-6.1-sol", "low")]
 DEFAULT = {"gpt-4o": "no reasoning, temperature 0", "gpt-6-luna": "medium, temperature 1",
