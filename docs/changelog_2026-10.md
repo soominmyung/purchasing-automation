@@ -896,12 +896,12 @@ English or Korean).
   no change: J6a-c judge the changes proposed, J6c only an item left out of a change that exists, and
   J10 passes when the document is used in a question or action. The judge calibration seeded no such
   fault; the hand-scored outputs (eval_02, 06, 08, 11, 14, H2) included none of these scenarios; the
-  analysis model comparison used dev cases whose documents give sizes. Still to do: a judge check (or
-  J6c extended) for a delay or lead-time finding left without a change or a reason, validated on seeded
-  faults.
-- **Still open:** estimated sizes vary from run to run (eval_13: 22, 24, 26 weeks over three runs of
-  the same documents). A company standard allowance by how the documents describe a delay or a rise
-  would make them repeatable; for the user to decide.
+  analysis model comparison used dev cases whose documents give sizes. **No judge check added** (the
+  user, 2026-10-25): whether a reported delay should change the lead time has no single right answer,
+  so it is not something to fail an analysis on.
+- **Left as it is:** estimated sizes vary from run to run (eval_13: 22, 24, 26 weeks over three runs
+  of the same documents). No company standard allowance is set (the user, 2026-10-25): the size is the
+  buyer's call, and the reason says it is an estimate to be confirmed.
 
 ## Evaluation
 
