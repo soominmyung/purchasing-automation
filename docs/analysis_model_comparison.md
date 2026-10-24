@@ -46,7 +46,22 @@ on the same prompt.
 | `gpt-6-luna` | efficiency tier: "focused, high-volume tasks" | none to max | 1/25 of GPT-4o's price |
 | `claude-sonnet-5-5` | — | thinking | another provider at GPT-4o's price |
 
-Reasoning effort was left at each model's default.
+Reasoning effort was left at each model's default, which differs by model. What each ran with in
+the first and second rounds (checked in the providers' documentation on 2026-10-24; `_llm` in
+`services/agents.py` set no effort then):
+
+| Model | Effort | Thinking | Temperature |
+|---|---|---|---|
+| `gpt-4o` | none (not a reasoning model) | none | 0, set in code |
+| `gpt-6.1-sol` | **medium** (default; low to max) | always on (none not supported) | default only |
+| `gpt-6-luna` | **medium** (default; none to max) | by effort | default only |
+| `claude-sonnet-5-5` | **high** (default on the Claude API) | adaptive, on by default | not offered by the API |
+| `gemini-3.6-flash` | not set | the model's default (not checked) | 0, set in code |
+| judge `claude-haiku-5-5` | medium (default) | on by default, though the forced tool call appeared to skip it (6-10 s, about 1,700 output tokens, against 15-18 s and 3,600-4,000 without the forced tool) | not offered |
+
+So Sonnet ran one level higher than Sol and Luna, which bears on its cost (more output, thinking
+included) and possibly on the breadth of its questions. From 2026-10-24 each agent's effort is set in
+code (`AGENT_EFFORT`) and recorded with every run; a third round compares models at other levels.
 
 ### How the candidates were chosen
 
@@ -272,9 +287,46 @@ the input's). Same prompt for every model. Two runs per model and case, sixteen 
   Judge validation (`docs/judge_validation.md`) has to come before the judge's verdicts are relied on,
   and a rewrite that follows a judge's note can do harm when the note is wrong.
 
+## Third round: other effort levels, 2026-10-24
+
+Same prompt and cases as the second round (seven-item Kestrel, Nordic, two runs each), each model
+at an effort other than its default: `gpt-6-luna` at high, `claude-sonnet-5-5` at medium
+(`dev/runs/…_model-comparison-round-3-…`; effort now set in code and recorded with each run). The
+judge is the same as in the second round (forced tool, no thinking).
+
+All configurations, rounds 2 and 3:
+
+| Model | Effort | First answers passing every blocking check | Rewrites | Analysis call | Total | Analysis cost per run |
+|---|---|---|---|---|---|---|
+| `gpt-4o` | — | 0 of 4 | 5 | 8-14 s | 39-63 s | $0.039-0.064 |
+| `gpt-6.1-sol` | medium | **4 of 4** | 0 | 23-39 s | 38-57 s | $0.021-0.033 |
+| `gpt-6-luna` | medium | 3 of 4 (one judge error) | 1 | 21-36 s | 37-84 s | $0.0015-0.0042 |
+| `gpt-6-luna` | high | 2 of 3 (one judge error); **2 runs timed out** | 1 | 37-94 s | 52-110 s | $0.0022-0.0042 |
+| `claude-sonnet-5-5` | high | 3 of 4 (one judge error) | 1 | 20-31 s | 36-71 s | $0.039-0.109 |
+| `claude-sonnet-5-5` | medium | **4 of 4** | 0 | **10-22 s** | **24-38 s** | $0.026-0.046 |
+
+- **Luna at high gained nothing and lost reliability.** On seven-item Kestrel two of three runs
+  failed: the analysis call passed the 60 s `llm_timeout_seconds` on both tries (the rerun timed out
+  too); one Nordic run timed out once and succeeded on the retry (94 s). Its questions and actions
+  were as general as at medium (Kestrel: two questions; no deadline dates in the actions, e.g.
+  "Confirm order-specific delivery dates with KestrelComponents in light of the announced lead-time
+  extension"). Its one failure, J8 on a question asking for expedited or partial delivery, was the
+  judge's error, against the J8 wording changed earlier that day.
+- **Sonnet at medium was the fastest configuration**, passed every first answer, and cost less than
+  at high. Its Kestrel questions were as broad as before (whether 22 weeks is realistic per item and
+  ends with 2025; expedited or partial delivery and by what dates; whether the GasketKit suggestion
+  already includes the demand rise; alternative source or internal reallocation), its actions
+  specific ("Order GasketKit at the increased quantity of 7,800 and place the order by the new latest
+  date of 19 April 2025"; ValveSeat "now"; the other orders brought forward to their 22-week dates),
+  though with fewer deadlines for bridging supply than Sol's ("arriving by 28 June 2025").
+- The judge was Haiku without thinking, of Sonnet's family; judge validation found that setting the
+  weaker judge (`docs/judge_validation.md`, rounds 1 and 2). The C10 figures, checked by code, are
+  unaffected.
+
 ## Decision
 
 **`gpt-6.1-sol`, decided 2026-10-24** (`AGENT_MODELS["analysis"]` in `services/agents.py`).
+Confirmed after the third round, at medium effort; the summary to cite is `docs/analysis_model_selection.md`.
 
 With the judge's errors set aside, Sol, Luna and Sonnet were equally accurate on both cases: the same
 lead times and quantities, every figure after the changes right at first. What decided it was what

@@ -1,0 +1,88 @@
+{
+  "plan": [
+    {
+      "model": "anthropic:claude-haiku-5-5?effort=medium&format=schema",
+      "modes": [
+        "single",
+        "split"
+      ],
+      "reps": 3
+    },
+    {
+      "model": "anthropic:claude-haiku-5-5?effort=high&format=schema",
+      "modes": [
+        "single",
+        "split"
+      ],
+      "reps": 3
+    }
+  ],
+  "groups": [
+    [
+      "J1a",
+      "J1b",
+      "J1c",
+      "J2a",
+      "J2b",
+      "J2c"
+    ],
+    [
+      "J6a",
+      "J6b",
+      "J6c",
+      "J7a"
+    ],
+    [
+      "J8",
+      "J9",
+      "J10",
+      "J11"
+    ]
+  ],
+  "prices_per_million": {
+    "anthropic:claude-haiku-5-5": [
+      0.1,
+      0.5
+    ],
+    "gemini:gemini-3.1-flash-lite": [
+      0.25,
+      1.5
+    ],
+    "openai:gpt-6-luna": [
+      0.1,
+      0.5
+    ]
+  },
+  "judge_retries": 1,
+  "judge_timeout_seconds": 90,
+  "anthropic_max_tokens": {
+    "tool": 4000,
+    "schema": 16000
+  },
+  "judge_system": "You audit a purchasing analysis written by an AI for a buyer. You are given the exact inputs the AI received and its output. For each check, first write the evidence (the part of the output that decides it), then give the verdict, true or false, that the evidence supports. Judge only what the check asks; do not reward length or style. When a check fails, also write a note: one plain sentence for the buyer, saying which part of the output may be wrong and how, with no check ids or technical terms.",
+  "check_wording": {
+    "J1a": "Every statement the analysis makes about supplier or item history (incidents, trends, reliability) is found in the history documents given; none is invented.",
+    "J1b": "No statement about the history distorts what a document says: nothing is made stronger, weaker or different (for example, 'high demand' reported as 'medium demand').",
+    "J1c": "No document's content is attributed to a supplier or item the document does not name (for example, a supplier-wide quality note presented as a problem of one particular item).",
+    "J2c": "No critical question presumes a supplier or item problem that the inputs do not show. Neutral questions that assume no problem, such as asking whether anything is about to change, pass. Questions about problems the inputs do show also pass.",
+    "J6a": "Each proposed change follows from the findings it cites: what those findings say is a reason for the lead time in supplier_lead_time and lead_time_changes to be longer or shorter than 18 weeks, or for the quantity in quantity_changes to be larger or smaller, as proposed.",
+    "J6b": "The size of each proposed change fits what the cited findings say, and its reason explains that size. For an item's lead time this includes whether the supplier-wide reason and the item's own reasons were rightly added together or rightly taken as one. Where the findings report a delay or a change without giving its size, a size passes if the reason makes clear, in whatever words, that it is the analysis's own estimate rather than a figure from the documents and is to be confirmed, as long as it is in keeping with how the findings describe it (a slight increase, a significant delay).",
+    "J6c": "No item that a reason applies to is left without it: an item whose final lead time stays at 18 weeks while supplier_lead_time changes, or that misses a change other items get for the same reason, has a reason for that which the findings support. If there is no such item, this check passes.",
+    "J7a": "Every figure from the stock data quoted in the prose (the summary, the findings' text, the questions, the actions and the changes' reasons; not the values in the change fields) matches that item's figures after the proposed changes exactly (the pipeline's figures for an item with no change): available stock, weeks to stockout, lead time, expected stockout weeks (the gap), suggested quantity, recommended order and delivery dates, risk level. Figures that come from the history documents are not judged here.",
+    "J8": "No critical question marked 'supplier' reveals anything internal to the company: its stock levels or weeks to stockout, how short its stock is, its budget, or its own analysis or plans. What the supplier itself did or announced is not internal. Asking what expedited shipping, earlier or partial delivery the supplier can offer for an item, with quantities and dates, passes even though it shows the item is needed soon.",
+    "J9": "Each critical question and recommended action follows from the findings it cites: what those findings say is a reason to ask that question or take that action. (Proposed changes are judged in J6.)",
+    "J10": "These documents are behind no question, proposed change or action: {unused}. None of them describes a problem that matters for this order and calls for a question, a change or an action; if one does, this check fails.",
+    "J11": "Every finding states only facts from its documents or from the stock figures, with no judgement of what they mean for this order (that belongs in the questions, changes and actions).",
+    "J2a": "If the history describes a problem with the supplier that matters for ordering, at least one critical question addresses it. If it describes no such problem, this check passes.",
+    "J2b": "If the history describes a problem with one of these items that matters for ordering, at least one critical question addresses it. If it describes no such problem, this check passes.",
+    "P1a": "Purpose and Justification add no fact, risk or assessment that their input does not give. Saying why an action from the input matters passes when the findings behind it support it, and so does writing a check to be done before ordering as a condition the request rests on.",
+    "P1b": "Figures are quoted exactly as the input gives them, with no word that judges them (for example calling a stated duration quick or slow).",
+    "P1c": "Where a word other than the input's is used, the meaning does not change (for example 'about 60%' written as '60%')."
+  },
+  "calibration_file": "eval_data\\judge_calibration_v5.jsonl",
+  "calibration_sha256": "c32fa8af7696dca865cfe7fcf9a7bbc21e9292676d0355223df7891c753fd705",
+  "code_commit": "797470de356a5de9d887c919d0dcdc777876934b",
+  "quality_checks_uncommitted_changes": true,
+  "quality_checks_sha256": "48964d50d26719d215efbff45fc27b29c50a38ff7bf09514dc9467d9f920bfb3",
+  "started": "2026-10-24T12:40:58"
+}

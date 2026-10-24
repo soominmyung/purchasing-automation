@@ -193,9 +193,14 @@ measured, with two passing samples). Causes found in the records:
 - **Gemini's no-answers were all 429 RESOURCE_EXHAUSTED** (2,319 checks without a verdict): the run's
   concurrency (four samples at once, three calls each in split mode) exceeded the account's rate
   limit. Where it did answer, single-mode detection was 40.4% (57 answered fault samples).
-- **Haiku ran at temperature 1.0**: the Anthropic judge call set no temperature, so the API default
-  applied; for a verdict that should not change from run to run this explains much of the 17.6%
-  flip rate.
+- **Haiku judged without thinking, Luna with it: round 1 did not compare them on equal terms.** The
+  judge forced its answer through a tool call (`record_verdicts`), and with a forced tool Haiku
+  returns only a `tool_use` block: no thinking (checked 2026-10-24: 1,637 output tokens; the same
+  sample in the scoring-sheet format returns a `thinking` block and 3,346 tokens). Luna reasoned at
+  its default medium effort. The production judge and every development run so far also judged
+  without thinking, which may account for some of the judge errors seen in the model comparisons.
+- **The temperature could not be set**: the Messages API takes no temperature (2026-10-24), so the
+  flip rate cannot be cut that way; the change tried for round 2 was dropped.
 - **Haiku's missing verdicts**: more checks lacked a verdict than the targeted-check figure shows,
   most often J7a in split mode. Haiku sometimes sent a verdict as a JSON string whose evidence held
   unescaped quotes, which could not be read, and once or twice left a check out despite the tool
@@ -204,17 +209,60 @@ measured, with two passing samples). Causes found in the records:
   (they were left out as not depending on the lead time); the judge's evidence repeatedly said so
   ("the 'figures after changes' list lacks those fields"), which may account for J7a's false alarms.
 
-Changed for round 2: temperature 0 for the Anthropic judge; a verdict sent as a broken string is
-read from its text ("pass": true/false, evidence, note); every figure the text may quote is in the
+Changed for round 2: the answer shaped like the scoring sheet with structured outputs (so Haiku
+thinks before it answers), at medium and at high effort; a verdict sent as a broken string is read
+from its text ("pass": true/false, evidence, note); every figure the text may quote is in the
 figures after the changes.
 
-### Round 2
+### Round 2, 2026-10-24
 
-*Haiku only, both modes, three runs each; to be filled in.*
+Settings: `eval_results/judge_validation_v5_round2_settings.json` (code at commit `1edc3ad`);
+verdicts: `eval_results/judge_validation_v5_round2_runs.jsonl`. `claude-haiku-5-5` with its answer
+shaped like the scoring sheet (structured outputs, so it thinks before answering), at medium (its
+default) and high effort; the same 51 samples, three runs each: 564 judgements, $1.58, no run error.
+
+| Haiku | Mode | Detection | Majority of 3 | Flip | Any check missing | Cost per judgement | Time |
+|---|---|---:|---:|---:|---:|---:|---:|
+| round 1: forced tool, no thinking, medium | single | 83.7% | 41/49 | 17.6% | some | $0.0012 | 6.1 s |
+| round 1: forced tool, no thinking, medium | split | 83.7% | 35/41 | 16.3% | some | $0.0023 | 4.2 s |
+| sheet format, thinking, **medium** | single | 91.2% | 45/49 | 5.9% | 0% | $0.0018 | 11.6 s |
+| sheet format, thinking, medium | split | 89.4% | 37/41 | 9.3% | 0% | $0.0032 | 7.8 s |
+| sheet format, thinking, **high** | **single** | **93.9%** | 46/49 | **3.9%** | 0% | $0.0024 | 15.9 s |
+| sheet format, thinking, high | split | 89.4% | 37/41 | 9.3% | 0% | $0.0041 | 11.4 s |
+
+For comparison, `gpt-6-luna` in round 1 (its default medium effort, with reasoning): 89.1% single,
+flip 7.8%, 23.6 s.
+
+Detection by check (round 1 single → round 2 single, high):
+
+| Check | Round 1 | Round 2 high |
+|---|---|---|
+| J1a, J1b, J1c, J2c, J6c, J7a, J8, J9, J11, P1a, P1b | 9/9, 15/15 or 6/6 (J1c 9/9) | all caught |
+| J2a supplier problem asked | 6/9 | 6/9 |
+| J2b item problem asked | 6/9 | 9/9 |
+| J6a direction of a change | 5/9 | 8/9 |
+| J6b size of a change | 3/9 | 6/9 |
+| J10 no problem document unused | 1/6 | 4/6 |
+| P1c meaning kept | 6/9 | 9/9 |
+
+The real cases, round 2: GPT-4o's lead time for a fixed customs hold (expected fail, J6a) is now
+caught two times in three at high effort in single mode (passed every time before); Luna's cut to
+5,400 (expected fail, J6b) caught every time at high; Luna's correct 7,800 and Sonnet's correct
+snapshot-date sentence (expected pass) passed every time in single mode at both efforts.
+
+**Reading.** The forced tool call kept Haiku from thinking, and that, not the model, was most of
+round 1's shortfall. With thinking, at high effort, in single mode, Haiku meets the detection (≥ 90%)
+and flip (≤ 5%) thresholds, answers every check, and does not fail the two correct real cases. Split
+mode is worse at both efforts (flip 9.3%) and costs more, so single mode stays. Still weak: J2a, J6b
+and J10 (two or three misses each); and false alarms are measured only on two passing samples, which
+the hand-scored outputs are to settle.
 
 ### Decision
 
-*Which judge is chosen, and why.*
+**Provisional: `claude-haiku-5-5`, effort high, the scoring-sheet format, one call per output**
+(`anthropic:claude-haiku-5-5?effort=high&format=schema`), pending the hand-scored false-alarm test.
+Its cost per judgement is $0.0024 (about $0.003 per supplier with the purchase request's check,
+against $0.0025 before) and it takes about 16 s, against about 6 s for the forced-tool judge.
 
 ## Change log
 
