@@ -26,7 +26,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from config import settings  # noqa: E402
 from services import documents, run_record  # noqa: E402
-from services.agents import AGENT_MODELS, purchasing_graph, run_email_draft_agent  # noqa: E402
+from services.agents import AGENT_EFFORT, AGENT_MODELS, purchasing_graph, run_email_draft_agent  # noqa: E402
 from services.item_grouping import group_by_supplier_and_recommend, group_risk_level  # noqa: E402
 from services.prompts import PROMPTS_DIR  # noqa: E402
 from utils.csv_utils import parse_csv_rows  # noqa: E402
@@ -119,14 +119,18 @@ def main() -> None:
     ap.add_argument("--from", dest="earlier", type=Path, help="run folder whose analysis the email uses")
     ap.add_argument("--analysis-model", help="analysis agent's model for this run (its rewrites too), "
                                              "e.g. gpt-6.1-sol or claude-sonnet-5-5")
+    ap.add_argument("--analysis-effort", help="analysis agent's reasoning effort (low, medium, high, ...; "
+                                              "'default' leaves it to the API)")
     args = ap.parse_args()
     if args.analysis_model:
         AGENT_MODELS["analysis"] = args.analysis_model  # recorded in the run's "models"
+    if args.analysis_effort:
+        AGENT_EFFORT["analysis"] = None if args.analysis_effort == "default" else args.analysis_effort
     case, group = load_case(args.case)
     folder = new_folder(args.label)
     record = {"label": args.label, "case": case["name"], "started": datetime.now().isoformat(timespec="seconds"),
               "kind": "email only" if args.email_only else "full run",
-              "settings": settings_used(), "models": AGENT_MODELS, "prompts": prompts_used()}
+              "settings": settings_used(), "models": AGENT_MODELS, "efforts": AGENT_EFFORT, "prompts": prompts_used()}
     if args.email_only:
         if not args.earlier:
             ap.error("--email-only needs --from <run folder>")

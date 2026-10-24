@@ -544,19 +544,22 @@ def _usage(input_tokens: int | None, output_tokens: int | None) -> dict[str, int
     return {"input_tokens": i, "output_tokens": o, "total_tokens": i + o}
 
 
-def _call_openai(model: str, system: str, user: str, checks: list[str] | None = None) -> tuple[str, dict[str, int]]:
+def _call_openai(model: str, system: str, user: str, checks: list[str] | None = None,
+                 effort: str | None = None, **_) -> tuple[str, dict[str, int]]:
     from openai import OpenAI
     from config import settings
     client = OpenAI(api_key=settings.openai_api_key or _key("OPENAI_API_KEY"),
                     timeout=_judge_timeout(), max_retries=0)
+    extra = {"reasoning_effort": effort} if effort else {}
     resp = client.chat.completions.create(
         model=model, response_format={"type": "json_object"},
-        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}])
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}], **extra)
     u = resp.usage
     return resp.choices[0].message.content, _usage(getattr(u, "prompt_tokens", 0), getattr(u, "completion_tokens", 0))
 
 
-def _call_anthropic(model: str, system: str, user: str, checks: list[str] | None = None) -> tuple[str, dict[str, int]]:
+def _call_anthropic(model: str, system: str, user: str, checks: list[str] | None = None,
+                    effort: str | None = None, format: str | None = None, **_) -> tuple[str, dict[str, int]]:
     import anthropic
     client = anthropic.Anthropic(api_key=_key("ANTHROPIC_API_KEY", "CLAUDE_API_KEY"),
                                  timeout=_judge_timeout(), max_retries=0)
@@ -572,18 +575,34 @@ def _call_anthropic(model: str, system: str, user: str, checks: list[str] | None
                              if checks else {"type": "object", "additionalProperties": verdict})}
     # 4000: an output with fourteen checks and their evidence came to about 1,800 tokens on average and some
     # answers stopped at the old limit of 2000, cut off mid-verdict (2026-10-24)
-    # temperature 0: a verdict is to be the same each time; left at the default (1.0), the same output
-    # was failed and passed on different runs (17.6% of samples, judge validation 2026-10-24)
-    resp = client.messages.create(model=model, max_tokens=4000, temperature=0, system=system,
+    # No temperature: the Messages API takes none (2026-10-24), so a verdict can differ from run to run.
+    # format "schema": the answer is one JSON object shaped like the scoring sheet (each check its
+    # evidence and its verdict), enforced by structured outputs instead of a forced tool call.
+    config = {"effort": effort} if effort else {}
+    if format == "schema":
+        schema = {"type": "object", "properties": {c: verdict for c in checks}, "required": list(checks),
+                  "additionalProperties": False} if checks else {"type": "object", "additionalProperties": verdict}
+        verdict.setdefault("additionalProperties", False)
+        config["format"] = {"type": "json_schema", "schema": schema}
+        # 16000: without a forced tool the model thinks, and thinking counts toward max_tokens; at high
+        # effort 4000 cut the answer off mid-JSON (2026-10-24)
+        resp = client.messages.create(model=model, max_tokens=16000, system=system,
+                                      messages=[{"role": "user", "content": user}], output_config=config)
+        if resp.stop_reason == "max_tokens":
+            raise ValueError("the judge's answer was cut off at max_tokens")
+        text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+        return text, _usage(resp.usage.input_tokens, resp.usage.output_tokens)
+    extra = {"output_config": config} if config else {}
+    resp = client.messages.create(model=model, max_tokens=4000, system=system,
                                   messages=[{"role": "user", "content": user}],
-                                  tools=[tool], tool_choice={"type": "tool", "name": "record_verdicts"})
+                                  tools=[tool], tool_choice={"type": "tool", "name": "record_verdicts"}, **extra)
     used = next((b for b in resp.content if getattr(b, "type", "") == "tool_use"), None)
     text = json.dumps(used.input) if used is not None else "".join(
         b.text for b in resp.content if getattr(b, "type", "") == "text")
     return text, _usage(resp.usage.input_tokens, resp.usage.output_tokens)
 
 
-def _call_gemini(model: str, system: str, user: str, checks: list[str] | None = None) -> tuple[str, dict[str, int]]:
+def _call_gemini(model: str, system: str, user: str, checks: list[str] | None = None, **_) -> tuple[str, dict[str, int]]:
     from google import genai
     client = genai.Client(api_key=_key("GEMINI_API_KEY", "GOOGLE_API_KEY"),
                           http_options={"timeout": int(_judge_timeout() * 1000)})  # milliseconds
@@ -600,10 +619,11 @@ PROVIDERS = {"openai": _call_openai, "anthropic": _call_anthropic, "gemini": _ca
 
 
 @traceable(run_type="llm", name="Judge_LLM")
-def _judge_call(provider: str, model: str, system: str, user: str, checks: list[str] | None = None) -> dict[str, Any]:
+def _judge_call(provider: str, model: str, system: str, user: str, checks: list[str] | None = None,
+                options: dict | None = None) -> dict[str, Any]:
     """One judge request. Traced in LangSmith (when tracing is on) with its prompt, answer
     and token usage, under the evaluation node that made it."""
-    text, usage = PROVIDERS[provider](model, system, user, checks)
+    text, usage = PROVIDERS[provider](model, system, user, checks, **(options or {}))
     from services.run_record import note_usage  # the judge's tokens, in the run record
     note_usage(f"{provider}:{model}", usage["input_tokens"], usage["output_tokens"])
     return {"output": text, "usage_metadata": usage}
@@ -624,10 +644,14 @@ def _verdict_from_text(text: str) -> dict:
 @traceable(run_type="chain", name="Judge")
 def run_judge(spec: str, prompt: str, checks: list[str], retries: int = 2) -> dict[str, dict[str, Any]]:
     """spec is 'provider:model'. A check the judge could not answer comes back as pass=None."""
+    # spec: "provider:model", optionally "?effort=high&format=schema" (judge validation, 2026-10-24)
     provider, model = spec.split(":", 1)
+    model, _, query = model.partition("?")
+    from urllib.parse import parse_qsl
+    options = dict(parse_qsl(query))
     for attempt in range(retries + 1):
         try:
-            raw = _judge_call(provider, model, JUDGE_SYSTEM, prompt, checks,
+            raw = _judge_call(provider, model, JUDGE_SYSTEM, prompt, checks, options,
                               langsmith_extra={"metadata": {"ls_provider": provider, "ls_model_name": model,
                                                             "checks": checks, "attempt": attempt + 1}})["output"]
             m = re.search(r"\{[\s\S]*\}", raw or "")

@@ -46,9 +46,11 @@ PLANS = {
     "1": [{"model": "anthropic:claude-haiku-5-5", "modes": ["single", "split"], "reps": 3},
           {"model": "gemini:gemini-3.1-flash-lite", "modes": ["single", "split"], "reps": 3},
           {"model": "openai:gpt-6-luna", "modes": ["single", "split"], "reps": 3}],
-    # round 2 (2026-10-24): Haiku again after temperature 0, verdicts sent as broken strings read,
-    # and every figure in the figures after the changes (docs/judge_validation.md, Results)
-    "2": [{"model": "anthropic:claude-haiku-5-5", "modes": ["single", "split"], "reps": 3}],
+    # round 2 (2026-10-24): Haiku with the answer shaped like the scoring sheet (structured outputs,
+    # format=schema) at medium (its default) and high effort; broken verdict strings read, every figure
+    # in the figures after the changes (docs/judge_validation.md, Results). Temperature cannot be set.
+    "2": [{"model": "anthropic:claude-haiku-5-5?effort=medium&format=schema", "modes": ["single", "split"], "reps": 3},
+          {"model": "anthropic:claude-haiku-5-5?effort=high&format=schema", "modes": ["single", "split"], "reps": 3}],
 }
 PLAN = None
 PRICES = {"anthropic:claude-haiku-5-5": (0.10, 0.50), "gemini:gemini-3.1-flash-lite": (0.25, 1.50),
@@ -83,7 +85,7 @@ def current_settings() -> dict:
     return {
         "plan": PLAN, "groups": GROUPS, "prices_per_million": PRICES,
         "judge_retries": settings.judge_retries, "judge_timeout_seconds": settings.judge_timeout_seconds,
-        "anthropic_max_tokens": 4000,
+        "anthropic_max_tokens": {"tool": 4000, "schema": 16000},
         "judge_system": q.JUDGE_SYSTEM, "check_wording": {**q._JUDGE_TEXT, **q._J2_UNLABELLED, **q._P1_TEXT},
         "calibration_file": str(CALIBRATION.relative_to(ROOT)), "calibration_sha256": sha256(CALIBRATION),
         "code_commit": commit, "quality_checks_uncommitted_changes": bool(dirty),
@@ -136,7 +138,7 @@ def judge_sample(s: dict, model: str, mode: str) -> dict:
         verdicts = {k: {"pass": v["pass"], "detail": v.get("evidence", ""), "note": v.get("note", "")} for k, v in judged.items()}
     seconds = round(time.perf_counter() - started, 2)
     tin = sum(c[0] for c in _usage.calls); tout = sum(c[1] for c in _usage.calls)
-    p_in, p_out = PRICES[model]
+    p_in, p_out = PRICES[model.split("?")[0]]
     target = verdicts.get(s["target_check"], {})
     return {"verdicts": verdicts, "target_pass": target.get("pass"), "seconds": seconds,
             "calls": len(_usage.calls), "input_tokens": tin, "output_tokens": tout,

@@ -54,11 +54,23 @@ AGENT_MODELS = {
     "email_validator": "gpt-4o-mini",
     "judge": settings.evaluator_model,
 }
+# Reasoning effort per agent, set explicitly so a change of API default cannot change a run unseen
+# (2026-10-24: the model comparisons until then ran on defaults, which differ by model: medium on
+# gpt-6.1-sol and gpt-6-luna, high on claude-sonnet-5-5). None: the model takes no effort setting
+# (gpt-4o, gpt-4o-mini) or it is left to the API. Recorded with every run (scripts/run_dev_case.py).
+AGENT_EFFORT = {
+    "analysis": "medium",
+    "approval": None,
+    "email_draft": None,
+    "email_rewrite": None,
+    "email_validator": None,
+}
 
 
-def _llm(model: str = "gpt-4o"):
+def _llm(model: str = "gpt-4o", effort: str | None = None):
     """A chat model by name: OpenAI by default, Anthropic for "claude-..." (or "anthropic:..."),
-    Google for "gemini-..."."""
+    Google for "gemini-...". effort: the reasoning effort (low, medium, high, ...) for the models
+    that take one; None leaves it to the API."""
     if model.startswith("gemini-"):
         from langchain_google_genai import ChatGoogleGenerativeAI
         from services.quality_checks import _key
@@ -68,11 +80,14 @@ def _llm(model: str = "gpt-4o"):
     if model.startswith(("claude-", "anthropic:")):
         from langchain_anthropic import ChatAnthropic
         from services.quality_checks import _key
+        extra = {"output_config": {"effort": effort}} if effort else {}
         return ChatAnthropic(model=model.removeprefix("anthropic:"), api_key=_key("ANTHROPIC_API_KEY", "CLAUDE_API_KEY"),
                              max_tokens=16000, timeout=settings.llm_timeout_seconds,  # thinking counts; default temperature only
-                             max_retries=settings.llm_retries)
-    # gpt-5 and later reasoning models take only their default temperature
+                             max_retries=settings.llm_retries, **extra)
+    # gpt-5 and later reasoning models take only their default temperature, and an effort
     kwargs = {} if model.startswith(("gpt-5", "gpt-6")) else {"temperature": 0}
+    if effort and model.startswith(("gpt-5", "gpt-6")):
+        kwargs["reasoning_effort"] = effort
     return ChatOpenAI(model=model, api_key=settings.openai_api_key,
                       timeout=settings.llm_timeout_seconds, max_retries=settings.llm_retries, **kwargs)
 
@@ -182,7 +197,7 @@ def to_model(analysis: dict[str, Any]) -> dict[str, Any]:
 
 
 def _analysis_call(messages: list[BaseMessage]) -> dict[str, Any]:
-    answer = _llm(AGENT_MODELS["analysis"]).invoke(messages)
+    answer = _llm(AGENT_MODELS["analysis"], AGENT_EFFORT["analysis"]).invoke(messages)
     # .text joins the text blocks; Claude models with thinking return a list of blocks as content
     text = answer.text if hasattr(answer, "text") else str(answer)
     try:
@@ -221,7 +236,7 @@ def run_approval_agent(payload: dict[str, Any]) -> dict[str, Any]:
     user = json.dumps(payload, ensure_ascii=False)
     if examples_text:
         user = "Reference (tone only):\n" + examples_text + "\n\nInput:\n" + user
-    out = _llm(AGENT_MODELS["approval"]).invoke([
+    out = _llm(AGENT_MODELS["approval"], AGENT_EFFORT["approval"]).invoke([
         SystemMessage(content=APPROVAL_AGENT_SYSTEM),
         HumanMessage(content=user),
     ])
