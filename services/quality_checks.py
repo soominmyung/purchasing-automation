@@ -86,7 +86,11 @@ _JUDGE_TEXT = {
            "18 weeks, or for the quantity in quantity_changes to be larger or smaller, as proposed.",
     "J6b": "The size of each proposed change fits what the cited findings say, and its reason explains that "
            "size. For an item's lead time this includes whether the supplier-wide reason and the item's own "
-           "reasons were rightly added together or rightly taken as one.",
+           "reasons were rightly added together or rightly taken as one. Where the findings report a delay or "
+           "a change without giving its size, a size passes if the reason makes clear, in whatever words, that "
+           "it is the analysis's own estimate rather than a figure from the documents and is to be confirmed, "
+           "as long as it is in keeping with how the findings describe it (a slight increase, a significant "
+           "delay).",
     "J6c": "No item that a reason applies to is left without it: an item whose final lead time stays at "
            "18 weeks while supplier_lead_time changes, or that misses a change other items get for the same "
            "reason, has a reason for that which the findings support. If there is no such item, this check "
@@ -565,7 +569,9 @@ def _call_anthropic(model: str, system: str, user: str, checks: list[str] | None
             "description": "Record one verdict for each check id.",
             "input_schema": ({"type": "object", "properties": {c: verdict for c in checks}, "required": list(checks)}
                              if checks else {"type": "object", "additionalProperties": verdict})}
-    resp = client.messages.create(model=model, max_tokens=2000, system=system,
+    # 4000: an output with fourteen checks and their evidence came to about 1,800 tokens on average and some
+    # answers stopped at the old limit of 2000, cut off mid-verdict (2026-10-24)
+    resp = client.messages.create(model=model, max_tokens=4000, system=system,
                                   messages=[{"role": "user", "content": user}],
                                   tools=[tool], tool_choice={"type": "tool", "name": "record_verdicts"})
     used = next((b for b in resp.content if getattr(b, "type", "") == "tool_use"), None)

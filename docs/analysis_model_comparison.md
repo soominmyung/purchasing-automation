@@ -188,6 +188,10 @@ write the date in the JSON without working, and there it was weeks out or left t
   not show.
 - The prompt was written and revised on GPT-4o.
 - The judge has not yet been validated (`docs/judge_validation.md`).
+- The judge (`claude-haiku-5-5`) is of Sonnet's family; LLM judges are known to favour their own
+  outputs and text familiar to them (references in `docs/judge_validation.md`, Candidates), so the
+  judge's verdicts may have favoured Sonnet. In the second round it in fact failed Sonnet once
+  wrongly (J7a); the accuracy comparison above rests on the C10 figures, which code checks.
 
 ## Second round, 2026-10-24
 

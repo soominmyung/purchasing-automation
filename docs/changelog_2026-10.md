@@ -774,6 +774,18 @@ English or Korean).
   sooner is unavoidable, since not asking risks a larger loss; and asking it says that much by
   itself. J8 and the analysis prompt now allow it; stock levels, weeks to stockout, how short stock
   is, budget and the analysis stay internal.
+- **An assumed lead-time allowance is allowed when the documents give no length** (decided
+  2026-10-24). On the 25 evaluation scenarios Sol raised the lead time in seven where a document
+  reports delays without saying how long: +2 weeks for "logistical complications" or "recent delivery
+  delays", +4 weeks for a "significant", "unresolved" strike or a "severe backlog", +1 week for a lead
+  time "increased slightly", each reason saying the size is an assumption pending the supplier's
+  confirmation (e.g. eval_11: "this allowance is an analytical assumption, not a documented delay
+  duration, and requires supplier confirmation"). Stated so, it cannot be mistaken for a documented
+  figure, and it puts the delay into the order dates and risk levels at once. J6b now passes such a size
+  when the reason makes clear, in whatever words, that it is the analysis's own estimate to be
+  confirmed (Sol wrote "assumption", "planning allowance", "contingency", "provisional"; the check
+  must not hang on one word), and when it is in keeping with how the documents describe the delay;
+  without that condition any size called an estimate would pass.
 - **Findings in two groups** (decided 2026-10-24): "From the documents", then "From the stock figures
   (after the proposed changes)", each sorted supplier first, then items by risk after any lead-time
   change; numbering runs on across both, so citations stay unique; "(stock position)" after each

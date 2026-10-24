@@ -68,14 +68,48 @@ against themselves.
 
 ## Candidates
 
-| Provider | Model |
-|---|---|
-| OpenAI | `gpt-5.5`, `gpt-5.4-mini`, `gpt-5-nano`, `gpt-6-luna` |
-| Anthropic | `claude-sonnet-5-5`, `claude-haiku-5-5` |
-| Google | `gemini-3.8-flash`, `gemini-3.1-flash-lite` |
+**Revised 2026-10-24 for prompt v5**, with the analysis model now `gpt-6.1-sol` (OpenAI).
+
+| Model | Price (input / output, $ per 1M) | Role |
+|---|---|---|
+| `claude-haiku-5-5` | 0.10 / 0.50 | production candidate (the current judge) |
+| Gemini Flash (`gemini-3.8-flash`, or `gemini-3.6-flash` when 3.8 does not answer) | 0.75 / 3.75 | production candidate; its availability is measured too (no-answer rate) |
+| `claude-sonnet-5-5` | 2.00 / 10.00 | accuracy reference: whether a dearer judge is more accurate; not a production candidate on cost |
+| `gpt-6-luna` | 0.10 / 0.50 | for reference only: of the analysis model's family, so not a production candidate |
+
+**How they were chosen:**
+1. **Not the analysis model, and not its family, for the production judge.** LLM judges favour
+   their own outputs (self-enhancement or self-preference bias): Zheng et al., "Judging
+   LLM-as-a-Judge with MT-Bench and Chatbot Arena", NeurIPS 2023 Datasets and Benchmarks
+   (arXiv:2306.05685); Panickssery, Bowman and Feng, "LLM Evaluators Recognize and Favor Their Own
+   Generations", NeurIPS 2024 (arXiv:2404.13076), who find that the more a model recognises its own
+   outputs, the more it favours them. Wataoka, Takahashi and Ri, "Self-Preference Bias in
+   LLM-as-a-Judge" (arXiv:2410.21819, preprint), trace it to judges rating text that is familiar to
+   them (lower perplexity) higher whoever wrote it, which is why a model of the same family, trained
+   and tuned alike, is also left out. The checks most exposed here are those that need a judgement
+   (J2, J9, J11); those that compare the text with its inputs (J1, J6, J7a) less so. It matters most
+   where the judge compares analysis models: an OpenAI judge scoring Sol against Sonnet could favour
+   Sol. The analysis comparisons so far used `claude-haiku-5-5`, of Sonnet's family, which could
+   have favoured Sonnet (`docs/analysis_model_comparison.md`, Limits).
+2. **A cost ceiling for production.** The judge runs on every analysis, again on every rewrite, and
+   on the purchase request; at `claude-haiku-5-5` prices that is about $0.0025 per supplier, at
+   Sonnet's about $0.05, more than the analysis itself. Production candidates are priced at the
+   mini tier (0.75 / 4.50) or below; Sonnet is the reference.
+3. **Available when needed.** Gemini refused four of six analysis calls for demand on 2026-10-24
+   (`docs/analysis_model_comparison.md`); it stays in so that its no-answer rate is measured rather
+   than assumed.
+4. Other providers (Mistral, DeepSeek, xAI, Cohere, Amazon, Llama hosts) and an open model served
+   on the project's own GPU (`docs/inference_serving_vllm.md`) were considered; none has an account
+   in this project yet, so they wait.
+
+**Offline judge panel** (comparing analysis models): one judge per provider, so that no family's
+preference decides a comparison.
 
 Each candidate judges every calibration output **three times**, with the same prompt the
-production evaluation node uses (`services/quality_checks.py`).
+production evaluation node uses (`services/quality_checks.py`), in two ways: all of an output's
+checks in one call, as now, and one call per group of checks (J1-J2, J6-J7a, J8-J11, P1) made at
+the same time, which could cut the judge's time by about half for about 1.7 times its cost
+(+3% of a supplier's total).
 
 ## Metrics
 
