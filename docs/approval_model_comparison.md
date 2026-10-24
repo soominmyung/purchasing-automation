@@ -262,9 +262,10 @@ judged: `eval_results/approval_model_judged_estimate.jsonl`, $0.07). 6.0 s and $
   alongside order placement"), and the unknown market as the analysis left it ("although the market
   concerned is not identified"; "retains 650 units ... with immediate verification of the surge's
   market, persistence and UK forecast coverage").
-- Carried over from the analysis, not the writer's own: "even if ordered on the snapshot date"
-  (eval_06, eval_20; the analysis's stock findings use the tool's term) and "three weeks of lead-time
-  headroom" (eval_13). For the analysis prompt, if the user wants it changed.
+- Carried over from the analysis: "even if ordered on the snapshot date" (eval_06, eval_20) and
+  "three weeks of lead-time headroom" (eval_13: 27 weeks to stockout against a 24-week lead time).
+  Neither is a fault (the user, 2026-10-25): "snapshot date" is a fine term for the reader, and the
+  headroom is correct and came from the analysis.
 
 ## Decision
 
