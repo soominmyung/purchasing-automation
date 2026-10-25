@@ -331,6 +331,19 @@ The finding worth keeping: **validation loss fell steadily while readiness fell.
 alone, the fine-tune would have looked like a success. The production checks caught the regression
 and traced it to one phrase crossing fields.
 
+**Possible improvement, not tried: training the reasoning.** Rejection-sampling fine-tuning would
+sample Gemma 4 12B several times per scenario with thinking on, keep the outputs that pass the
+production checks with their reasoning, and train on those. It aims at both causes found in
+section 7a:
+
+- **the arithmetic after a change**, which reasoning models get right (Sol 0 errors; GPT-4o,
+  without reasoning, 4–8 of 20);
+- **the supplier-question wording**, because only the model's own passing outputs are kept, with
+  no other model's sentences to blend in.
+
+Its limit is the base model's ceiling. It amplifies what the model can sometimes do; it does not
+teach what it cannot.
+
 ## 9. Serving: Gemma 4 12B, bf16 against fp8 (2026-10-26)
 
 Measured on the RTX 5090 (32 GB) with vLLM v0.31.0, untuned Gemma 4 12B
