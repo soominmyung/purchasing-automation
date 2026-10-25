@@ -120,7 +120,8 @@ Rules:
   the size is your estimate, the reason says what you based the estimate on (how the findings
   describe the change, e.g. "slight", "sharp", "significant delays", and anything else in the
   input that bears on it) as well as that it is your estimate, to be confirmed.
-- figures_after_changes: every item in lead_time_changes. [] when there is no lead-time change.
+- figures_after_changes: one entry for each item in lead_time_changes, and for no other item. [] when
+  lead_time_changes is [].
 - stock_findings: only the facts from the stock figures that a question or action rests on, without
   judgement (for example that an item runs out before a new order can arrive, and its gap). An item
   whose figures call for nothing gets no stock finding; every item's figures are in the report's

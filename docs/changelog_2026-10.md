@@ -949,6 +949,23 @@ English or Korean).
   the run went on to a purchase request and an email, `dev/runs/2026-10-25_155928_...`). The second
   is why the analysis runs even when every item is Low.
 
+### 28. SFT base-model screening, and the figures-after-changes rule made exact *(2026-10-25)*
+
+- **Screening** (`docs/sft_base_screening.md`): five open-weight models, untuned, as the analysis
+  agent on the 25 evaluation cases, with the production prompt, code path and checks, served by
+  vLLM on the RTX 5090. `services/agents._llm` now takes `local:<name>` (`config.py`
+  `local_llm_url`).
+- **Prompt** (`prompts/v5/analysis.md`, `prompts/CHANGES.md`): `figures_after_changes` is for
+  each item in `lead_time_changes` and no other. Several open models had copied the filled-in
+  template for unchanged items, a prompt-made failure that would have inflated SFT's gain. All
+  five models and Sol were run again on the revised prompt.
+- **Found on the way:** first-answer readiness alone misleads. Gemma 4 12B was the most often
+  ready (14/25) partly because it changed the lead time in only 2 of the 11 cases where Sol did,
+  and a missing change is not checked. Change detection against Sol (and the scenarios' labels)
+  is to be reported beside readiness in the SFT results.
+- **Open, for the user:** the base model(s). Gemma 4 12B and Gemma 4 E4B are the realistic
+  candidates; training both was proposed.
+
 ## Evaluation
 
 - **Rubric** (`docs/eval_rubric.md`): fixed checklist replacing imitation-of-GPT-4o scoring;

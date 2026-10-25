@@ -102,12 +102,69 @@ Outputs are 1–2k tokens, so the lower output limits did not cut any answer.
 - Code: `services/agents._llm` takes `local:<name>`; the address is in `config.py`
   (`local_llm_url`, `local_llm_api_key`, `local_llm_max_tokens`).
 
+## Round 2: the figures-after-changes rule made exact (2026-10-25)
+
+Round 1 showed several models copying the filled-in output template for items whose lead time
+was not changed. The rule was rewritten to match C10 exactly ("one entry for each item in
+lead_time_changes, and for no other item. [] when lead_time_changes is []";
+`prompts/CHANGES.md`), and all five models and Sol were run again. Results:
+`eval_results/sft_screen_<model>_fac-rule.jsonl`.
+
+| Model | Ready, round 1 → 2 | Figures for unchanged items, 1 → 2 | Of Sol's 11 lead-time changes, also changed | Wrong figures / figures checked (round 2) | Time (median) |
+|---|---|---|---|---|---|
+| `gpt-6.1-sol` | 25 → 24 | 0 → 0 | 11 | 0/88 (0%) | 14.1 s |
+| **Gemma 4 12B** | 15 → **14** | 3 → 1 | **2** | 2/12 (17%) | 11.6 s |
+| Qwen3.5-9B | 4 → 8 | 5 → **0** | 11 | 29/92 (32%) | 11.5 s |
+| **Gemma 4 E4B** | 2 → 3 | 4 → 4 | **10** | **8/104 (7.7%)** | 8.6 s |
+| Ministral 3 14B | 2 → 0 | 7 → 8 | 11 | 32/88 (36%) | 20.6 s |
+| Ministral 3 8B | 0 → 0 | 11 → 12 | 11 | 36/112 (32%) | 14.6 s |
+
+Sol's one failure in round 2 is a judge reading. In eval_01 its summary says "only one week between
+the standard lead time and stockout" (19 weeks of stock, 18-week lead time), which is right, and
+J7a took it against a gap of 0 weeks. Differences of one case are within run-to-run variation (Sol
+25 → 24, Gemma 4 12B 15 → 14).
+
+**The rule change worked where a model followed rules.** Qwen went from 5 such cases to 0, and from
+4 to 8 ready; Gemma 4 12B from 3 to 1. Ministral 3 8B and 14B and Gemma 4 E4B did not change, so for
+them it is instruction-following, not wording. Wrong figures were unchanged for every model, as
+expected: that is arithmetic, not the prompt.
+
+### Readiness alone misleads: Gemma 4 12B rarely changes a lead time
+
+Sol changed the lead time in 11 cases, on delivery-delay and lead-time notices in the history
+(eval_08–13, H1–H5). Gemma 4 12B changed it in 2 of them and missed eval_08–12 and H1, H3, H4, H5.
+
+A case with no lead-time change has no figures after a change to get wrong (C10) and no change size
+to judge (J6b). A missing change is not checked: the user decided on 2026-10-25 that there is no
+judge check for it. So part of Gemma 4 12B's 14 ready cases are changes it did not make. In
+production that is a serious miss: an order placed by an 18-week date for an item whose supplier
+has announced 22 weeks arrives late.
+
+Gemma 4 E4B is the opposite. It changed the lead time in 10 of Sol's 11 cases and had the lowest
+error rate on the figures it worked out (8 of 104, 7.7%). It fails on the output's structure
+instead:
+
+- C5 14: a supplier-wide lead time with no final lead time per item;
+- C4 11: findings without a basis, or wrong citations.
+
+**Measure to add.** The SFT results report change detection beside readiness: Sol's lead-time
+changes, and the scenarios' planted labels (Sol is the reference, not the truth). This is a
+reported measure, not a new blocking check.
+
 ## Decision
 
-**Open, for the user.** The screening points to **Gemma 4 12B**:
+**Open, for the user.** After round 2 the realistic candidates are **Gemma 4 12B** and **Gemma 4
+E4B**. Their weaknesses are opposite:
 
-- 15 of 25 ready untuned, against 4 or fewer for every other candidate;
-- one arithmetic error;
-- the rest are faults that the teacher's verified outputs show the right way every time.
+- **Gemma 4 12B:** the best format, faithfulness to the documents and readiness (14/25), but it
+  misses lead-time changes (2 of 11). That is a judgement fault, and whether training fixes it has
+  to be measured.
+- **Gemma 4 E4B:** detects the changes (10 of 11) and gets 92% of their figures right, but breaks
+  the output's structure and citations (C5, C4). That is a format fault, the kind training usually
+  fixes. It is about 4.5B effective, so it is faster and cheaper to train and serve.
 
-It is 12B, about 12 GB at fp8, so it fits an L4 for serving.
+The proposal is to train both, as the plan allows one or two (`docs/sft_plan.md`), and compare them
+on readiness, change detection and wrong figures.
+
+The Qwen and Ministral models change lead times as often as Sol but get about a third of the
+figures wrong, which training on final answers is unlikely to fix.

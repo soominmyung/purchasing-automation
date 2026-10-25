@@ -43,6 +43,14 @@ The email check and rewrite prompts were written inline in `services/agents.py` 
 Design and the reasons for each decision: `docs/changelog_2026-10.md`, items 16 and 19-22.
 
 **What changed**
+- (2026-10-25, item 28) `analysis.md`, the `figures_after_changes` rule: "every item in
+  lead_time_changes. [] when there is no lead-time change" became "one entry for each item in
+  lead_time_changes, and for no other item. [] when lead_time_changes is []", the same test C10
+  applies. The output template shows the field filled in, and the open models in the SFT screening
+  copied it for items whose lead time was not changed. After the change: Qwen3.5-9B 5 → 0 such
+  cases, Gemma 4 12B 3 → 1; Ministral 3 8B and 14B and Gemma 4 E4B unchanged;
+  `gpt-6.1-sol` 0 → 0, 24 of 25 ready (the one failure a judge reading, J7a)
+  (`docs/sft_base_screening.md`).
 - (2026-10-24, item 23) `analysis.md`, one call: the output fields in the order of the work
   (findings, changes, `figures_after_changes`, `stock_findings`, questions, actions, summary); a
   change's consequences stated (a changed lead time changes the item's risk, gap and order date,

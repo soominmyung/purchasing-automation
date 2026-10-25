@@ -11,6 +11,8 @@ Run:
   python scripts/screen_base_models.py --model local:qwen3.5-9b      one candidate (resumes)
   python scripts/screen_base_models.py --sol                         score Sol's outputs the same way
   python scripts/screen_base_models.py --report                      the table of every file so far
+  python scripts/screen_base_models.py --model gpt-6.1-sol --tag fac-rule   a fresh run (Sol at its
+      production effort) after a prompt revision, kept apart from the earlier files
 Out: eval_results/sft_screen_<name>.jsonl, one line per scenario
 """
 import argparse
@@ -35,8 +37,11 @@ RESULTS = ROOT / "eval_results"
 SOL_OUTPUTS = RESULTS / "v5_base_outputs_estimate.jsonl"
 
 
+TAG = ""  # --tag: a suffix for a run on a revised prompt, e.g. "fac-rule"
+
+
 def out_file(name: str) -> Path:
-    return RESULTS / f"sft_screen_{name.removeprefix('local:').replace('/', '_')}.jsonl"
+    return RESULTS / f"sft_screen_{name.removeprefix('local:').replace('/', '_')}{'_' + TAG if TAG else ''}.jsonl"
 
 
 def _done(path: Path) -> set[str]:
@@ -52,7 +57,9 @@ def _score(group: dict, analysis: dict, docs: list[dict]) -> dict:
 
 
 def run_model(model: str) -> None:
-    agents.AGENT_MODELS["analysis"], agents.AGENT_EFFORT["analysis"] = model, None
+    agents.AGENT_MODELS["analysis"] = model
+    if model.startswith("local:"):  # an API model keeps its production effort (Sol: medium)
+        agents.AGENT_EFFORT["analysis"] = None
     path = out_file(model)
     done = _done(path)
     with open(path, "a", encoding="utf-8") as f:
@@ -121,7 +128,9 @@ if __name__ == "__main__":
     ap.add_argument("--model")
     ap.add_argument("--sol", action="store_true")
     ap.add_argument("--report", action="store_true")
+    ap.add_argument("--tag", default="")
     a = ap.parse_args()
+    TAG = a.tag
     if a.model:
         run_model(a.model)
     if a.sol:
