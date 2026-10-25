@@ -12,13 +12,29 @@ A multi-agent LLM pipeline that jointly analyzes an inventory snapshot together 
 
 > A polished A4 version of this write-up is available as a [PDF](docs/portfolio_a4_en.pdf).
 
+## Project history
+
+- **Sep–Dec 2025, at Korea Foods.** Prototyped in n8n with the purchasing team, then built as a
+  LangGraph multi-agent system on GPT-4o, with a supplier-email validator and an analysis-quality
+  evaluator kept simple on GPT-4o as well. Deployed on the company's on-premises SAP ERP server
+  with the IT manager's help, and first used experimentally by a few members of the purchasing
+  team. Fine-tuning Llama-3-8B to replace GPT-4o was considered; GPT-4o was kept.
+- **Feb 2026: reconstructed for this repository.** The company's code stayed with the company, so
+  the system was rebuilt here from scratch. The February commits record that reconstruction, not
+  the first development.
+- **Mar–Aug 2026.** Llama-3-8B QLoRA SFT and DPO, then self-hosted serving with vLLM (FP8).
+- **Oct 2026: v5 overhaul.** The work between code and LLMs redrawn, evaluation checks and a
+  validated judge, every agent's model chosen by measurement, and SFT retraining on the current
+  pipeline (`docs/changelog_2026-10.md`).
+
+
 ---
 
 ## At a Glance
 
 <table>
 <tbody>
-<tr><td><b>Period</b></td><td>Oct 2025 – Dec 2025</td></tr>
+<tr><td><b>Period</b></td><td>Sep 2025 – present (at Korea Foods until Dec 2025; developed further since)</td></tr>
 <tr><td><b>Role</b></td><td>Solo project — architecture, development, deployment</td></tr>
 <tr><td><b>Domain</b></td><td>Generative AI-based inventory-risk analysis &amp; automated document generation</td></tr>
 <tr><td><b>Core stack</b></td><td>Python, FastAPI, LangGraph, ChromaDB, GPT-4o, Docker, GCP Cloud Run</td></tr>
