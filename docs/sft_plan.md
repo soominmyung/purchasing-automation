@@ -215,8 +215,8 @@ The measures are chosen so that the answer does not rest on resemblance to the t
    has learned the standard, not copied the teacher, mistakes included.
 5. **Generalisation to an unseen type** (§2.3). Following the rules on a kind of history never trained
    on is not imitation.
-6. **The purpose is a deployment requirement, not "as good as GPT".** On the company's own server, the
-   stock figures and supplier history never leave the building, cost is fixed, and nothing depends on
+6. **The purpose is a deployment requirement, not "as good as GPT".** On the company's own server (taken
+   to have an L4, §4), the stock figures and supplier history never leave the building, cost is fixed, and nothing depends on
    an outside API. So the question is whether the small model is good enough for this role and where
    it falls short. Its shortfalls are reported with real examples.
 
@@ -246,7 +246,8 @@ before it is reused.
 | Sequence length | 4,096 | **6,144–8,192**, set from the longest example | the two analysis calls together took 3.9–4.8k input tokens in recent runs (about 2–2.5k per call), plus the output; no example may be cut |
 | LoRA | r 16, α 32, lr 2e-4, 5 epochs | r 16, α 32, lr 2e-4, **2–3 epochs** | 5 epochs on about 200 examples risks overfitting |
 | Checkpoint choice | none | **10% of the generated data held out as validation**; the checkpoint is chosen by validation loss | the 25 evaluation cases are used only for the final measurement, never to choose a checkpoint |
-| GPU | Vertex AI T4 (16 GB, no bf16) | **L4 (24 GB, bf16)** | longer sequences need more memory; it is also the serving GPU, whose set-up already exists (`docs/inference_serving_vllm.md`) |
+| GPU, training | Vertex AI T4 (16 GB, no bf16) | **the user's PC, RTX 5090 (32 GB, bf16, fp8), under WSL2 or Docker**; the final configuration run once more as a **Vertex AI custom training job** with the same container | the 5090 has more memory and several times the speed of an L4, at no hourly cost, which the learning curve's many runs need; the Vertex run shows the same job reproduced in the cloud (decided by the user, 2026-10-25) |
+| GPU, serving and measurement | — | **an L4 (24 GB) on GCP**, standing in for the company server's card | measured on the class of GPU it would be deployed on, not on a development PC; continues `docs/inference_serving_vllm.md` |
 | Output format at serving | not enforced | **measured with and without vLLM guided JSON (the output schema)** | separates what decoding guarantees (the format) from what training must supply (the content) |
 | Thinking mode | — | **off**, if the model has one | the teacher's targets are final answers; Sol's reasoning is not available to train on |
 | Tracking | W&B | W&B, plus the settings and data version recorded in the results document | |
@@ -291,13 +292,19 @@ on the official model card before a model is chosen.
   only at 4-bit (AWQ or GPTQ, about 9 GB), with a small KV cache.
 - **So** a T4 would rule out the fp16-against-fp8 comparison. The plan keeps the L4.
 
+**The company server's GPU (assumption, the user, 2026-10-25).** The on-prem server that runs SAP is
+taken to have an NVIDIA L4. An L4 is a 72 W, single-slot, low-profile card with passive cooling,
+made to be added to an ordinary server; one costs about $2,000–4,000 (listings checked 2026-10-25,
+about ₩2.8–5.5 million), within what a company would spend for this. Business servers usually have
+no GPU, so this is stated as an assumption in the write-up, not as fact.
+
 **How the model is chosen (proposed, Open):**
 
 1. Run every candidate untuned, with the same prompt, on part of the evaluation set.
 2. Read the outputs side by side.
 3. Train one or two of them.
 
-No candidate is dropped on impression. The screening costs a few L4 hours.
+No candidate is dropped on impression. The screening runs on the RTX 5090.
 
 ## 6. Order of work
 
@@ -306,6 +313,8 @@ No candidate is dropped on impression. The screening costs a few L4 hours.
    the generated inputs.
 3. Run the teacher through the pipeline, filter, and record the raw pass rate. The user reads about 20
    outputs.
-4. Train at 25, 50 and 100 suppliers on an L4, and choose checkpoints by validation loss.
-5. Measure on the 25 cases and the generalisation set, read side by side, and serve at fp16 and fp8.
+4. Train at 25, 50 and 100 suppliers on the RTX 5090, and choose checkpoints by validation loss. Run the
+   final configuration once as a Vertex AI custom training job with the same container.
+5. Serve on a GCP L4 at fp16 and fp8; measure on the 25 cases and the generalisation set, and read side
+   by side.
 6. Write up the results, with the learning curve, then update the README and both portfolios.
