@@ -924,8 +924,13 @@ English or Korean).
   and no "faster shipping option" question (air freight is the only answer for these imports); no
   "also in different words"; no "pipeline"; no example lines. `prompts/v5/approval_request.md`: the
   example rule removed.
-- **Still to decide:** the email validator (`gpt-4o-mini` with a keyword check) caught nothing in 525
-  emails.
+- **The email validator replaced** (`docs/email_model_comparison.md`, The validator): code checks
+  (internal terms; an item outside the email named, by `documents.items_named`) and then
+  `claude-haiku-5-5` at medium effort, of another family than the writer, told to fail internal
+  information, a past problem of the supplier and an item outside the email in other words
+  (`prompts/v5/email_validator.md`); its answer read with `.text` and after leading markdown. On 239 test
+  emails it caught all 13 real faults and failed 8 of 162 clean ones, none of Sol low's; `gpt-4o-mini`,
+  given the same prompt, failed 55 of them for wrong reasons.
 
 ## Evaluation
 
@@ -974,15 +979,9 @@ to be written after testing in Claude Desktop.
   that pass every blocking check; keep the five holdout scenarios out of the training data;
   check how `scripts/generate_dpo_pairs.py` builds pairs today before using the checks for
   them; compare the result in the staged comparison, fp16 and fp8 serving included.
-- Email validator wrongly flags proposed purchase quantities as internal stock figures, and
-  a failing email is still sent after three rewrites.
-- Email validator: what it is given to judge what is internal. Today it gets general
-  categories (stock quantities, weeks to stockout, risk levels, analysis logic). Options: give it
-  this run's actual internal data (available stock, weeks to stockout, risk levels, finding
-  sentences, internal questions) to compare against, and have code check that no such figure
-  appears in the email, leaving the validator the paraphrased leaks ("stock is running low").
-  Since v5 it checks the email text before code adds the item lines, so purchase quantities no
-  longer reach it.
+- Email validator: settled 2026-10-25 (item 26). Still open: a failing email is still sent after
+  three rewrites (with the buyer's draft note); whether to give the validator this run's actual
+  internal figures to compare against.
 - Undecided: whether to call the model at all when every item is Low; whether the PR
   document also gets the data-issues section.
 - **Later: a second stage for the purchase request** (designed 2026-10-22, not built). The

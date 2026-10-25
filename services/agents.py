@@ -52,7 +52,9 @@ AGENT_MODELS = {
     # order without naming the supplier's past problems; gpt-5.4-mini copied them in whatever the prompt said
     "email_draft": "gpt-6.1-sol",
     "email_rewrite": "gpt-6.1-sol",
-    "email_validator": "gpt-4o-mini",
+    # chosen 2026-10-25 over gpt-4o-mini (docs/email_model_comparison.md, Validator): of another family
+    # than the email writer; caught every fault in 239 test emails and failed none of Sol's
+    "email_validator": "claude-haiku-5-5",
     "judge": settings.evaluator_model,
 }
 # Reasoning effort per agent, set explicitly so a change of API default cannot change a run unseen
@@ -64,7 +66,7 @@ AGENT_EFFORT = {
     "approval": "low",  # no issue in 25 at low as at medium, in less than half the time
     "email_draft": "low",
     "email_rewrite": "low",
-    "email_validator": None,
+    "email_validator": "medium",
 }
 
 
@@ -510,43 +512,44 @@ def email_draft_node(state: PurchasingState):
         email_text = run_email_draft_agent(payload)
     return {"email_text": email_text, "iteration_count": state.get("iteration_count", 0) + 1}
 
-def validator_node(state: PurchasingState):
-    """DLP validator: checks if email draft is safe for external communication. It reads the
-    email agent's own text; the item lines, written in code, are not part of it."""
-    email = documents.email_for_check(state["email_text"])
-    
-    # 1. Heuristic check (keyword-based)
-    leak_keywords = ["stock level", "weeks to oos", "risk level", "internal analysis", "replenishment timeline", "wks_to_oos"]
-    leaks = [k for k in leak_keywords if k in email.lower()]
-    
-    if leaks:
-        feedback = f"Found internal terminology: {', '.join(leaks)}"
-        return {
-            "is_valid_email": False,
-            "correction_feedback": feedback,
-            "validation_log": [{"attempt": state.get("iteration_count", 0), "check": "keywords",
-                                "passed": False, "feedback": feedback}],
-        }
-    
-    # 2. LLM-based precision check
-    llm = _llm(AGENT_MODELS["email_validator"], AGENT_EFFORT["email_validator"])
-    check_prompt = EMAIL_VALIDATOR_TEMPLATE.replace("{email}", email)
+LEAK_KEYWORDS = ["stock level", "weeks to oos", "risk level", "internal analysis", "replenishment timeline", "wks_to_oos"]
 
-    out = llm.invoke([
+
+def check_email(email_text: str, other_refs: list[dict]) -> dict[str, Any]:
+    """The email validator, on the email agent's own text (the item lines, written in code, are not
+    part of it). In code: internal terms, and items outside the email named by name or code. Then
+    the model (AGENT_MODELS["email_validator"]): internal information, a past problem of the
+    supplier, items outside the email referred to in other words. Returns passed, check, feedback."""
+    email = documents.email_for_check(email_text)
+    leaks = [k for k in LEAK_KEYWORDS if k in email.lower()]
+    if leaks:
+        return {"passed": False, "check": "keywords", "feedback": f"Found internal terminology: {', '.join(leaks)}"}
+    named = documents.items_named(email, other_refs)
+    if named:
+        return {"passed": False, "check": "items",
+                "feedback": f"Names {', '.join(named)}, which {'is' if len(named) == 1 else 'are'} not part of this "
+                            f"order; leave {'it' if len(named) == 1 else 'them'} out."}
+    others = ", ".join(r["item_name"] for r in other_refs if r.get("item_name")) or "(none)"
+    out = _llm(AGENT_MODELS["email_validator"], AGENT_EFFORT["email_validator"]).invoke([
         SystemMessage(content=EMAIL_VALIDATOR_SYSTEM),
-        HumanMessage(content=check_prompt)
+        HumanMessage(content=EMAIL_VALIDATOR_TEMPLATE.replace("{email}", email).replace("{other_items}", others)),
     ])
-    result = out.content.strip()
-    
-    if result.startswith("PASS"):
-        return {"is_valid_email": True, "correction_feedback": "",
-                "validation_log": [{"attempt": state.get("iteration_count", 0), "check": "llm",
-                                    "passed": True, "feedback": ""}]}
-    else:
-        feedback = result.replace("FAIL:", "").strip()
-        return {"is_valid_email": False, "correction_feedback": feedback,
-                "validation_log": [{"attempt": state.get("iteration_count", 0), "check": "llm",
-                                    "passed": False, "feedback": feedback}]}
+    # .text joins the text blocks; a Claude model that thinks returns a list of blocks as content
+    result = (out.text if hasattr(out, "text") else str(out.content)).strip()
+    # the answer may come in markdown ("**PASS**"), so the verdict is read after any leading marks
+    result = re.sub(r"^[\W_]+", "", result)
+    if result.upper().startswith("PASS"):
+        return {"passed": True, "check": "llm", "feedback": ""}
+    return {"passed": False, "check": "llm", "feedback": re.sub(r"^\W*FAIL:?\s*", "", result, flags=re.I).strip()}
+
+
+def validator_node(state: PurchasingState):
+    """The email validator (check_email); a fail sends the email back to be rewritten."""
+    refs = documents.email_other_items(state["snapshot_date"], state["items"], state["analysis_output"])
+    res = check_email(state["email_text"], refs)
+    return {"is_valid_email": res["passed"], "correction_feedback": res["feedback"],
+            "validation_log": [{"attempt": state.get("iteration_count", 0), "check": res["check"],
+                                "passed": res["passed"], "feedback": res["feedback"]}]}
 
 def should_continue(state: PurchasingState):
     if state.get("is_valid_email") or state.get("iteration_count", 0) >= 3:

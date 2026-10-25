@@ -647,6 +647,33 @@ def email_input(snapshot_date: str, supplier: str, items: list[dict], analysis: 
     }
 
 
+def email_other_items(snapshot_date: str | None, items: list[dict], analysis: dict) -> list[dict]:
+    """The supplier's items that are not part of the email (as email_input's other_items), with
+    their codes, for the validator's check that none of them is named."""
+    items = with_lead_times(items, analysis, snapshot_date)
+    req = requested_items(items)
+    return [{"item_name": str(it.get("item_name") or ""), "item_code": str(it.get("item_code") or "")}
+            for it in ordered_items(items) if it not in req]
+
+
+def items_named(text: str, refs: list[dict]) -> list[str]:
+    """The items of refs that text names, by name or by code. A name matches whatever its case and
+    whether its parts are joined, spaced or hyphenated ("PlasticCap", "plastic cap", "Plastic-Cap"),
+    as a whole word only."""
+    found = []
+    for r in refs:
+        name, code = r.get("item_name") or "", r.get("item_code") or ""
+        parts = re.findall(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+", name) or ([name] if name else [])
+        pats = []
+        if parts:
+            pats.append(r"\b" + r"[\s\-_]?".join(re.escape(p) for p in parts) + r"(?:e?s)?\b")  # plural too
+        if code:
+            pats.append(r"\b" + re.escape(code) + r"\b")
+        if any(re.search(p, text or "", re.I) for p in pats):
+            found.append(name or code)
+    return found
+
+
 def email_item_lines(items: list[dict], analysis: dict) -> list[str]:
     changes = changes_by_item(analysis)
     items = with_lead_times(items, analysis, None)  # which items are requested; dates do not change

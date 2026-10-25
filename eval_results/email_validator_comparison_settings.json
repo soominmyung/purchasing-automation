@@ -1,0 +1,32 @@
+{
+  "configs": [
+    [
+      "gpt-4o-mini",
+      null
+    ],
+    [
+      "claude-haiku-5-5",
+      "low"
+    ],
+    [
+      "claude-haiku-5-5",
+      "medium"
+    ],
+    [
+      "claude-haiku-5-5",
+      "high"
+    ]
+  ],
+  "prompt": "Analyze the following draft of the requests in an email to a supplier.\nIt fails if it contains any of these:\n- internal stock quantities, weeks to stockout (\"Weeks to Out of Stock\", WksToOOS) or internal risk\n  assessments (High/Medium/Low risk);\n- a mention of an internal analysis, review, logic or tool;\n- a mention of a problem the supplier had before, or of when it happened (a question about how a step\n  of this order will proceed or be checked is fine);\n- a mention, by name or otherwise, of any of these items, which are not part of this email:\n  {other_items}\n\nEmail draft:\n---\n{email}\n---\nIf it fails, respond with 'FAIL: <reason>'.\nIf it is safe to send to the supplier, respond with 'PASS'.\n",
+  "system": "You are a strict data loss prevention (DLP) auditor.",
+  "keywords": [
+    "stock level",
+    "weeks to oos",
+    "risk level",
+    "internal analysis",
+    "replenishment timeline",
+    "wks_to_oos"
+  ],
+  "cases": 239,
+  "started": "2026-10-25T15:17:31"
+}

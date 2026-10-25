@@ -76,7 +76,8 @@ fixed there.
 | Emails written (3 rounds x 7 settings x 25), each through the production validator loop | 525 emails, 533 drafts with rewrites, 533 validator checks | `eval_results/email_model*_comparison.jsonl` |
 | Judge calls on them (E1, E2, E4-E7, three runs each; five scorings as the checks were corrected) | 2,625 (15,750 verdicts) | `eval_results/email_model*_judged.jsonl` |
 | Read by hand, issue by issue | 525 | `docs/email_model_comparison.md` |
-| Recorded cost | $0.67 writing and validating, $2.61 judging | |
+| Validator compared (gpt-4o-mini, Haiku low / medium / high) on 175 real and 64 seeded emails | 956 checks | `eval_results/email_validator_comparison.jsonl` |
+| Recorded cost | $0.67 writing and validating, $2.61 judging, $0.14 the validator test | |
 
 Chosen: `gpt-6.1-sol`, effort low (`docs/email_model_comparison.md`). **What decided it:** Sol rewrote
 the analyst's notes on a supplier's past problems as ordinary questions about this order ("how

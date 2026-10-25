@@ -21,7 +21,10 @@ two development cases, never on the same inputs as other models.
 - **The checks had to be corrected too.** The judge failed questions the prompt requires to be left
   out, counted required questions as repeats, and failed an indirect question for not asking about
   the problem itself; each wording was corrected and the emails scored again.
-- **The validator caught nothing** in 525 emails, the PowerModuleZ sentence included.
+- **The validator caught nothing** in 525 emails, the PowerModuleZ sentence included, and failed
+  good emails for wrong reasons. Replaced by code checks (internal terms, items outside the email by
+  name) and `claude-haiku-5-5` at medium effort told to look for past problems too: on 239 test emails
+  it caught all 13 real faults and failed none of Sol low's.
 - Sol low was chosen over Luna medium, the other clean setting: more expensive, faster, and it asks
   indirectly where it matters.
 
@@ -140,6 +143,57 @@ What the reading found in round 3:
 - The validator passed every email again, the January PowerModuleZ sentence and the Armenian word
   included.
 
+## The validator
+
+**Why it was changed.** Over the three rounds the validator (`gpt-4o-mini` after a keyword check)
+passed every email, including "the loose-terminal issue in the January PowerModuleZ batch" and an
+Armenian word, and its only fails were false alarms: it objected to "HighTorqueScrew", an item the
+email is about, and in round 2 sent Sol low's eval_11 back three times and left it failed. It checked
+only what the email agent is never given (stock figures, risk levels, the analysis), and it was of the
+writer's family (GPT), the case the self-preference papers warn about (`docs/judge_selection.md`).
+
+**What changed** (`services/agents.check_email`, `prompts/v5/email_validator.md`, the user's
+decisions): in code, the keyword check as before and, new, any item of `other_items` named by name or
+code (`documents.items_named`: whatever its case, spacing, hyphens or plural, as a whole word); then
+the model, told to fail internal information, a past problem of the supplier or when it happened (a
+question about how a step of this order will proceed or be checked passes, as E2), and an item outside
+the email referred to in other words. The answer is read with `.text`, since a Claude model that thinks
+returns blocks, and after any leading markdown, since Haiku answers "**PASS**" (a bug in the first
+version of this change, which read such answers as fails; 11 at medium effort before it was fixed).
+
+**Test** (`scripts/compare_email_validators.py`, `eval_results/email_validator_comparison.jsonl`): the 175
+round-3 emails, labelled by the judge's last scoring (13 with a fault), and Sol low's 25 clean emails
+with one fault added: an item outside the email named (7, where there is one), the same item referred
+to without its name (7), a past problem with its month (25), weeks of stock left (25). Each setting
+once on all 239.
+
+| Validator | Item named | Item referred to | Past problem | Internal | Real faults caught | Clean emails failed | Of Sol low's 25 | Time | Cost per email |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `gpt-4o-mini` | 7/7 | 4/7 | 25/25 | 25/25 | 13/13 | **55/162 (34%)** | 10 | 0.8 s | $0.00005 |
+| Haiku, low | 7/7 | 4/7 | 25/25 | 25/25 | 12/13 | 47/162 | 8 | 1.9 s | $0.00014 |
+| **Haiku, medium** | 7/7 | 3/7 | 25/25 | 25/25 | **13/13** | **8/162 (4.9%)** | **0** | 2.2 s | $0.00018 |
+| Haiku, high | 7/7 | 2/7 | 25/25 | 25/25 | 11/13 | 8/162 | 0 | 2.4 s | $0.00021 |
+
+The seven named items were all caught by the code check, before the model.
+
+**Why Haiku at medium: it catches every real fault and leaves Sol's emails alone.** With the new
+prompt every setting caught the seeded past problems and internal figures; they differ in what they
+fail wrongly. `gpt-4o-mini` failed a third of the clean emails on reasons that are simply wrong ("The
+email mentions 'current availability' and 'lead times,' which could imply internal stock quantities";
+"mentions 'CircuitBoardA,' which is not part of the email", the item the email is about); in production
+it would send most emails back for nothing. Haiku at medium failed 8, none of them Sol low's, and seven
+of the eight are traces of a past problem that the judge's E2 let through and the validator read more
+strictly, the same traces Luna was faulted for: "expected recovery timetable and backlog clearance
+schedule", "any update on the production restart", "dispatch from an unaffected location",
+"corrective measures" (which presuppose a nonconformance). The eighth gave a wrong reason besides
+(it took HandleGrip, the email's item, for one outside it). At high effort Haiku missed two real
+faults ("any product-standard discrepancies") for no fewer false alarms. Referring to an item outside
+the email without its name is caught less well (3 of 7), but the seeded wording ("the other product we
+usually order from you") is itself vague, and a name is caught by code every time.
+
+**Decided by the user, 2026-10-25: `claude-haiku-5-5` at effort medium**, of another family than the
+email writer, about 2.2 s and $0.0002 per check.
+
 ## Decision
 
 **`gpt-6.1-sol` at effort low, decided by the user on 2026-10-25**, on round 3, against
@@ -163,5 +217,4 @@ What the reading found in round 3:
 
 `gpt-5.4-mini` is out on copying past problems in.
 
-The validator: still `gpt-4o-mini` with the keyword check; it caught nothing across 525 emails. To be
-decided.
+The validator: see the section above; `claude-haiku-5-5` at medium effort.
