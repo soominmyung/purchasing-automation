@@ -140,6 +140,24 @@ judge check for it. So part of Gemma 4 12B's 14 ready cases are changes it did n
 production that is a serious miss: an order placed by an 18-week date for an item whose supplier
 has announced 22 weeks arrives late.
 
+**Why Gemma 4 12B made so few changes: it saw the delays but would not estimate a size.** The
+history documents in these cases name a delay but give no size: "recent logistical complications
+have led to delays in shipping schedules" (eval_08), "significant delivery delays due to a recent
+strike … not been resolved" (eval_11), "a significant production halt" (H3). Sol applied a
+provisional allowance (20 or 22 weeks), with the reason saying it is an analyst's estimate to be
+confirmed, as the prompt allows. Gemma 4 12B:
+
+- recorded the delay as a finding in 8 of the 9 cases;
+- in 5 of them, asked the buyer to confirm the timing before ordering, for example eval_11: "Confirm
+  current lead times and delivery schedules for this order before placing, given the unresolved
+  warehouse strike";
+- did not put a number on it.
+
+This is the behaviour the user decided against on 2026-10-25: confirm the delay, and allow for it
+in the meantime. So it is a policy the prompt states and the model did not follow, not a failure to
+notice. The teacher's outputs apply the allowance every time, so it is the kind of behaviour
+training should change; the change-detection measure will show whether it did.
+
 Gemma 4 E4B is the opposite. It changed the lead time in 10 of Sol's 11 cases and had the lowest
 error rate on the figures it worked out (8 of 104, 7.7%). It fails on the output's structure
 instead:
@@ -164,20 +182,28 @@ model changed too:
 changes, and the scenarios' planted labels (Sol is the reference, not the truth). This is a
 reported measure, not a new blocking check.
 
+## Performance by model, in short
+
+| Model | What it does well | What it gets wrong | Example |
+|---|---|---|---|
+| `gpt-6.1-sol` (reference) | every check, every figure right; applies a provisional lead time with its basis and asks to confirm it | — (one judge reading in round 2) | eval_11: 22 weeks for an unresolved strike, "an analyst estimate … to be confirmed" |
+| **Gemma 4 12B** | the most often ready (14–15/25); faithful findings; the output's format | puts no number on an unsized delay, only asks to confirm it (9 of Sol's 11 changes); slight strengthening of documents (J1b 4–5); internal figures in a supplier question (J8 2–3) | H3: an undated past halt written as "currently experiencing a significant production halt"; eval_06: "to bridge the 13-week gap" in a supplier question |
+| **Gemma 4 E4B** | applies the lead-time changes (10 of 11); the most accurate figures after a change (3 of 21 items wrong) | the output's structure: no final lead time per item (C5 14); citations (C4 11–13) | eval_01: a supplier-wide lead time with no item given its final lead time |
+| Qwen3.5-9B | applies every change (11 of 11); follows the revised rule (0 figures for unchanged items) | date arithmetic: 21 of 22 changed items with a wrong figure | eval_08: four wrong values in one answer (an order date, Critical written as High, a 31-week gap where the rules give 0, a second order date) |
+| Ministral 3 14B | applies the changes (11 of 11) | arithmetic (22 of 22 items wrong); figures for unchanged items (8); internal figures to the supplier (J8 6–10); slowest (17–21 s) | eval_09: Critical written as Medium, High as Low |
+| Ministral 3 8B | applies the changes (11 of 11) | arithmetic (22 of 22 items wrong); figures for unchanged items in almost every case (11–12); J8 14–15 | eval_02: no lead-time change, yet 18-week "figures after changes" for both items |
+
 ## Decision
 
-**Open, for the user.** After round 2 the realistic candidates are **Gemma 4 12B** and **Gemma 4
-E4B**. Their weaknesses are opposite:
+**Open, for the user.**
 
-- **Gemma 4 12B:** the best format, faithfulness to the documents and readiness (14/25), but it
-  misses lead-time changes (2 of 11). That is a judgement fault, and whether training fixes it has
-  to be measured.
-- **Gemma 4 E4B:** detects the changes (10 of 11) and gets 92% of their figures right, but breaks
-  the output's structure and citations (C5, C4). That is a format fault, the kind training usually
-  fixes. It is about 4.5B effective, so it is faster and cheaper to train and serve.
-
-The proposal is to train both, as the plan allows one or two (`docs/sft_plan.md`), and compare them
-on readiness, change detection and wrong figures.
-
-The Qwen and Ministral models change lead times as often as Sol but get about a third of the
-figures wrong, which training on final answers is unlikely to fix.
+- **Gemma 4 12B is the leading candidate.** It is a server-class general model with the best format
+  and faithfulness. Its main gap, no allowance for an unsized delay, is a policy the teacher's
+  outputs show every time, so training should change it. Change detection measures whether it did.
+- **Gemma 4 E4B** has the most accurate figures but breaks the output's structure. It is built for
+  phones and laptops (about 4.5B effective), which limits how many rules it holds. The user is
+  wary of it.
+- **Gemma 4 26B-A4B** (a mixture of experts, about 4B active) was left out of the screening on size
+  alone. It needs fp8 to fit the 5090 and 4-bit for an L4. Screening it once was proposed.
+- The Qwen and Ministral models apply the changes but get nearly every changed item's figures
+  wrong, which training on final answers is unlikely to fix.
