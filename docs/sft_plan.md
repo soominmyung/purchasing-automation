@@ -215,8 +215,8 @@ The measures are chosen so that the answer does not rest on resemblance to the t
    has learned the standard, not copied the teacher, mistakes included.
 5. **Generalisation to an unseen type** (§2.3). Following the rules on a kind of history never trained
    on is not imitation.
-6. **The purpose is a deployment requirement, not "as good as GPT".** On the company's own server (with an
-   NVIDIA L4, §4), the stock figures and supplier history never leave the building, cost is fixed, and nothing depends on
+6. **The purpose is a deployment requirement, not "as good as GPT".** Served from the company's own GCP
+   project (§6), the stock figures and supplier history go to no model company's API, cost is fixed, and nothing depends on
    an outside API. So the question is whether the small model is good enough for this role and where
    it falls short. Its shortfalls are reported with real examples.
 
@@ -247,7 +247,7 @@ before it is reused.
 | LoRA | r 16, α 32, lr 2e-4, 5 epochs | r 16, α 32, lr 2e-4, **2–3 epochs** | 5 epochs on about 200 examples risks overfitting |
 | Checkpoint choice | none | **10% of the generated data held out as validation**; the checkpoint is chosen by validation loss | the 25 evaluation cases are used only for the final measurement, never to choose a checkpoint |
 | GPU, training | Vertex AI T4 (16 GB, no bf16) | **the user's PC, RTX 5090 (32 GB, bf16, fp8), under WSL2 or Docker**; the final configuration run once more as a **Vertex AI custom training job** with the same container | the 5090 has more memory and several times the speed of an L4, at no hourly cost, which the learning curve's many runs need; the Vertex run shows the same job reproduced in the cloud (decided by the user, 2026-10-25) |
-| GPU, serving and measurement | — | **an L4 (24 GB) on GCP**, the same card as the company server's | measured on the class of GPU it would be deployed on, not on a development PC; continues `docs/inference_serving_vllm.md` |
+| GPU, serving and measurement | — | **an L4 (24 GB) on GCP**, the production serving VM (§6) | measured on the GPU it is deployed on, not on a development PC; continues `docs/inference_serving_vllm.md` |
 | Output format at serving | not enforced | **measured with and without vLLM guided JSON (the output schema)** | separates what decoding guarantees (the format) from what training must supply (the content) |
 | Thinking mode | — | **off**, if the model has one | the teacher's targets are final answers; Sol's reasoning is not available to train on |
 | Tracking | W&B | W&B, plus the settings and data version recorded in the results document | |
@@ -292,9 +292,6 @@ on the official model card before a model is chosen.
   only at 4-bit (AWQ or GPTQ, about 9 GB), with a small KV cache.
 - **So** a T4 would rule out the fp16-against-fp8 comparison. The plan keeps the L4.
 
-**The company server's GPU.** The on-prem server that runs SAP has an NVIDIA L4: a 72 W,
-single-slot, low-profile card with passive cooling, made to be added to an ordinary rack server
-(about $2,000–4,000, listings checked 2026-10-25). Serving is measured on a GCP L4, the same card.
 
 **How the model is chosen (proposed, Open):**
 
@@ -304,88 +301,70 @@ single-slot, low-profile card with passive cooling, made to be added to an ordin
 
 No candidate is dropped on impression. The screening runs on the RTX 5090.
 
-## 6. Serving at the company
+## 6. Serving
 
-The fine-tuned model is served on the company's own server, the one that already runs SAP Business
-One and the pipeline. Only the **measurement** is done on GCP (§6.4), on the same card.
+**Decided (the user, 2026-10-25):** the fine-tuned analysis model is served on **an L4 VM in the
+company's GCP project**, with vLLM. The pipeline itself stays on the on-prem SAP server. The company
+server has no GPU. This is the set-up actually built and measured (§6.4), and it is the same recipe as
+`docs/inference_serving_vllm.md`.
+
+Serving on the SAP server itself was considered and set aside. vLLM runs only on Linux, so on that
+Windows server it would need a Linux VM under Hyper-V with the GPU passed through to it: a set-up that
+was never built or tested here. A Windows-native engine (llama.cpp or Ollama with a GGUF of the model)
+would avoid Linux. But it is a different engine from the one measured, so the measurements would not
+apply to it.
 
 ### 6.1 Where it runs
 
 | | |
 |---|---|
-| Server | the on-prem SAP Business One server, on all the time. Windows Server, running SAP B1 with SQL Server, the pipeline (FastAPI) and the nightly history sync (Windows Task Scheduler) |
-| GPU | one NVIDIA L4, 24 GB, 72 W, in a PCIe slot of that server |
-| RAM | 32 GB in all, shared by SQL Server, SAP B1 and the model |
-| Model | the chosen base model with the LoRA adapter, served at fp8 if the measurement shows no loss of quality (§3.2), otherwise at fp16 |
-
-vLLM does not run on Windows. It therefore runs in a **Linux virtual machine on the same server**:
-
-- an Ubuntu VM under Hyper-V, which is part of Windows Server;
-- the L4 handed to the VM whole, by Hyper-V's Discrete Device Assignment (GPU passthrough), so the VM
-  drives it with the ordinary Linux NVIDIA driver;
-- in the VM, the official `vllm/vllm-openai` container, started with a restart policy, so that it comes
-  back after a reboot.
-
-The alternative, WSL2 on the Windows host, is simpler to set up but is meant for desktops. A VM keeps the
-model's environment apart from SAP, can be restarted or rebuilt without touching SAP, and is a standard
-set-up for a server.
+| Pipeline | the on-prem SAP Business One server, as today: FastAPI, the history sync, the documents |
+| Model | a GCP Compute Engine VM, `g2-standard-8`, with one NVIDIA L4 (24 GB), in the company's own GCP project, in a region near the UK office where L4s are offered (to be checked) |
+| Engine | the official `vllm/vllm-openai` Docker container: the chosen base model with the LoRA adapter (`--enable-lora`), at fp8 if the measurement shows no loss of quality (§3.2), otherwise fp16 |
 
 ### 6.2 How the pipeline reaches it
 
-- **The network.** The VM sits on an internal Hyper-V virtual switch, so only the host can reach it.
-  vLLM listens there on port 8000, with an API key. Nothing is opened to the office network or the
-  internet.
+- **The network.** The VM has no open ports except vLLM's. The GCP firewall allows only the company's
+  fixed IP address, and vLLM requires an API key (`--api-key`). The call goes over HTTPS, with a TLS
+  proxy in front of vLLM on the VM.
 - **The call.** vLLM serves an OpenAI-compatible API. To the pipeline, the analysis model is an OpenAI
-  model at another address: `http://<vm address>:8000/v1`, with the model name given to the adapter
-  (for example `purchasing-analysis`). The only code change is in `services/agents._llm`: a model name
-  such as `local:purchasing-analysis` creates `ChatOpenAI` with that `base_url`, and the address goes in
-  `config.py`. The analysis prompt, the checks, the judge and the documents do not change.
+  model at another address (`https://<vm address>/v1`, model name `purchasing-analysis`). The only code
+  change is in `services/agents._llm`: a model name such as `local:purchasing-analysis` creates
+  `ChatOpenAI` with that `base_url` and key, both set in `config.py`. The prompt, checks, judge and
+  documents do not change.
 - **The output format.** When the pipeline asks for the analysis's JSON schema, vLLM's guided decoding
-  can enforce it. Whether to switch it on is decided by the measurement (§4, "Output format at
-  serving").
+  can enforce it. Whether to switch it on is decided by the measurement (§4).
 - **The other agents.** The approval agent, the email agent, the validator and the judge stay on their
-  APIs. Only the analysis is moved, as only the analysis is trained (§1).
+  APIs. Only the analysis is trained (§1).
 
-### 6.3 Sharing the server with SAP
+### 6.3 Where the data goes
 
-- **The GPU** is used only by the model.
-- **The RAM** is shared, so it is divided on purpose:
-  - SQL Server's `max server memory` is capped (for example at 16 GB), so it does not take the memory
-    the VM needs;
-  - the VM gets a fixed share (for example 12 GB);
-  - the rest is for Windows and SAP B1.
+The stock figures and supplier history leave the building for the analysis. They go only to a VM in
+the company's own GCP project, under its own account, region and firewall. They are not sent to a
+model company's API, as they are with `gpt-6.1-sol`. The other agents still call their APIs, as today.
 
-  The model's weights live on the GPU. The VM's RAM is needed mainly while they are loaded, and it is
-  checked against the chosen model: about 9–10 GB at fp8 for a 9B model, about 12–13 GB for a 12B.
-- **Load.** The buyers run the pipeline a few times a day, one supplier after another. The model stays
-  loaded, and the L4 idles at low power between runs.
+### 6.4 Measurement
 
-### 6.4 What is measured on GCP, and why it carries over
+The serving measurement (§3.2) runs on this VM type with the production flags:
 
-The measurement uses a GCP `g2-standard-8` VM with one L4, the same card as the server's. It runs the
-**same vLLM version and flags as the server**:
-
-- the same `--max-model-len`;
-- the same `--gpu-memory-utilization`;
-- the same fp16 or fp8 setting;
+- the same vLLM version;
+- the same `--max-model-len` and `--gpu-memory-utilization`;
+- fp16 against fp8;
 - the adapter served the same way.
 
-Generation is bound by the GPU, so throughput and latency carry over to the server. Two things do not
-carry over and are checked once on the server itself: the VM's RAM while the model loads, and the time
-to start after a reboot.
+The figures measured are therefore the production figures.
 
 ### 6.5 Running it
 
+- **Cost.** The buyers run the pipeline a few times a day. The VM can be started on schedule for
+  working hours and stopped outside them, or left running; the measurement gives the cost per analysis
+  either way.
 - **Health.** The pipeline checks vLLM's `/health` before an analysis.
-- **If the model is down.** What the pipeline should do then is **Open**, for the user to decide:
-  - stop with an error;
-  - or fall back to `gpt-6.1-sol`, which would send that run's data to the API.
-- **Adapter versions.** Each trained adapter is a folder of files, kept with its version and its
-  evaluation results.
-  - **Update:** point vLLM at the new adapter and restart the container.
-  - **Rollback:** point it back at the previous folder.
-- **Tracing.** LangSmith keeps tracing the run as today (`docs/observability.md`). The model call no
-  longer leaves the server.
+- **If the model is down.** What the pipeline should do then is **Open**, for the user to decide: stop
+  with an error, or fall back to `gpt-6.1-sol`, which sends that run's data to the API.
+- **Adapter versions.** Each trained adapter is a folder in Cloud Storage, kept with its version and its
+  evaluation results. An update points vLLM at the new one and restarts the container; a rollback
+  points it back at the previous one.
 
 ## 7. Order of work
 
@@ -396,7 +375,7 @@ to start after a reboot.
    outputs.
 4. Train at 25, 50 and 100 suppliers on the RTX 5090, and choose checkpoints by validation loss. Run the
    final configuration once as a Vertex AI custom training job with the same container.
-5. Serve on a GCP L4 at fp16 and fp8, with the server's flags (§6.4); measure on the 25 cases and the generalisation set, and read side
+5. Serve on a GCP L4 at fp16 and fp8, with the production flags (§6.4); measure on the 25 cases and the generalisation set, and read side
    by side.
-6. Write up the results, with the learning curve. Set up serving on the company server (§6), then update
+6. Write up the results, with the learning curve. Set up the production serving VM (§6), then update
    the README and both portfolios.
