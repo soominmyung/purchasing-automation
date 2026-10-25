@@ -386,7 +386,8 @@ The figures measured are therefore the production figures.
    outputs.
 4. Train at 25, 50 and 100 suppliers on the RTX 5090, and choose checkpoints by validation loss. Run the
    final configuration once as a Vertex AI custom training job with the same container.
-5. Serve on a GCP L4 at fp16 and fp8, with the production flags (§6.4); measure on the 25 cases and the generalisation set, and read side
+5. Launch the GCP L4 VM with the three access layers of §6.2 set up by the user (firewall rule for the
+   company IP, vLLM API key, HTTPS through Caddy). Serve at fp16 and fp8, with the production flags (§6.4); measure on the 25 cases and the generalisation set, and read side
    by side.
 6. Write up the results, with the learning curve. Set up the production serving VM (§6), then update
    the README and both portfolios.
