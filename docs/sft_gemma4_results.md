@@ -262,6 +262,56 @@ The finding worth keeping: **validation loss fell steadily while readiness fell.
 alone, the fine-tune would have looked like a success. The production checks caught the regression
 and traced it to one phrase crossing fields.
 
+## 9. Serving: Gemma 4 12B, bf16 against fp8 (2026-10-26)
+
+Measured on the RTX 5090 (32 GB) with vLLM v0.31.0, untuned Gemma 4 12B
+(`scripts/serve_quant_compare.ps1`):
+
+- **Quality:** the 25 evaluation cases with the production checks, 6 cases at a time.
+- **Throughput:** the production request itself (`scripts/bench_vllm_v5.py`). That is the v5 system
+  prompt and the pipeline's JSON for the evaluation scenarios, about 4,400 prompt tokens, answers
+  up to 1,500 tokens, temperature 0, at 1–16 concurrent requests.
+
+These are not L4 figures. At bf16 the model does not fit an L4 at all (weights about 24 GB);
+fp8 is what an L4 would serve.
+
+**Memory:**
+
+| | bf16 | fp8 |
+|---|---|---|
+| Weights and runtime | 23.9 GiB | **13.3 GiB** |
+
+**Throughput (output tokens per second, all requests; latency per request):**
+
+| Concurrent requests | bf16 tok/s | fp8 tok/s | bf16 p50 / p95 | fp8 p50 / p95 |
+|---|---|---|---|---|
+| 1 | 52.8 | **82.8** | 9.1 / 12.8 s | 5.8 / 7.6 s |
+| 2 | 94.3 | 141.6 | 9.3 / 13.0 s | 5.9 / 7.7 s |
+| 4 | 146.0 | 227.1 | 9.0 / 12.9 s | 6.1 / 7.9 s |
+| 8 | 315.4 | 514.9 | 12.0 / 19.5 s | 7.9 / 12.0 s |
+| 16 | 453.5 | **834.5** | 16.1 / 22.2 s | 8.6 / 14.2 s |
+
+- **Continuous batching:** from 1 to 16 concurrent requests, throughput rose 8.6× at bf16
+  (52.8 → 453.5 tok/s) and 10× at fp8 (82.8 → 834.5), while latency per request rose far less.
+- **fp8 against bf16:** 1.6× the throughput at one request and 1.8× at sixteen, with lower
+  latency, on 56% of the memory.
+
+**Quality, production checks, 25 cases:**
+
+| | Ready | Lead-time changes applied (of Sol's 11) | Blocking failures by check |
+|---|---|---|---|
+| bf16, this run | 15 | 1 | J1b 5, C10 3, J8 2, C5 1, J1c 1, C6 1, J6b 1 |
+| bf16, round-2 screening run | 14 | 1 | J1b 5, J8 3, J1c 2, C10 2, J6b 2, C5 1, J1a 1, C6 1 |
+| fp8 | 13 | 3 | J1b 6, J6b 5, J1a 2, C10 2, J8 1, J7a 1, J1c 1 |
+
+**Run-to-run variation is part of the comparison.** The two bf16 runs, same model and settings,
+disagree on 3 of the 25 cases (batched decoding is not exactly repeatable). bf16 and fp8 disagree
+on 6, and fp8 is ready in 13 against 14–15.
+
+So the quality cost of fp8 is small, about the size of the run-to-run variation, and not shown to
+be zero. Its extra J6b failures come with the extra lead-time changes it made (3 against 1).
+These are measured with the production checks, not a preference score.
+
 ## 10. Files
 
 | What | Where |

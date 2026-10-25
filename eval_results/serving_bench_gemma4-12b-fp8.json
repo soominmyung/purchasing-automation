@@ -1,0 +1,57 @@
+{
+  "model": "gemma-4-12b-it",
+  "label": "gemma4-12b-fp8",
+  "max_tokens": 1500,
+  "levels": [
+    {
+      "concurrency": 1,
+      "requests": 8,
+      "output_tokens": 3393,
+      "prompt_tokens_mean": 4398,
+      "throughput_tok_s": 82.8,
+      "p50_s": 5.8,
+      "p95_s": 7.6,
+      "wall_s": 41.0
+    },
+    {
+      "concurrency": 2,
+      "requests": 8,
+      "output_tokens": 3378,
+      "prompt_tokens_mean": 4398,
+      "throughput_tok_s": 141.6,
+      "p50_s": 5.9,
+      "p95_s": 7.7,
+      "wall_s": 23.9
+    },
+    {
+      "concurrency": 4,
+      "requests": 8,
+      "output_tokens": 3384,
+      "prompt_tokens_mean": 4398,
+      "throughput_tok_s": 227.1,
+      "p50_s": 6.1,
+      "p95_s": 7.9,
+      "wall_s": 14.9
+    },
+    {
+      "concurrency": 8,
+      "requests": 16,
+      "output_tokens": 9390,
+      "prompt_tokens_mean": 4419,
+      "throughput_tok_s": 514.9,
+      "p50_s": 7.9,
+      "p95_s": 12.0,
+      "wall_s": 18.2
+    },
+    {
+      "concurrency": 16,
+      "requests": 32,
+      "output_tokens": 17793,
+      "prompt_tokens_mean": 4407,
+      "throughput_tok_s": 834.5,
+      "p50_s": 8.6,
+      "p95_s": 14.2,
+      "wall_s": 21.3
+    }
+  ]
+}

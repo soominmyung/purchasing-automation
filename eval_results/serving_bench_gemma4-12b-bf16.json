@@ -1,0 +1,57 @@
+{
+  "model": "gemma-4-12b-it",
+  "label": "gemma4-12b-bf16",
+  "max_tokens": 1500,
+  "levels": [
+    {
+      "concurrency": 1,
+      "requests": 8,
+      "output_tokens": 3629,
+      "prompt_tokens_mean": 4398,
+      "throughput_tok_s": 52.8,
+      "p50_s": 9.1,
+      "p95_s": 12.8,
+      "wall_s": 68.7
+    },
+    {
+      "concurrency": 2,
+      "requests": 8,
+      "output_tokens": 3590,
+      "prompt_tokens_mean": 4398,
+      "throughput_tok_s": 94.3,
+      "p50_s": 9.3,
+      "p95_s": 13.0,
+      "wall_s": 38.1
+    },
+    {
+      "concurrency": 4,
+      "requests": 8,
+      "output_tokens": 3581,
+      "prompt_tokens_mean": 4398,
+      "throughput_tok_s": 146.0,
+      "p50_s": 9.0,
+      "p95_s": 12.9,
+      "wall_s": 24.5
+    },
+    {
+      "concurrency": 8,
+      "requests": 16,
+      "output_tokens": 9127,
+      "prompt_tokens_mean": 4419,
+      "throughput_tok_s": 315.4,
+      "p50_s": 12.0,
+      "p95_s": 19.5,
+      "wall_s": 28.9
+    },
+    {
+      "concurrency": 16,
+      "requests": 32,
+      "output_tokens": 17620,
+      "prompt_tokens_mean": 4407,
+      "throughput_tok_s": 453.5,
+      "p50_s": 16.1,
+      "p95_s": 22.2,
+      "wall_s": 38.9
+    }
+  ]
+}
