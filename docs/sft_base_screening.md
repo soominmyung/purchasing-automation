@@ -147,6 +147,19 @@ instead:
 - C5 14: a supplier-wide lead time with no final lead time per item;
 - C4 11: findings without a basis, or wrong citations.
 
+**Wrong figures on the same items.** The "figures checked" column differs between models because
+each model changed the lead time of different items (four figures per changed item), so its rates
+are not on the same items. On the items Sol changed (11 cases, 22 items), counting only those the
+model changed too:
+
+| Model | Of Sol's 22 items, also changed | Of those, an item with a wrong figure |
+|---|---|---|
+| Gemma 4 E4B | 21 | **3 (14%)** |
+| Gemma 4 12B | 3 | 1 (33%; too few to judge) |
+| Qwen3.5-9B | 22 | 21 (95%) |
+| Ministral 3 14B | 22 | 22 (100%) |
+| Ministral 3 8B | 22 | 22 (100%) |
+
 **Measure to add.** The SFT results report change detection beside readiness: Sol's lead-time
 changes, and the scenarios' planted labels (Sol is the reference, not the truth). This is a
 reported measure, not a new blocking check.
