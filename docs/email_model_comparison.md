@@ -5,6 +5,26 @@ and `["email_rewrite"]` in `services/agents.py`), and what the prompt had to say
 held the role since the v5 prompt tuning of 2026-10-22 (`prompts/CHANGES.md`), chosen there on one or
 two development cases, never on the same inputs as other models.
 
+## In short
+
+- **The deciding difference: how each model asks about a supplier's past problem.** The analyst's
+  points often name what went wrong ("Was the loose-terminal failure in the January PowerModuleZ batch
+  isolated...?"), and the email leaves the company. Sol rewrites such a point as an ordinary question
+  about this order ("how terminal integrity will be verified for the items listed above"); Luna
+  softens it but leaves the trace ("the cause of the loose-terminal failure"); `gpt-5.4-mini` copies
+  it ("the loose-terminal issue in the January PowerModuleZ batch"), and kept doing so whatever the
+  prompt said.
+- **The prompt had to say it for every point, not as an exception.** A rule "use a point as it is
+  where it reads well" put before the past-problem rule let every point through, since the points
+  are questions; the user's correction (style for every point, no past problem whatever a point
+  says) fixed it for Sol and Luna, not for `gpt-5.4-mini`.
+- **The checks had to be corrected too.** The judge failed questions the prompt requires to be left
+  out, counted required questions as repeats, and failed an indirect question for not asking about
+  the problem itself; each wording was corrected and the emails scored again.
+- **The validator caught nothing** in 525 emails, the PowerModuleZ sentence included.
+- Sol low was chosen over Luna medium, the other clean setting: more expensive, faster, and it asks
+  indirectly where it matters.
+
 ## What the agent does
 
 It writes only the requests paragraph of an email to the supplier; code adds the greeting, the
@@ -113,10 +133,26 @@ What the reading found in round 3:
 
 ## Decision
 
-**`gpt-6.1-sol` at effort low, decided by the user on 2026-10-25**, on round 3: no fault found by
-reading, the fastest of the settings without one (3.3 s), and the same model and effort as the
-purchase request. `gpt-6-luna` medium was as clean, at about a tenth of the cost, but slower and with
-a history of malformed JSON; `gpt-5.4-mini` is out on copying past problems in.
+**`gpt-6.1-sol` at effort low, decided by the user on 2026-10-25**, on round 3, against
+`gpt-6-luna` medium, the other setting with no fault found by reading:
+
+| | `gpt-6.1-sol` low | `gpt-6-luna` medium |
+|---|---|---|
+| Cost per email | $0.0024 | $0.0003 |
+| Time per email | **3.3 s** | 5.2 s |
+| How it asks about a supplier's past problem | **as an ordinary question about this order**: "how terminal integrity will be verified", "confirm compliance with the applicable product standards", "the production and order fulfilment schedule" | keeps the problem words, softened: "the cause of the loose-terminal failure" (none), "any product-standard discrepancies", "the expected recovery timeline and backlog clearance schedule" |
+| JSON format | sound in all three rounds | three malformed in round 1, one past repair |
+
+- **It costs more:** about eight times as much per email, but about $0.21 more per 100 suppliers,
+  since each supplier gets one email.
+- **It is faster:** 3.3 s against 5.2 s, the fastest of the settings without a fault.
+- **It asks indirectly where it matters:** the email goes outside the company, and the analyst's
+  points often name what went wrong with the supplier. Sol rewrites them as questions about this
+  order that reveal nothing the company has heard; Luna softens them but leaves the trace (the user:
+  a slight difference of preference, but the deciding one).
+- It is also the same model and effort as the purchase request.
+
+`gpt-5.4-mini` is out on copying past problems in.
 
 The validator: still `gpt-4o-mini` with the keyword check; it caught nothing across 525 emails. To be
 decided.

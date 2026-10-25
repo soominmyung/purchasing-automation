@@ -128,7 +128,7 @@ and to settle internally, and the actions to take.
 
 Sonnet costs about 1.3-1.6 times as much and is 1.5-2 times as fast.
 
-## 6. What bears on the choice
+## 6. What else bears on the choice
 
 - **The judge's family matters most.** The production judge provisionally chosen,
   `claude-haiku-5-5` (`docs/judge_validation.md`), is a Claude model.
@@ -143,11 +143,52 @@ Sonnet costs about 1.3-1.6 times as much and is 1.5-2 times as fast.
   - The judge used in these comparisons was Haiku without thinking, the weaker setting found in
     judge validation. The figure accuracy (C10) is checked by code and is unaffected.
 
-## 7. Decision
+## 7. What each round showed
+
+- **Round 1 (one run per model and case): changing the model fixed what prompt revisions had not.**
+  GPT-4o got 8 of Kestrel's 20 figures after the lead-time change wrong at first (order dates copied
+  from the 18-week input, risk levels a level too low) and turned Nordic's customs hold, which the
+  supplier says is fixed, into a 22-week lead time. Several prompt revisions had not fixed its date
+  arithmetic; a probe showed why: asked "2025-09-06 minus 22 weeks", it was right 6 times in 9 with
+  its working written out, and in the analysis it must write the date without working. The three
+  newer models had every figure right at first, kept Nordic at 18 weeks and raised the defective
+  AnchorPlug batch, which GPT-4o left out.
+- **Round 2 (two runs each, two items added whose risk rises at 22 weeks): equally accurate, so the
+  difference is what they draw out of the history.** Sol, Luna and Sonnet got every figure right,
+  including ThrustWasher becoming Critical with a 2-week gap; GPT-4o did not, in either run. The
+  failures left were the judge's: it failed Luna's correct 50% quantity rise with a wrong reason, and
+  Luna's rewrite followed it to a wrong 5,400; it passed GPT-4o's wrong lead time, then failed and
+  passed the same output. This made judge validation the next step.
+- **Round 3 (other efforts): more reasoning did not make Luna more specific.** At high effort Luna's
+  actions were as general as at medium ("Confirm order-specific delivery dates with KestrelComponents
+  in light of the announced lead-time extension") and three calls passed the 60-second limit. Sonnet
+  at medium was the fastest and as accurate, with the broadest questions.
+- **The deciding difference, read side by side (Kestrel, same prompt):**
+  - Sol: "Place the ValveSeat order on 5 April 2025 and obtain a delivery commitment for no later than
+    6 September 2025; the revised lead time leaves no timing buffer"; bridging supply "arriving by
+    28 June 2025".
+  - Sonnet: "Order SpringClip by 2025-05-17, PistonRing by 2025-05-31 and OilSeal by 2025-10-18", but
+    no date by which bridging supply must arrive.
+  - Luna: "Confirm the revised lead time and delivery dates with KestrelComponents before placing the
+    orders".
+- **Later, with Sol in place (changelog items 24-25):** asked to say when each check comes, Sol first
+  put supplier-wide checks "before placing each order" next to orders it said to place immediately;
+  told to judge the timing against each item's latest order date, it split the same check by item
+  ("alongside the immediate HexBoltM12 order, without delaying it. Complete these checks before
+  placing the remaining orders"), overdue items with a check put first went 9 to 0 in 25 analyses and
+  dates in actions 38 to 72. Given the company's market, it told a UK demand rise from a Korean one
+  ("Use the Korean demand surge to assess supply availability, not to increase the UK order
+  quantity").
+
+## 8. Decision
 
 **`gpt-6.1-sol` at medium effort, kept.**
-1. On the deciding criterion it writes the most actionable actions, with arrival deadlines and
-   order dates as dates.
+
+**Why Sol: its actions say what to secure and by when, as dates.** The value of the LLM in this
+pipeline is what it draws out of the history for the buyer to act on; once the newer models were
+equally accurate, that was the difference (examples above). An action with a deadline can be done
+and checked; "confirm the lead time" cannot.
+1. It writes the most actionable actions, with arrival deadlines and order dates as dates.
 2. It costs less than Sonnet, with the same first-answer record (4 of 4).
 3. It is of a different family from the production judge (Haiku), so the judge can check it fairly.
 

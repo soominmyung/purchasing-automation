@@ -117,17 +117,52 @@ substituted" for "ComponentZ historically substitutes"), frequencies weakened ("
 "often experiences"), a quality finding attributed to the supplier. More reasoning helped Luna a
 little (7 → 6 → 4); Sol carried the same inputs over cleanly even at low effort (18 reasoning tokens).
 
-## 4. Decision
+## 4. What each round showed
 
-**`gpt-6.1-sol` at effort low** (decided by the user, 2026-10-25). On the latest prompts (round 5)
-low and medium both had no issue in 25 outputs; low takes less than half the time (5.3 s against
+- **Round 1: the metrics and the texts disagreed.** `gpt-5.4-mini` kept the sentence-length rule best
+  (24 of 25) and `gpt-4o` worst (13); read, `gpt-5.4-mini` put "the dates shown in the pipeline",
+  "the revised order dates" (nothing was revised) and "[ ]" into the approvers' text, and `gpt-4o`
+  added "a proven track record, supporting the decision to proceed with this supplier". Sol carried
+  the facts over cleanly.
+- **Round 2 (efforts set): reasoning is not what this agent needs.** Luna wrote as well with no
+  reasoning as at medium; `gpt-5.4-mini` got worse with more effort; Sol at low halved the time but
+  moved checks "before ordering" where the actions order now. The judge's P1a-c ranked the settings
+  as the reading did, but do not see citations, placeholders or missing actions.
+- **Round 3: recurring faults came from the prompt, not the models.** The prompt's own "the
+  pipeline's figures" was repeated in the text; findings from the stock figures arrive with an empty
+  document list, written out as "[ ]". The writer was made a purchasing officer putting the request
+  to the approvers neutrally (the user's wording); a clause asking it to name "the current stock
+  position" then made seven outputs tie quantities to it ("the current stock position supports the
+  suggested quantity of 780 units"), so it was taken out (round 4).
+- **Round 5: the last fault came from the analysis agent.** Sol moved checks before the order because
+  the analysis's actions gave no timing ("Obtain confirmed lead times ... for this order, then ...
+  reassess ordering deadlines"), and the approval prompt asked it to decide which checks come first.
+  Fixed in the analysis prompt (changelog item 24), the fault was gone in both Sol settings. Luna,
+  read at every effort under the same conditions, still misplaced figures and wording.
+- **What this taught:** read the outputs, not only the scores, and trace a fault to where it arises
+  (the prompt, the input, the agent upstream) before blaming the model.
+
+## 5. Decision
+
+**`gpt-6.1-sol` at effort low** (decided by the user, 2026-10-25).
+
+**Why Sol: it carries the facts, figures and conditions over exactly, and adds nothing.** The
+approvers decide on this text, so what matters is that it says what the analysis says, no more and no
+less. On the same inputs, the others did not:
+- `gpt-6-luna`, at every effort: the bridging delivery date given as the order's ("place the order on
+  2026-03-02 for delivery by 2026-05-25"), a finding inverted ("ComponentZ has historically been
+  substituted" for "ComponentZ historically substitutes"), frequencies weakened ("can experience" for
+  "often experiences");
+- `gpt-5.4-mini`: this tool's terms, false statements and empty placeholders in the approvers' text;
+- `gpt-4o`: its own assessment of the supplier, and figures wrong.
+
+**Why low effort:** on the latest prompts (round 5) low and medium both had no issue in 25 outputs; low takes less than half the time (5.3 s against
 12.8 s) and about three quarters of the cost ($0.0056 against $0.0076). The user compared on the
 latest prompts only: in rounds 2–4 low had more outputs with an issue (13 against 6, 9 of them a check
 moved before the order), but on prompts since changed, and the cause of that fault was removed in the
-analysis prompt. Luna and `gpt-5.4-mini` are out on the accuracy of what they carry over; `gpt-4o` on
-added assessments and figure errors.
+analysis prompt.
 
-## 5. A person in the loop
+## 6. A person in the loop
 
 Every comparison was read by hand as well as scored, and the reading changed the outcome more than
 once: it ruled out the model the metrics favoured (`gpt-5.4-mini`), traced recurring faults to the

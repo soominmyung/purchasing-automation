@@ -907,9 +907,11 @@ English or Korean).
 
 - **Compared** (`docs/email_model_comparison.md`): `gpt-5.4-mini`, `gpt-6-luna`, `gpt-6.1-sol` at set
   efforts, 25 inputs, three rounds through the production validator loop, judged (E1-E7) and read.
-  **Chosen: `gpt-6.1-sol`, effort low** for the draft and the rewrite. `gpt-5.4-mini`, the model until
-  now, copied the analyst's notes on the supplier's past problems into the email whatever the prompt
-  said.
+  **Chosen: `gpt-6.1-sol`, effort low** for the draft and the rewrite: more expensive than `gpt-6-luna`
+  medium (about $0.21 more per 100 suppliers) but faster (3.3 s against 5.2 s), and it rewrites the
+  analyst's notes on a supplier's past problems as ordinary questions about this order, where Luna
+  leaves the problem words in. `gpt-5.4-mini`, the model until now, copied those notes into the email
+  whatever the prompt said.
 - **`services/agents.py`:** the email draft, rewrite and validator calls now pass their effort (it was
   dropped before); no style examples for the purchase request or the email (`search_request_examples`,
   `search_email_examples` no longer called: the examples in `docs/Examples.zip` say "our stock review"
@@ -1166,6 +1168,15 @@ to be written after testing in Claude Desktop.
     order: 9 → 0 in 25 analyses; dates in actions 38 → 72.
   - Every setting measured, including the cheapest: Luna at none, low and medium, at the user's
     question when it had been left out of reading on an earlier impression.
+- **README and portfolio: the email writer was chosen on how it asks** (item 26,
+  `docs/email_model_comparison.md`). The point to make: the analyst's supplier questions often name
+  what went wrong ("Was the loose-terminal failure in the January PowerModuleZ batch isolated?"), and
+  the email goes outside the company. The three models wrote the same point as "how terminal integrity
+  will be verified for the items listed above" (Sol), "the cause of the loose-terminal failure" (Luna)
+  and "the loose-terminal issue in the January PowerModuleZ batch" (`gpt-5.4-mini`, the model until
+  then, which kept copying such notes whatever the prompt said). Sol was chosen on that, though dearer
+  than Luna. Also: a rule placed as an exception before the main rule switched the main rule off, found
+  by reading and fixed by the user's wording; and the production validator caught none of these.
 - **README and portfolio: the scale of the evaluation** (`docs/evaluation_record.md`). About 1,360
   agent outputs written for evaluation, about 5,480 judge calls (about 35,500 check verdicts), about
   1,050 outputs read by hand plus 89 verdicts scored by the user, for about $9.40 of recorded API cost:

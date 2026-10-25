@@ -53,12 +53,40 @@ adding "supporting the decision to proceed with this supplier". No judge caught 
 also failed a plain summary of a document. With the kept wording: caught 3/3, the summary passed
 3/3, seeded P1 faults 23/24.
 
-## 5. Decision
+## 5. What each round showed
+
+- **Why validate at all:** in the analysis model comparison the judge had become the larger source of
+  error. It failed a correct 50% quantity rise with a wrong reason and the rewrite followed it to a
+  wrong figure; it passed a wrong lead time and then, on the same output, failed and passed it.
+- **Round 1: the model was not the problem; the way it was asked was.** Haiku caught 83.7% of the
+  seeded faults and its verdicts flipped on 17.6% of samples; Luna caught 89.1%. The user saw that the
+  comparison was unfair: the judge's answer was forced through a tool call, and with a forced tool
+  Haiku returns only a `tool_use` block, no thinking (1,637 output tokens against 3,346 with thinking
+  on the same sample), while Luna reasoned. Gemini Flash-Lite answered too seldom to judge (429
+  errors).
+- **Round 2: let it think.** The same Haiku, answering in the scoring sheet's shape so that it thinks
+  first: 91.2% at medium effort, **93.9% at high, flip 3.9%**. The checks it had missed most improved
+  most: J6a (direction of a change) 5/9 to 8/9, J6b (size) 3/9 to 6/9, J10 (a problem document left
+  unused) 1/6 to 4/6, P1c (meaning kept) 6/9 to 9/9. GPT-4o's wrong lead time for a fixed customs
+  hold, passed every time in round 1, was now caught two times in three.
+- **False alarms, on 89 verdicts the user scored by hand:** Haiku high 8.0%, most of them stricter
+  readings than a person's ("only 5 weeks to stockout" as a judging word); Haiku without thinking
+  2.7% but it catches less; Luna 17.0% with 19.1% flips. No setting caught the one real fault (an
+  added assessment of the supplier) until P1a was reworded to "Stating a conclusion that the input
+  does not draw"; a broader rewording also failed a plain summary, so the narrow one was kept.
+- **What this taught:** a judge's verdicts depend on how it is made to answer as much as on the
+  model; and with warnings that the buyer settles, a judge that flags a little more than a person is
+  better than one that misses what a person would catch (recall over precision).
+
+## 6. Decision
 
 **`claude-haiku-5-5`, thinking at high effort, answer in the scoring sheet's shape, one call per
 output** (`anthropic:claude-haiku-5-5?effort=high&format=schema`, `evaluator_model` in `config.py`).
-It meets all three thresholds, is of a different family from the analysis model, and costs about
-$0.0035 per supplier with both calls.
+
+**Why Haiku with thinking: it catches the most faults with the fewest flips.** 93.9% of the seeded
+faults (against 83.7% for the same model forced to answer without thinking and 89.1% for Luna), flip
+3.9%, false alarms 8.0%: the only setting to meet all three thresholds. It is also of a different
+family from the analysis model, and costs about $0.0035 per supplier with both calls.
 
 **Favouring recall over precision.** Most remaining false alarms are stricter readings than a
 person's ("only 5 weeks to stockout" read as a judging word, "imminent" for 19 weeks out). They are

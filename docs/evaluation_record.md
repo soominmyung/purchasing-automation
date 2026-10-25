@@ -27,7 +27,11 @@ its checks. "Check verdict": one pass/fail on one check.
 | Analyses of the 25 evaluation scenarios, rebuilt per prompt version | 149 (5 sets of 25, one stopped at 24; plus GPT-4o's 25) | `eval_results/v5_base_outputs*.jsonl`, `eval_v2_gpt4o_outputs.jsonl` |
 | Models compared | `gpt-4o`, `gpt-6-luna`, `gpt-6.1-sol`, `claude-sonnet-5-5`, Gemini Flash; effort set per model | `docs/analysis_model_comparison.md` |
 
-Chosen: `gpt-6.1-sol`, effort medium (`docs/analysis_model_selection.md`). Prompt decisions measured
+Chosen: `gpt-6.1-sol`, effort medium (`docs/analysis_model_selection.md`). **What decided it:** once
+the newer models were equally accurate, Sol wrote the actions the buyer can act on, with deadlines as
+dates ("obtain a delivery commitment for no later than 6 September 2025"), where Luna wrote "confirm
+the revised lead time". **What it taught:** several prompt revisions did not fix GPT-4o's date
+arithmetic; changing the model did. Prompt decisions measured
 on the 25 analyses: action timing judged against the latest order date (overdue items with a check
 put before their order 9 → 0), quantity changes on UK demand only, estimated sizes that say what they
 rest on (changelog items 23-25).
@@ -43,8 +47,11 @@ rest on (changelog items 23-25).
 | P1 rewording, two wordings | 84 judge calls, 252 verdicts | `eval_results/judge_p1_rewording*_runs.jsonl` |
 | Recorded cost | $2.96 | |
 
-Chosen: `claude-haiku-5-5`, thinking at high effort, scoring-sheet format: detection 93.9%, flip
-3.9%, false alarms 8.0%, recall favoured over precision (`docs/judge_selection.md`).
+Chosen: `claude-haiku-5-5`, thinking at high effort, scoring-sheet format (`docs/judge_selection.md`).
+**What decided it:** letting the same Haiku think raised its detection from 83.7% to 93.9% and cut its
+flips from 17.6% to 3.9%; round 1 had been unfair to it, its answer forced through a tool call that
+leaves no room to think. **What it taught:** how a judge is made to answer matters as much as the
+model; warnings favour recall over precision.
 
 ## 3. The purchase request writer (approval agent)
 
@@ -55,8 +62,12 @@ Chosen: `claude-haiku-5-5`, thinking at high effort, scoring-sheet format: detec
 | Read by hand, issue by issue | about 525 | `eval_results/approval_model_issues_*.json`, `docs/approval_model_comparison.md` |
 | Recorded cost | $2.03 writing, $1.64 judging | |
 
-Chosen: `gpt-6.1-sol`, effort low, after the prompt was revised three times on what the reading found
-(`docs/approval_model_selection.md`).
+Chosen: `gpt-6.1-sol`, effort low (`docs/approval_model_selection.md`). **What decided it:** Sol carried
+the analysis's facts, figures and conditions over exactly, where Luna gave a bridging date as the
+order's delivery and `gpt-4o` added "a proven track record, supporting the decision to proceed".
+**What it taught:** the scores and the texts disagreed (`gpt-5.4-mini` kept the length rule best and
+wrote the worst text), and the recurring faults came from the prompt and the analysis agent upstream,
+fixed there.
 
 ## 4. The supplier email writer and its validator
 
@@ -67,7 +78,10 @@ Chosen: `gpt-6.1-sol`, effort low, after the prompt was revised three times on w
 | Read by hand, issue by issue | 525 | `docs/email_model_comparison.md` |
 | Recorded cost | $0.67 writing and validating, $2.10 judging | |
 
-Chosen: `gpt-6.1-sol`, effort low (`docs/email_model_comparison.md`). What the reading found: `gpt-5.4-mini`, the email model until now, kept copying the
+Chosen: `gpt-6.1-sol`, effort low (`docs/email_model_comparison.md`). **What decided it:** Sol rewrote
+the analyst's notes on a supplier's past problems as ordinary questions about this order ("how
+terminal integrity will be verified"), where Luna left the trace ("the cause of the loose-terminal
+failure"). What the reading found besides: `gpt-5.4-mini`, the email model until now, kept copying the
 analyst's notes about a supplier's past problems into the email ("the loose-terminal issue in the
 January PowerModuleZ batch") whatever the prompt said; one `gpt-6-luna` setting wrote raw JSON into
 the email until the parser was fixed; the production validator passed all 525 emails, catching none
