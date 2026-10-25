@@ -1017,7 +1017,9 @@ Redesigned for v5 and tested once on 2026-10-25; not used by the pipeline, by de
   2025-03-08, a date already past. C5 caught it (blocking). To do: state both limits in the
   analysis prompt's rules for `po_date_changes` and `quantity_changes`, and add the quantity
   limit to C5, which checks only the date today.
-- **SFT retraining:** the fine-tuned model was trained on raw CSV rows, source risk levels
+- **SFT retraining:** plan agreed 2026-10-25 in `docs/sft_plan.md` (analysis agent only; data size set by a
+  learning curve at 25/50/100 suppliers; a tie-in-sale type kept out for generalisation; base, SFT and Sol
+  compared, GPT-4o not; a current instruct base model, still to choose). The fine-tuned model was trained on raw CSV rows, source risk levels
   with no Critical, and GPT-4o outputs from the old prompt. Regenerate the teacher data with
   the current pipeline and retrain before comparing it with GPT-4o. Keep only teacher outputs
   that pass every blocking check; keep the five holdout scenarios out of the training data;
