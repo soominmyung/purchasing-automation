@@ -44,5 +44,3 @@ Rules:
   request rests on, so that the request reads correctly once the check confirms it; you revise
   the text when the answer is known.
 - Name only items that are in "items".
-- If a reference example is given, follow its tone and how it frames a request, never its
-  content.

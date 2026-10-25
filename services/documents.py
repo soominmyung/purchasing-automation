@@ -675,7 +675,7 @@ def email_parts(email_text: str) -> tuple[dict[str, str], list[str]]:
     raw = (email_text or "").strip()
     m = re.search(r"\{[\s\S]*\}", raw)
     try:
-        data = json.loads(m.group(0)) if m else None
+        data = json.loads(m.group(0), strict=False) if m else None  # line breaks inside the string too
     except ValueError:
         data = None
     if not isinstance(data, dict):

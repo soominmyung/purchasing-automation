@@ -19,11 +19,9 @@ from langchain_openai import ChatOpenAI
 from config import settings
 from services import documents
 from services.item_grouping import data_issue_lines, group_risk_level
-from services.vector_store import (
-    search_history,
-    search_request_examples,
-    search_email_examples,
-)
+# No style examples for the purchase request or the email (2026-10-25): the ones in docs/Examples.zip
+# contradict the current rules (an email saying "our stock review", questions as a list).
+from services.vector_store import search_history
 from services.prompts import (
     ANALYSIS_AGENT_SYSTEM,
     ANALYSIS_REVISION_REQUEST,
@@ -49,10 +47,11 @@ AGENT_MODELS = {
     # chosen 2026-10-25 over gpt-4o, gpt-6-luna and gpt-5.4-mini on the same 25 inputs, at set efforts
     # (docs/approval_model_selection.md): carries facts, figures and wording over without additions
     "approval": "gpt-6.1-sol",
-    # gpt-4o-mini and gpt-4o both carried the analyst's wording into the email, naming the
-    # supplier's past problem; gpt-5.4-mini followed the rules (prompts/CHANGES.md, v5)
-    "email_draft": "gpt-5.4-mini",
-    "email_rewrite": "gpt-5.4-mini",
+    # chosen 2026-10-25 over gpt-5.4-mini and gpt-6-luna at set efforts, on 25 inputs in three rounds
+    # (docs/email_model_comparison.md): rewrites the analyst's points as plain questions about this
+    # order without naming the supplier's past problems; gpt-5.4-mini copied them in whatever the prompt said
+    "email_draft": "gpt-6.1-sol",
+    "email_rewrite": "gpt-6.1-sol",
     "email_validator": "gpt-4o-mini",
     "judge": settings.evaluator_model,
 }
@@ -63,8 +62,8 @@ AGENT_MODELS = {
 AGENT_EFFORT = {
     "analysis": "medium",
     "approval": "low",  # no issue in 25 at low as at medium, in less than half the time
-    "email_draft": None,
-    "email_rewrite": None,
+    "email_draft": "low",
+    "email_rewrite": "low",
     "email_validator": None,
 }
 
@@ -236,11 +235,7 @@ def run_analysis_agent(
 def run_approval_agent(payload: dict[str, Any]) -> dict[str, Any]:
     """Approval Agent: the purchase request's Purpose and Justification, for the approvers.
     payload comes from documents.approval_input."""
-    examples = search_request_examples(k=2)
-    examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
     user = json.dumps(payload, ensure_ascii=False)
-    if examples_text:
-        user = "Reference (tone only):\n" + examples_text + "\n\nInput:\n" + user
     out = _llm(AGENT_MODELS["approval"], AGENT_EFFORT["approval"]).invoke([
         SystemMessage(content=APPROVAL_AGENT_SYSTEM),
         HumanMessage(content=user),
@@ -255,12 +250,8 @@ def run_approval_agent(payload: dict[str, Any]) -> dict[str, Any]:
 
 def run_email_draft_agent(payload: dict[str, Any]) -> str:
     """Email Draft Agent: plain-text supplier email. payload comes from documents.email_input."""
-    examples = search_email_examples(k=2)
-    examples_text = "\n\n".join(d.page_content for d in examples) if examples else ""
-    llm = _llm(AGENT_MODELS["email_draft"])
+    llm = _llm(AGENT_MODELS["email_draft"], AGENT_EFFORT["email_draft"])
     user = json.dumps(payload, ensure_ascii=False)
-    if examples_text:
-        user = "Reference (tone only):\n" + examples_text + "\n\nInput:\n" + user
     out = llm.invoke([
         SystemMessage(content=EMAIL_DRAFT_AGENT_SYSTEM),
         HumanMessage(content=user),
@@ -508,7 +499,7 @@ def email_draft_node(state: PurchasingState):
     payload = documents.email_input(state["snapshot_date"], state["supplier"], state["items"],
                                     state["analysis_output"])
     if state.get("correction_feedback") and state["iteration_count"] > 0:
-        llm = _llm(model=AGENT_MODELS["email_rewrite"])  # stronger model for the rewrite
+        llm = _llm(AGENT_MODELS["email_rewrite"], AGENT_EFFORT["email_rewrite"])
         feedback_prompt = EMAIL_REVISION_REQUEST_TEMPLATE.replace("{feedback}", state["correction_feedback"])
         out = llm.invoke([
             SystemMessage(content=EMAIL_DRAFT_AGENT_SYSTEM + EMAIL_REVISION_SYSTEM_SUFFIX),
@@ -538,7 +529,7 @@ def validator_node(state: PurchasingState):
         }
     
     # 2. LLM-based precision check
-    llm = _llm(model=AGENT_MODELS["email_validator"])
+    llm = _llm(AGENT_MODELS["email_validator"], AGENT_EFFORT["email_validator"])
     check_prompt = EMAIL_VALIDATOR_TEMPLATE.replace("{email}", email)
 
     out = llm.invoke([

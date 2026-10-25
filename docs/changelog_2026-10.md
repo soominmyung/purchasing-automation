@@ -903,6 +903,28 @@ English or Korean).
   of the same documents). No company standard allowance is set (the user, 2026-10-25): the size is the
   buyer's call, and the reason says it is an estimate to be confirmed.
 
+### 26. The supplier email: model chosen, prompt revised, style examples removed *(2026-10-25)*
+
+- **Compared** (`docs/email_model_comparison.md`): `gpt-5.4-mini`, `gpt-6-luna`, `gpt-6.1-sol` at set
+  efforts, 25 inputs, three rounds through the production validator loop, judged (E1-E7) and read.
+  **Chosen: `gpt-6.1-sol`, effort low** for the draft and the rewrite. `gpt-5.4-mini`, the model until
+  now, copied the analyst's notes on the supplier's past problems into the email whatever the prompt
+  said.
+- **`services/agents.py`:** the email draft, rewrite and validator calls now pass their effort (it was
+  dropped before); no style examples for the purchase request or the email (`search_request_examples`,
+  `search_email_examples` no longer called: the examples in `docs/Examples.zip` say "our stock review"
+  and ask in lists, against the current rules).
+- **`services/documents.py`:** the email JSON is read with `strict=False`, so a line break inside the
+  string no longer leaves raw JSON in the email.
+- **`prompts/v5/email_draft.md`:** every point written up in the email's style, its wording kept where
+  it suits; no mention of a past problem whatever a point says; INPUT wording rewritten where it does
+  not suit the email; the earliest-dispatch question only when no point asks for an earlier delivery,
+  and no "faster shipping option" question (air freight is the only answer for these imports); no
+  "also in different words"; no "pipeline"; no example lines. `prompts/v5/approval_request.md`: the
+  example rule removed.
+- **Still to decide:** the email validator (`gpt-4o-mini` with a keyword check) caught nothing in 525
+  emails.
+
 ## Evaluation
 
 - **Rubric** (`docs/eval_rubric.md`): fixed checklist replacing imitation-of-GPT-4o scoring;
@@ -1144,6 +1166,12 @@ to be written after testing in Claude Desktop.
     order: 9 → 0 in 25 analyses; dates in actions 38 → 72.
   - Every setting measured, including the cheapest: Luna at none, low and medium, at the user's
     question when it had been left out of reading on an earlier impression.
+- **README and portfolio: the scale of the evaluation** (`docs/evaluation_record.md`). About 1,360
+  agent outputs written for evaluation, about 5,480 judge calls (about 35,500 check verdicts), about
+  1,050 outputs read by hand plus 89 verdicts scored by the user, for about $9.40 of recorded API cost:
+  every model, effort and prompt of the analysis, judge, purchase request and email agents chosen on
+  the same inputs, measured and read. A point to make with the numbers: careful evaluation at this
+  scale costs little; what it takes is a fixed input set, recorded settings and reading the outputs.
 - **README and portfolio: the judge favours recall over precision** (`docs/judge_selection.md`).
   The judge (Haiku, thinking at high effort) was chosen by detection on 51 seeded faults (93.9%),
   flip and false alarms on 89 hand-scored verdicts (8.0%). Its remaining false alarms are stricter
