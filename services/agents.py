@@ -558,9 +558,15 @@ def should_continue(state: PurchasingState):
 
 def email_doc_node(state: PurchasingState):
     """The email draft: everything but the requests is written in code (greeting, purpose, item
-    lines, closing, signature, draft note); the validator sees only the agent's requests."""
+    lines, closing, signature, draft note); the validator sees only the agent's requests. When the
+    last draft still failed the validator, it is kept and the draft note says why (the user,
+    2026-10-25)."""
+    failure = "" if state.get("is_valid_email") else (state.get("correction_feedback") or "the reason was not recorded")
     md, problems = documents.render_email(state.get("email_text") or "", state["items"], state["analysis_output"],
-                                          state["supplier"])
+                                          state["supplier"], check_failure=failure,
+                                          drafts=state.get("iteration_count", 0))
+    if failure:
+        problems = problems + [f"the email check still failed after the last rewrite: {failure}"]
     return {"email_md": md, "document_issues": [f"email: {p}" for p in problems]}
 
 # Build the graph.

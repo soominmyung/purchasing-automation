@@ -717,11 +717,16 @@ def email_for_check(email_text: str) -> str:
     return "\n\n".join(parts[k] for k in EMAIL_PARTS if parts[k])
 
 
-def render_email(email_text: str, items: list[dict], analysis: dict, supplier: str) -> tuple[str, list[str]]:
+def render_email(email_text: str, items: list[dict], analysis: dict, supplier: str,
+                 check_failure: str = "", drafts: int = 0) -> tuple[str, list[str]]:
     """The email draft, assembled in a fixed order: the draft note, the greeting, the purpose,
     the item lines, the agent's requests, the closing and the signature. Only the requests come
-    from the agent. Returns (markdown, problems)."""
+    from the agent. check_failure: the validator's reason when the last draft still failed it
+    (after the last rewrite), shown in the draft note for the buyer. Returns (markdown, problems)."""
     parts, problems = email_parts(email_text)
-    blocks = [_red(EMAIL_NOTE), f"Dear {supplier} Team,", EMAIL_PURPOSE, "\n".join(email_item_lines(items, analysis)),
+    note = _red(EMAIL_NOTE)
+    if check_failure:
+        note += "  \n" + _red(f"The email check still failed after {drafts} drafts; check before sending: {check_failure}")
+    blocks = [note, f"Dear {supplier} Team,", EMAIL_PURPOSE, "\n".join(email_item_lines(items, analysis)),
               parts["requests"], EMAIL_CLOSING, "\n".join(SIGNATURE)]
     return "\n\n".join(b for b in blocks if b) + "\n", problems

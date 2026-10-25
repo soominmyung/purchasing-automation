@@ -959,13 +959,20 @@ English or Korean).
 `mcp_servers/` (history and replenishment servers, Claude Desktop config example). Docs
 to be written after testing in Claude Desktop.
 
+## Not done, by decision
+
+- Renumbering the checks by severity: not done (the user, 2026-10-25).
+
 ## Still to do
 
-- Judge validation: hand-score about 10 originals, run 8 candidates × 3, choose the
-  production judge and the offline panel.
+- ~~Judge validation~~: done 2026-10-24 (`docs/judge_selection.md`).
 - Refactor `scripts/eval_v2_score.py` onto `services/quality_checks.py`.
-- Analysis-model benchmark (GPT-4o against 7 others on quality, cost, latency).
-- **Limits on proposed changes (decided 2026-10-23, not yet in the prompt).** A proposed order
+- ~~Analysis-model benchmark~~: done 2026-10-24 (`docs/analysis_model_selection.md`).
+- **Limits on proposed changes: in place (checked 2026-10-25).** The note below predates the v5 design,
+  in which the analysis proposes lead times, not order dates: an order date that would fall before the
+  snapshot date is set to the snapshot date and marked overdue (`documents.with_lead_times`), and C10
+  checks the analysis's `new_latest_po_date` against it; C5 fails a quantity factor of 0 or below
+  ("quantity would fall to zero or below"). The original note: a proposed order
   date is never earlier than the snapshot date, and a proposed quantity is never below zero (the
   factor is above 0). Seen in `dev/runs/2026-10-23_013618_arrows-in-the-text-c9-j7-for-changed-figures`: for a supplier-wide
   lead time four weeks longer, the analysis moved every item's order date four weeks earlier,
@@ -979,12 +986,14 @@ to be written after testing in Claude Desktop.
   that pass every blocking check; keep the five holdout scenarios out of the training data;
   check how `scripts/generate_dpo_pairs.py` builds pairs today before using the checks for
   them; compare the result in the staged comparison, fp16 and fp8 serving included.
-- Email validator: settled 2026-10-25 (item 26). Still open: a failing email is still sent after
-  three rewrites (with the buyer's draft note); whether to give the validator this run's actual
-  internal figures to compare against.
-- Undecided: whether to call the model at all when every item is Low; whether the PR
-  document also gets the data-issues section.
-- **Later: a second stage for the purchase request** (designed 2026-10-22, not built). The
+- Email validator: settled 2026-10-25 (item 26). An email that still fails after the last rewrite is
+  kept, and the draft note says why (the user, 2026-10-25: `documents.render_email`, `check_failure`).
+  Not done: giving the validator this run's actual internal figures to compare against.
+- Every item Low: no model call (the user, 2026-10-25); how the result is shown, especially in the
+  demo, to be settled. The purchase request gets no data-issues section (the user, 2026-10-25; it has
+  none today).
+- ~~Later: a second stage for the purchase request~~: dropped, out of the project's scope (the user,
+  2026-10-25). The design, kept for the record (designed 2026-10-22, not built). The
   request is submitted days after the analysis, after the supplier has answered. Design: the
   analysis report gives each critical question an "Update" and "Source" field, plus "Other new
   facts"; the buyer fills them; a purchase-request run reads them with a current CSV, stores
