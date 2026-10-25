@@ -45,6 +45,12 @@ class Settings(BaseSettings):
     # check. In production this is left unset (None) and the run date is the actual date the
     # run is made.
     run_date: Optional[str] = "2025-04-06"
+    # A self-hosted model served by vLLM (OpenAI-compatible API), used for a model named
+    # "local:<served model name>": the SFT base-model screening on the RTX 5090 and, later, the
+    # fine-tuned analysis model on the GCP L4 VM (docs/sft_plan.md).
+    local_llm_url: str = "http://localhost:8000/v1"
+    local_llm_api_key: Optional[str] = None
+    local_llm_max_tokens: int = 6000
     # Which prompts/<version>/ folder the agents use; recorded with every run.
     prompt_version: str = "v5"
     # Run records (services/run_record.py): one JSON file per run on the server.

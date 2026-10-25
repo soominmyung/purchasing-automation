@@ -87,6 +87,17 @@ def _llm(model: str = "gpt-4o", effort: str | None = None):
         return ChatAnthropic(model=model.removeprefix("anthropic:"), api_key=_key("ANTHROPIC_API_KEY", "CLAUDE_API_KEY"),
                              max_tokens=16000, timeout=settings.llm_timeout_seconds,  # thinking counts; default temperature only
                              max_retries=settings.llm_retries, **extra)
+    if model.startswith("local:"):
+        # vLLM's OpenAI-compatible server. Thinking is switched off where a model's chat template
+        # has it (Qwen3.5), as the training targets are final answers (docs/sft_plan.md, section 4).
+        # Mistral models use vLLM's Mistral tokenizer, which takes no chat-template arguments.
+        name = model.removeprefix("local:")
+        extra = {} if "ministral" in name.lower() else {"chat_template_kwargs": {"enable_thinking": False}}
+        return ChatOpenAI(model=name, base_url=settings.local_llm_url,
+                          api_key=settings.local_llm_api_key or "none", temperature=0,
+                          max_tokens=settings.local_llm_max_tokens,
+                          timeout=max(settings.llm_timeout_seconds, 300), max_retries=settings.llm_retries,
+                          extra_body=extra)
     # gpt-5 and later reasoning models take an effort, and temperature 0 only at effort "none" (no
     # reasoning); at any other effort only their default temperature (checked 2026-10-24)
     kwargs = {} if model.startswith(("gpt-5", "gpt-6")) else {"temperature": 0}
