@@ -231,7 +231,38 @@ The SFT failures are J8, invalid JSON (C1, 2–3 in the smaller runs) and citati
 - **Accept the result for now:** at this scale, the untuned model with the production prompt is
   better than the fine-tuned one, and the production analysis stays on `gpt-6.1-sol`.
 
-## 8. Files
+## 8. Decision: stop here, production stays on `gpt-6.1-sol`
+
+**Decided by the user on 2026-10-26.** No DPO and no further SFT rounds. The analysis agent
+stays on `gpt-6.1-sol`, and this failed attempt is kept as the record of why.
+
+**The reasons, as the user put them:** the gap between the open model and the teacher is large,
+and training made the results worse, not better.
+
+**What the record shows:**
+
+- **Untuned, the gap is wide.** Gemma 4 12B was ready in 14 of 25 cases against Sol's 24, and
+  applied 1 of Sol's 11 lead-time allowances.
+- **SFT did not close it at 25–85 examples.** Every adapter fell below the untuned model (3–10
+  ready). The changes it learned to apply came with wrong figures (9 of 12 at 85 runs).
+- **Closing it would need more than one more round:** more data in the evaluation's risk mix,
+  targeted examples or DPO for the field mix-up, and reasoning traces for the arithmetic. Each is
+  a project of its own.
+- **At this point the API is the better choice for the role.** The analysis is a few calls a day,
+  at $0.021–0.033 each (`docs/analysis_model_selection.md`). Its quality is the point of the
+  pipeline.
+
+**Where self-hosting stands:**
+
+- the serving side is measured: vLLM, fp8 against bf16, `docs/sft_plan.md` section 6, and
+  section 9 below;
+- the model side is not yet good enough, by the same checks that chose every production model.
+
+The finding worth keeping: **validation loss fell steadily while readiness fell.** Judged by loss
+alone, the fine-tune would have looked like a success. The production checks caught the regression
+and traced it to one phrase crossing fields.
+
+## 10. Files
 
 | What | Where |
 |---|---|

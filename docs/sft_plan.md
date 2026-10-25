@@ -1,5 +1,7 @@
 # SFT retraining plan (v5 analysis agent)
 
+**Outcome (2026-10-26):** carried out on Gemma 4 12B; SFT at 25–85 examples fell below the untuned model, and production stays on `gpt-6.1-sol` (the user's decision). Results: `docs/sft_gemma4_results.md`.
+
 Plan agreed with the user on 2026-10-25, before any data is generated. It records what will be
 trained, on what data, how the result will be measured, and the training settings, with the reason
 for each choice. Decisions still open are marked **Open**. Results will be written up separately

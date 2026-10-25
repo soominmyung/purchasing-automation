@@ -968,6 +968,17 @@ English or Korean).
   devices, about 4.5B effective) broke the output's structure and has less room to improve; Qwen
   and Ministral got nearly every changed figure wrong.
 
+### 29. SFT on Gemma 4 12B: worse than untuned; production stays on gpt-6.1-sol *(2026-10-25/26)*
+
+- 117 scenarios, 98 verified teacher examples, six QLoRA runs (25 / 50 / 85 examples × 2 seeds) on
+  the RTX 5090 (`docs/sft_training_data.md`, `docs/sft_gemma4_results.md`).
+- Validation loss fell 0.45 → 0.33, but every adapter was ready less often than the untuned model
+  (3–10 of 25 against 14): an action's "to bridge the N-week gap" moved into supplier questions
+  (J8), and changed figures were wrong.
+- **Decided by the user (2026-10-26):** no DPO or further rounds; the gap to the teacher is too
+  large at this scale; the failed attempt is kept as the record, and production stays on
+  `gpt-6.1-sol`.
+
 ## Evaluation
 
 - **Rubric** (`docs/eval_rubric.md`): fixed checklist replacing imitation-of-GPT-4o scoring;
