@@ -182,6 +182,41 @@ model changed too:
 changes, and the scenarios' planted labels (Sol is the reference, not the truth). This is a
 reported measure, not a new blocking check.
 
+## Correction: counting only lead times other than 18 weeks (2026-10-25)
+
+The change-detection and same-items counts above treated any item listed in `lead_time_changes` as
+changed. Some models list an item and keep it at 18 weeks. For example, Gemma 4 E4B in eval_11
+wrote "The standard 18-week lead time is maintained, but the ongoing strike … introduces
+significant uncertainty". Counting only a new lead time other than 18 weeks, on Sol's 11 cases
+(22 items):
+
+| Model | Cases also changed | Items also changed | Of those, an item with a wrong figure | Items listed at 18 weeks instead | Weeks given |
+|---|---|---|---|---|---|
+| `gpt-6.1-sol` | 11 | 22 | 0 | 0 | 19, 20, 22, 24 |
+| Gemma 4 12B | 1 | 1 | 1 | 2 | 20 |
+| **Gemma 4 E4B** | **1** | **2** | **2** | **19** | 21 |
+| Qwen3.5-9B | 11 | 22 | 21 | 0 | 19, 20, 21, 26 |
+| Ministral 3 14B | 11 | 22 | 22 | 0 | 20, 21, 22, 24, 26 |
+| Ministral 3 8B | 11 | 22 | 22 | 0 | 20, 22, 24, 26 |
+
+So **Gemma 4 E4B did not apply the changes either**. It listed the items and kept 18 weeks, and its
+"accurate figures" were mostly the input's 18-week figures copied over. Both Gemma models found the
+delays and did not put a size on them. The Qwen and Ministral models put a size on every delay,
+often a large one (26 weeks), and got the arithmetic wrong. The E4B entries in the tables above,
+and in the table below, are superseded by this one.
+
+Side by side on eval_11 (an unresolved warehouse strike, no size given):
+
+- **Sol:** 22 weeks, "a provisional estimate based on significant, unresolved delays, to be confirmed
+  with the supplier"; every figure right.
+- **Gemma 4 12B:** no change; "Confirm current lead times and delivery schedules for this order
+  before placing, given the unresolved warehouse strike."
+- **Gemma 4 E4B:** listed at 18 weeks, "the standard 18-week lead time is maintained"; C5.
+- **Qwen3.5-9B:** 26 weeks, the 8 weeks stated as fact (J6b); order date 2026-02-03 where the rules
+  give the snapshot date.
+- **Ministral 3 8B:** 26 weeks, "an estimated 8 weeks"; HeavyDutyBracket written Critical with a
+  2-week gap.
+
 ## Performance by model, in short
 
 | Model | What it does well | What it gets wrong | Example |
