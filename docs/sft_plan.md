@@ -304,7 +304,90 @@ single-slot, low-profile card with passive cooling, made to be added to an ordin
 
 No candidate is dropped on impression. The screening runs on the RTX 5090.
 
-## 6. Order of work
+## 6. Serving at the company
+
+The fine-tuned model is served on the company's own server, the one that already runs SAP Business
+One and the pipeline. Only the **measurement** is done on GCP (§6.4), on the same card.
+
+### 6.1 Where it runs
+
+| | |
+|---|---|
+| Server | the on-prem SAP Business One server, on all the time. Windows Server, running SAP B1 with SQL Server, the pipeline (FastAPI) and the nightly history sync (Windows Task Scheduler) |
+| GPU | one NVIDIA L4, 24 GB, 72 W, in a PCIe slot of that server |
+| RAM | 32 GB in all, shared by SQL Server, SAP B1 and the model |
+| Model | the chosen base model with the LoRA adapter, served at fp8 if the measurement shows no loss of quality (§3.2), otherwise at fp16 |
+
+vLLM does not run on Windows. It therefore runs in a **Linux virtual machine on the same server**:
+
+- an Ubuntu VM under Hyper-V, which is part of Windows Server;
+- the L4 handed to the VM whole, by Hyper-V's Discrete Device Assignment (GPU passthrough), so the VM
+  drives it with the ordinary Linux NVIDIA driver;
+- in the VM, the official `vllm/vllm-openai` container, started with a restart policy, so that it comes
+  back after a reboot.
+
+The alternative, WSL2 on the Windows host, is simpler to set up but is meant for desktops. A VM keeps the
+model's environment apart from SAP, can be restarted or rebuilt without touching SAP, and is a standard
+set-up for a server.
+
+### 6.2 How the pipeline reaches it
+
+- **The network.** The VM sits on an internal Hyper-V virtual switch, so only the host can reach it.
+  vLLM listens there on port 8000, with an API key. Nothing is opened to the office network or the
+  internet.
+- **The call.** vLLM serves an OpenAI-compatible API. To the pipeline, the analysis model is an OpenAI
+  model at another address: `http://<vm address>:8000/v1`, with the model name given to the adapter
+  (for example `purchasing-analysis`). The only code change is in `services/agents._llm`: a model name
+  such as `local:purchasing-analysis` creates `ChatOpenAI` with that `base_url`, and the address goes in
+  `config.py`. The analysis prompt, the checks, the judge and the documents do not change.
+- **The output format.** When the pipeline asks for the analysis's JSON schema, vLLM's guided decoding
+  can enforce it. Whether to switch it on is decided by the measurement (§4, "Output format at
+  serving").
+- **The other agents.** The approval agent, the email agent, the validator and the judge stay on their
+  APIs. Only the analysis is moved, as only the analysis is trained (§1).
+
+### 6.3 Sharing the server with SAP
+
+- **The GPU** is used only by the model.
+- **The RAM** is shared, so it is divided on purpose:
+  - SQL Server's `max server memory` is capped (for example at 16 GB), so it does not take the memory
+    the VM needs;
+  - the VM gets a fixed share (for example 12 GB);
+  - the rest is for Windows and SAP B1.
+
+  The model's weights live on the GPU. The VM's RAM is needed mainly while they are loaded, and it is
+  checked against the chosen model: about 9–10 GB at fp8 for a 9B model, about 12–13 GB for a 12B.
+- **Load.** The buyers run the pipeline a few times a day, one supplier after another. The model stays
+  loaded, and the L4 idles at low power between runs.
+
+### 6.4 What is measured on GCP, and why it carries over
+
+The measurement uses a GCP `g2-standard-8` VM with one L4, the same card as the server's. It runs the
+**same vLLM version and flags as the server**:
+
+- the same `--max-model-len`;
+- the same `--gpu-memory-utilization`;
+- the same fp16 or fp8 setting;
+- the adapter served the same way.
+
+Generation is bound by the GPU, so throughput and latency carry over to the server. Two things do not
+carry over and are checked once on the server itself: the VM's RAM while the model loads, and the time
+to start after a reboot.
+
+### 6.5 Running it
+
+- **Health.** The pipeline checks vLLM's `/health` before an analysis.
+- **If the model is down.** What the pipeline should do then is **Open**, for the user to decide:
+  - stop with an error;
+  - or fall back to `gpt-6.1-sol`, which would send that run's data to the API.
+- **Adapter versions.** Each trained adapter is a folder of files, kept with its version and its
+  evaluation results.
+  - **Update:** point vLLM at the new adapter and restart the container.
+  - **Rollback:** point it back at the previous folder.
+- **Tracing.** LangSmith keeps tracing the run as today (`docs/observability.md`). The model call no
+  longer leaves the server.
+
+## 7. Order of work
 
 1. Confirm the candidates' model cards. Run the untuned screening; the user chooses the base model(s).
 2. Write the scenario generator and the tie-in generalisation scenarios. The user reviews a sample of
@@ -313,6 +396,7 @@ No candidate is dropped on impression. The screening runs on the RTX 5090.
    outputs.
 4. Train at 25, 50 and 100 suppliers on the RTX 5090, and choose checkpoints by validation loss. Run the
    final configuration once as a Vertex AI custom training job with the same container.
-5. Serve on a GCP L4 at fp16 and fp8; measure on the 25 cases and the generalisation set, and read side
+5. Serve on a GCP L4 at fp16 and fp8, with the server's flags (§6.4); measure on the 25 cases and the generalisation set, and read side
    by side.
-6. Write up the results, with the learning curve, then update the README and both portfolios.
+6. Write up the results, with the learning curve. Set up serving on the company server (§6), then update
+   the README and both portfolios.
