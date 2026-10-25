@@ -131,8 +131,8 @@ checks, so whether more data is needed is decided on the evaluation (section 6).
 | Gemma 4 12B, untuned | 14/25 | 1/11 | 1/1 | J1b 5, J8 3, J1c 2, C10 2, J6b 2, C5 1, J1a 1, C6 1 |
 | **SFT, 85 runs, seed 1** | **3/25** | 3/11 | 5/5 | **J8 17**, J7a 5, C4 4, C10 3, J1c 2, J1b 2, C2 1, J1a 1 |
 
-On the tie-in generalisation set the same adapter was ready in 5 of 6 (one case was still
-running), and Sol in 7 of 7.
+On the tie-in generalisation set (a type never trained on) the same adapter was ready in 5 of 7,
+both failures J8, the same pattern; Sol was ready in 7 of 7.
 
 ### Why readiness fell: an action's phrase moved into the supplier questions
 
