@@ -1178,8 +1178,8 @@ to be written after testing in Claude Desktop.
   than Luna. Also: a rule placed as an exception before the main rule switched the main rule off, found
   by reading and fixed by the user's wording; and the production validator caught none of these.
 - **README and portfolio: the scale of the evaluation** (`docs/evaluation_record.md`). About 1,360
-  agent outputs written for evaluation, about 5,480 judge calls (about 35,500 check verdicts), about
-  1,050 outputs read by hand plus 89 verdicts scored by the user, for about $9.40 of recorded API cost:
+  agent outputs written for evaluation, about 6,000 judge calls (about 38,600 check verdicts), about
+  1,050 outputs read by hand plus 89 verdicts scored by the user, for about $9.90 of recorded API cost:
   every model, effort and prompt of the analysis, judge, purchase request and email agents chosen on
   the same inputs, measured and read. A point to make with the numbers: careful evaluation at this
   scale costs little; what it takes is a fixed input set, recorded settings and reading the outputs.

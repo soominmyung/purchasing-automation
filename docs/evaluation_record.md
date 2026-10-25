@@ -11,10 +11,10 @@ reasoning behind each choice is in the documents named under each section.
 | | Count |
 |---|---:|
 | Outputs written by the agents for evaluation (analyses, purchase requests, supplier emails) | **about 1,360** |
-| LLM judge calls | **about 5,480** |
-| Check verdicts from those calls (one per check per output per run) | **about 35,500** |
+| LLM judge calls | **about 6,000** |
+| Check verdicts from those calls (one per check per output per run) | **about 38,600** |
 | Outputs read by hand, issue by issue | **about 1,050** (plus 89 verdicts scored by the user) |
-| Recorded API cost of the evaluation runs below | **about $9.40** (development runs of the analysis not included) |
+| Recorded API cost of the evaluation runs below | **about $9.90** (development runs of the analysis not included) |
 
 Counted from the record files on 2026-10-25. "Judge call": one call that scores one output on all
 its checks. "Check verdict": one pass/fail on one check.
@@ -74,9 +74,9 @@ fixed there.
 | | Count | Where |
 |---|---:|---|
 | Emails written (3 rounds x 7 settings x 25), each through the production validator loop | 525 emails, 533 drafts with rewrites, 533 validator checks | `eval_results/email_model*_comparison.jsonl` |
-| Judge calls on them (E1, E2, E4-E7, three runs each; four scorings as the checks were corrected) | 2,100 (12,600 verdicts) | `eval_results/email_model*_judged.jsonl` |
+| Judge calls on them (E1, E2, E4-E7, three runs each; five scorings as the checks were corrected) | 2,625 (15,750 verdicts) | `eval_results/email_model*_judged.jsonl` |
 | Read by hand, issue by issue | 525 | `docs/email_model_comparison.md` |
-| Recorded cost | $0.67 writing and validating, $2.10 judging | |
+| Recorded cost | $0.67 writing and validating, $2.61 judging | |
 
 Chosen: `gpt-6.1-sol`, effort low (`docs/email_model_comparison.md`). **What decided it:** Sol rewrote
 the analyst's notes on a supplier's past problems as ordinary questions about this order ("how

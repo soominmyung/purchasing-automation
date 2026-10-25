@@ -6,10 +6,10 @@
     "E2": "The requests do not mention a problem the supplier had before, nor when it happened. A question about how a step of this order will proceed passes.",
     "E4": "Every point in points_to_clarify is covered by a question that would get the information this order needs, except what a point asks about items in other_items: that must be left out, and asking about such an item fails. Where a point concerns a problem the supplier had before, an indirect question about how the related step of this order will proceed or be checked covers it; the question need not ask about the problem itself. One question may cover several points. Passes when points_to_clarify is empty.",
     "E5": "No question is asked more than once.",
-    "E6": "For every item in ask_earliest_dispatch, the requests ask for its earliest dispatch date or an earlier delivery, through a point to clarify or a question of their own. Passes when ask_earliest_dispatch is empty.",
+    "E6": "For every item in ask_earliest_dispatch, the requests ask for its earliest dispatch date or a delivery sooner than the standard lead time allows (such as expedited or partial delivery by the requested date), through a point to clarify or a question of their own. Passes when ask_earliest_dispatch is empty.",
     "E7": "The requests promise no purchase order and do not write out the list of items again (referring to the items listed above is fine). They read as polite, conversational requests to a business partner in flowing sentences, not as an internal note or a list of questions; a point used as written passes when it reads that way."
   },
   "judge_system": "You audit a purchasing analysis written by an AI for a buyer. You are given the exact inputs the AI received and its output. For each check, first write the evidence (the part of the output that decides it), then give the verdict, true or false, that the evidence supports. Judge only what the check asks; do not reward length or style. When a check fails, also write a note: one plain sentence for the buyer, saying which part of the output may be wrong and how, with no check ids or technical terms.",
   "quality_checks_sha256": "496d8bd40c28ca4ef1fbe42beaf937699ae99424f3878cec2305abf8562ce8b9",
-  "started": "2026-10-25T14:17:31"
+  "started": "2026-10-25T14:40:57"
 }

@@ -64,8 +64,9 @@ E_TEXT = {
           "the related step of this order will proceed or be checked covers it; the question need not ask about the "
           "problem itself. One question may cover several points. Passes when points_to_clarify is empty.",
     "E5": "No question is asked more than once.",
-    "E6": "For every item in ask_earliest_dispatch, the requests ask for its earliest dispatch date or an "
-          "earlier delivery, through a point to clarify or a question of their own. Passes when "
+    "E6": "For every item in ask_earliest_dispatch, the requests ask for its earliest dispatch date or a "
+          "delivery sooner than the standard lead time allows (such as expedited or partial delivery by the "
+          "requested date), through a point to clarify or a question of their own. Passes when "
           "ask_earliest_dispatch is empty.",
     "E7": "The requests promise no purchase order and do not write out the list of items again (referring "
           "to the items listed above is fine). They read as polite, conversational requests to a business "

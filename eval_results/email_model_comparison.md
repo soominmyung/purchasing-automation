@@ -301,7 +301,7 @@ Could you please confirm current availability, lead times and commercial terms f
 
 For SteelRodX, what expedited transport or partial delivery options could you offer to deliver an initial quantity by the requested delivery date, and what quantities, dates and additional charges would apply?
 
-> **Judge:** fail on E6: SteelRodX is in ask_earliest_dispatch. The requests ask for availability and lead times in general, and for expedited or partial delivery 'to deliver an initial quantity by the requested delivery date'. Neither asks for the earliest dispatch date or for delivery earlier than the requested date.
+> **Judge:** pass
 
 ---
 
@@ -441,7 +441,7 @@ Could you please confirm current availability, lead time and commercial terms fo
 
 In addition, please advise what expedited shipping, earlier partial delivery or alternative transport you can offer for TitaniumValve with an initial delivery by 25 May 2026, whether any shipping delay affects the confirmed delivery dates for TitaniumValve and CarbonFiberTube, and whether any product-standard discrepancies affect either of these items, together with any corrective measures and inspection evidence for affected shipments.
 
-> **Judge:** fail on E2: "whether any shipping delay affects the confirmed delivery dates for TitaniumValve and CarbonFiberTube, and whether any product-standard discrepancies affect either of these items, together with any corrective measures and inspection evidence for affected shipments"
+> **Judge:** pass
 
 ### `gpt-5.4-mini?effort=low` · drafts 1 · validator PASS · 2.83 s
 
@@ -449,7 +449,7 @@ Could you please confirm current availability, lead time and commercial terms fo
 
 For TitaniumValve and CarbonFiberTube, please also confirm the current shipping status and any impact on the confirmed delivery dates, and let us know whether any product-standard discrepancies affect these items, together with any corrective measures and inspection evidence for affected shipments. For TitaniumValve, please advise what expedited shipping, earlier partial delivery or alternative transport options you can offer to support an initial delivery by 25 May 2026.
 
-> **Judge:** fail on E2: "let us know whether any product-standard discrepancies affect these items, together with any corrective measures and inspection evidence for affected shipments" refers to a past supplier problem (discrepancies and corrective measures for affected shipments).
+> **Judge:** fail on E2: "let us know whether any product-standard discrepancies affect these items, together with any corrective measures and inspection evidence for affected shipments"
 
 ### `gpt-6-luna?effort=none` · drafts 1 · validator PASS · 2.55 s
 
@@ -457,7 +457,7 @@ Could you please confirm current availability, lead times and commercial terms f
 
 Could you also advise whether any shipping delays or logistical constraints affect the confirmed delivery dates for the listed items, and whether any product-standard discrepancies affect them? If so, please outline the corrective measures and inspection evidence available for the affected shipments.
 
-> **Judge:** pass
+> **Judge:** fail on E2: 'whether any shipping delays or logistical constraints affect the confirmed delivery dates' and 'whether any product-standard discrepancies affect them? If so, please outline the corrective measures' name past supplier problems.
 
 ### `gpt-6-luna?effort=low` · drafts 1 · validator PASS · 3.96 s
 
@@ -465,7 +465,7 @@ Could you please confirm current availability, lead times and commercial terms f
 
 Could you also advise whether any shipping or logistical factors affect the confirmed delivery dates for TitaniumValve and CarbonFiberTube? Do any product-standard discrepancies affect either item, and if so, what corrective measures and inspection evidence can you provide for the relevant shipments?
 
-> **Judge:** fail on E2: "Do any product-standard discrepancies affect either item, and if so, what corrective measures and inspection evidence can you provide for the relevant shipments?"
+> **Judge:** fail on E2: 'Do any product-standard discrepancies affect either item, and if so, what corrective measures and inspection evidence can you provide for the relevant shipments?'
 
 ### `gpt-6-luna?effort=medium` · drafts 1 · validator PASS · 6.77 s
 
@@ -473,7 +473,7 @@ Could you please confirm current availability, lead times and commercial terms f
 
 Could you also confirm the current shipping timeline and advise whether any logistical considerations affect the confirmed delivery dates for the listed items? Finally, could you confirm whether either item is affected by any product-standard deviations and, if so, what corrective measures and inspection evidence you can provide for the relevant shipment?
 
-> **Judge:** fail on E2: "confirm whether either item is affected by any product-standard deviations and, if so, what corrective measures and inspection evidence you can provide"
+> **Judge:** fail on E2: "could you confirm whether either item is affected by any product-standard deviations and, if so, what corrective measures and inspection evidence you can provide" names a past product-standard problem directly.
 
 ### `gpt-6.1-sol?effort=low` · drafts 1 · validator PASS · 3.6 s
 
@@ -511,7 +511,7 @@ Could you please confirm current availability, lead time and commercial terms fo
 
 Please also advise whether the reported quality inconsistencies affect AlloyBracing or MicroProcessorX, and share the examination results and release controls available for the lots proposed for this order. For AlloyBracing, please also confirm the earliest dispatch date you can offer, and whether any expedited shipping or partial delivery options are available to support the requested delivery date.
 
-> **Judge:** fail on E2: "whether the reported shipment delays affect AlloyBracing or MicroProcessorX" and "whether the reported quality inconsistencies affect AlloyBracing or MicroProcessorX" both name earlier supplier problems.
+> **Judge:** fail on E2: "whether the reported shipment delays affect AlloyBracing or MicroProcessorX" and "whether the reported quality inconsistencies affect AlloyBracing or MicroProcessorX" both refer to earlier supplier problems.
 
 ### `gpt-5.4-mini?effort=low` · drafts 1 · validator PASS · 2.43 s
 
@@ -519,7 +519,7 @@ Could you please confirm current availability, lead time and commercial terms fo
 
 Please also let us know the expected dispatch and UK delivery dates for each item, and whether you can share the applicable examination results and release controls for the lots proposed for this order.
 
-> **Judge:** fail on E4: Point 1 (delays, dispatch and UK delivery dates) is covered by "expected dispatch and UK delivery dates for each item." Point 2 (quality, examination results and release controls) is covered by "examination results and release controls for the lots proposed for this order." Point 3 asks about expedited shipping or partial delivery for AlloyBracing by 6 July 2026, but the requests only ask for the earliest dispatch date and never ask about expedited or partial delivery options.; E5: "the earliest dispatch date you can offer for AlloyBracing" in the first paragraph is repeated as "the expected dispatch and UK delivery dates for each item" in the second paragraph, which includes AlloyBracing.
+> **Judge:** fail on E4: Point 1 (delays, dispatch and UK delivery dates) is covered by "expected dispatch and UK delivery dates for each item". Point 2 (quality, examination results and release controls) is covered by "examination results and release controls for the lots proposed". Point 3 asks about expedited shipping or partial delivery for AlloyBracing by 6 July 2026, but the requests only ask for "the earliest dispatch date you can offer for AlloyBracing", with no mention of expedited or partial delivery or the 6 July date.; E5: "the earliest dispatch date you can offer for AlloyBracing" in the first paragraph, and "the expected dispatch and UK delivery dates for each item" in the second, which includes AlloyBracing. The AlloyBracing dispatch date is requested twice.
 
 ### `gpt-6-luna?effort=none` · drafts 1 · validator PASS · 3.5 s
 
@@ -580,7 +580,7 @@ Could you please confirm current availability, lead time and commercial terms fo
 
 Please also confirm whether any shipping delays are affecting these items, and advise the firm delivery dates you can commit to, together with any expedited or partial-delivery options available. In addition, could you confirm whether any temporary reduction in quality affects these items, and share the relevant inspection evidence and corrective measures you can provide?
 
-> **Judge:** fail on E2: "whether any shipping delays are affecting these items" and "whether any temporary reduction in quality affects these items" name earlier supplier problems (shipping delays, a temporary quality reduction).
+> **Judge:** fail on E2: "whether any temporary reduction in quality affects these items" directly names a past quality problem; "whether any shipping delays are affecting these items" also refers to earlier delays.
 
 ### `gpt-5.4-mini?effort=low` · drafts 1 · validator PASS · 2.71 s
 
@@ -649,7 +649,7 @@ Could you please confirm current availability, lead time and commercial terms fo
 
 For HeavyDutyBracket, please confirm the dispatch and delivery dates you can commit to.
 
-> **Judge:** fail on E2: 'advise how the warehouse strike affects dispatch and delivery for each' names a supplier-side problem (the warehouse strike) directly.
+> **Judge:** pass
 
 ### `gpt-5.4-mini?effort=low` · drafts 1 · validator PASS · 2.64 s
 
@@ -720,7 +720,7 @@ Could you please confirm current availability, lead times and commercial terms f
 
 Please also let us know the dispatch and UK delivery dates you can commit to, and whether any expedited shipping, earlier partial deliveries or alternative shipping routes are available. In addition, could you confirm whether the loose-terminal issue in the January PowerModuleZ batch was isolated, and whether it has any bearing on the items in this order or requires any additional pre-dispatch checks?
 
-> **Judge:** fail on E2: "could you confirm whether the loose-terminal issue in the January PowerModuleZ batch was isolated" names a past supplier problem and its timing (January).
+> **Judge:** fail on E2: Third paragraph: "could you confirm whether the loose-terminal issue in the January PowerModuleZ batch was isolated". This names a past supplier problem and when it happened.
 
 ### `gpt-5.4-mini?effort=low` · drafts 1 · validator PASS · 2.95 s
 
@@ -728,7 +728,7 @@ Could you please confirm current availability, lead times and commercial terms f
 
 In addition, please let us know the dispatch and UK delivery dates you can commit to, whether any expedited shipping, earlier partial deliveries or alternative shipping routes are available, and whether the loose-terminal issue seen in the January PowerModuleZ batch was isolated, if its cause affects any products in this order, and whether any additional pre-dispatch checks would be required.
 
-> **Judge:** fail on E2: "whether the loose-terminal issue seen in the January PowerModuleZ batch was isolated"; E5: "advise the earliest dispatch dates you can offer for each one" and later "let us know the dispatch and UK delivery dates you can commit to" both ask for dispatch dates.
+> **Judge:** fail on E2: "whether the loose-terminal issue seen in the January PowerModuleZ batch was isolated"
 
 ### `gpt-6-luna?effort=none` · drafts 1 · validator PASS · 2.64 s
 
@@ -736,7 +736,7 @@ Could you please confirm current availability, lead times and commercial terms f
 
 Could you also confirm whether the cause of the loose-terminal failure affects any products in this order and whether any additional pre-dispatch checks will be required?
 
-> **Judge:** pass
+> **Judge:** fail on E2: "Could you also confirm whether the cause of the loose-terminal failure affects any products in this order" names a past supplier problem directly.
 
 ### `gpt-6-luna?effort=low` · drafts 1 · validator PASS · 4.22 s
 
@@ -788,7 +788,7 @@ Could you please confirm current availability, lead time and commercial terms fo
 
 We would also appreciate your clarification on the current production situation, including the expected recovery timetable and backlog clearance schedule, and how these may affect lead times and allocation for NanoCircuitX. In addition, please advise whether delivery by the requested date can be confirmed, and if not, what alternative production arrangements or partial deliveries you can offer.
 
-> **Judge:** fail on E5: 'let us know whether you can meet the requested delivery date?' in paragraph one and 'please advise whether delivery by the requested date can be confirmed' in paragraph two ask the same question about the delivery date.
+> **Judge:** fail on E2: "the expected recovery timetable and backlog clearance schedule" implies a past production disruption, though the cause and timing are not stated.; E5: Whether the requested delivery date can be met is asked in paragraph 1 ("let us know whether you can meet the requested delivery date?") and again in paragraph 2 ("please advise whether delivery by the requested date can be confirmed"). Lead time is asked in paragraph 1 and again in paragraph 2 ("how these may affect lead times").
 
 ### `gpt-5.4-mini?effort=low` · drafts 1 · validator PASS · 2.77 s
 
@@ -796,7 +796,7 @@ Please could you confirm current availability, lead time and commercial terms fo
 
 Please also confirm whether delivery by the requested date can be met for NanoCircuitX, and if not, what alternative production arrangements or partial deliveries you can առաջարկ?
 
-> **Judge:** fail on E2: 'let us know the current production status, expected recovery timetable and backlog clearance schedule' - 'recovery' and 'backlog clearance' imply an earlier disruption at the supplier, although no date is given.
+> **Judge:** pass
 
 ### `gpt-6-luna?effort=none` · drafts 1 · validator PASS · 2.34 s
 
@@ -810,7 +810,7 @@ Can you confirm whether delivery of NanoCircuitX by the requested date is feasib
 
 Could you please confirm current availability, lead time and commercial terms for the items listed above? For NanoCircuitX, could you also share the production schedule and allocation outlook, including the expected recovery timeline and backlog clearance schedule, and confirm whether delivery by the requested date is achievable? If not, what alternative production arrangements or partial deliveries could you offer?
 
-> **Judge:** fail on E2: "including the expected recovery timeline and backlog clearance schedule" presupposes an earlier disruption that the supplier had, though no date is given.
+> **Judge:** fail on E2: "including the expected recovery timeline and backlog clearance schedule" refers to a past disruption and a backlog, though no strike or date is named.
 
 ### `gpt-6-luna?effort=medium` · drafts 1 · validator PASS · 4.79 s
 
@@ -863,7 +863,7 @@ Could you please confirm current availability, lead times and commercial terms f
 
 For FiberglassSheetB, please confirm availability, lead time and commercial terms as well, and let us know if there are any constraints that may affect the requested delivery date.
 
-> **Judge:** fail on E5: The first sentence asks the supplier to 'confirm current availability, lead times and commercial terms for the listed items', which includes FiberglassSheetB. The second paragraph asks again: 'For FiberglassSheetB, please confirm availability, lead time and commercial terms as well'.
+> **Judge:** fail on E5: 'Could you please confirm current availability, lead times and commercial terms for the listed items?' is followed by 'For FiberglassSheetB, please confirm availability, lead time and commercial terms as well', which asks the same thing again for FiberglassSheetB.
 
 ### `gpt-6-luna?effort=none` · drafts 1 · validator PASS · 2.28 s
 
@@ -1051,7 +1051,7 @@ Could you please confirm current availability, lead times and commercial terms f
 
 For PrecisionOpticsHolder, please let us know whether you can support delivery by the requested date through expedited shipping or a partial shipment, and, if so, what the earliest delivery schedule would be for the balance. For AdvancedCircuitryBoard, please confirm the current lead time and available commercial terms.
 
-> **Judge:** fail on E5: The opening question asks to "confirm current availability, lead times and commercial terms for the listed items". The last paragraph asks again to "confirm the current lead time and available commercial terms" for AdvancedCircuitryBoard, which repeats the lead-time and commercial-terms question already covered.
+> **Judge:** fail on E5: The opening sentence asks for 'lead times and commercial terms for the listed items', and the later sentence asks again to 'confirm the current lead time and available commercial terms' for AdvancedCircuitryBoard, which repeats the same question.
 
 ### `gpt-6-luna?effort=none` · drafts 1 · validator PASS · 2.11 s
 
@@ -1145,7 +1145,7 @@ Could you please confirm current availability, lead times and commercial terms f
 
 For OpticalFiberCableX, what quantity could you deliver by the requested date using expedited shipping or a partial delivery, and what delivery dates could you commit to for the balance?
 
-> **Judge:** fail on E6: ask_earliest_dispatch contains OpticalFiberCableX. The output asks what quantity could arrive 'by the requested date using expedited shipping or a partial delivery' and for balance dates, but never asks for the earliest dispatch date or for delivery earlier than the requested date.
+> **Judge:** pass
 
 ### `gpt-6.1-sol?effort=medium` · drafts 1 · validator PASS · 6.36 s
 
@@ -1279,7 +1279,7 @@ Could you please confirm current availability, lead times and commercial terms f
 
 For NanoThermalRegulator, what expedited shipping or partial-delivery options could you offer to deliver by the requested date, and what quantities and delivery dates could you commit to?
 
-> **Judge:** fail on E6: NanoThermalRegulator is in ask_earliest_dispatch, but the requests only ask for expedited options "to deliver by the requested date" and for dates the supplier "could commit to"; no earliest dispatch date or earlier-than-requested delivery is asked for.
+> **Judge:** pass
 
 ### `gpt-6.1-sol?effort=medium` · drafts 1 · validator PASS · 5.65 s
 
@@ -1378,7 +1378,7 @@ Could you please confirm current availability, lead time and commercial terms fo
 
 Please also confirm PartW’s current manufacturing and delivery lead time following the process change, and whether you can commit to delivery by the requested date. In addition, could you advise how any raw material shortages and recent price changes affect pricing, availability and delivery commitments for ComponentZ and PartW, and share the earliest dispatch date you can offer for ComponentZ?
 
-> **Judge:** fail on E2: 'how any raw material shortages and recent price changes affect pricing, availability and delivery commitments' names a past supplier problem and when it happened ('recent'). 'following the process change' also refers to a prior change.
+> **Judge:** fail on E2: 'how any raw material shortages and recent price changes affect pricing, availability and delivery commitments' and 'PartW's current manufacturing and delivery lead time following the process change' both refer to earlier supplier problems and when they happened.; E5: 'confirm current availability, lead time and commercial terms for the items listed above' and later 'confirm PartW's current manufacturing and delivery lead time'. The lead time for PartW is asked twice.
 
 ### `gpt-5.4-mini?effort=low` · drafts 1 · validator PASS · 2.93 s
 
@@ -1386,7 +1386,7 @@ Could you please confirm current availability, lead times and commercial terms f
 
 For PartW, could you confirm the current manufacturing and delivery lead time following the process change, and whether you can meet the requested delivery date? Please also let us know how current pricing, availability and delivery commitments for ComponentZ and PartW are affected.
 
-> **Judge:** fail on E5: 'confirm current availability, lead times and commercial terms for ComponentZ and PartW' and 'confirm current manufacturing and delivery lead time following the process change' both ask for PartW's lead time. 'current availability' in the opening question is repeated in 'how current pricing, availability and delivery commitments... are affected'.
+> **Judge:** fail on E5: The opening question asks to confirm current availability and lead times for ComponentZ and PartW, and the closing question asks how current availability is affected for both items; PartW's lead time is then asked again in the PartW sentence.
 
 ### `gpt-6-luna?effort=none` · drafts 1 · validator PASS · 2.44 s
 
@@ -1410,7 +1410,7 @@ Could you please confirm current availability, lead times and commercial terms f
 
 For PartW, could you confirm the current manufacturing and delivery lead time under the current process, and whether delivery by the requested date is achievable? For this order, could you also clarify whether raw-material availability will affect pricing, availability or delivery commitments for ComponentZ and PartW?
 
-> **Judge:** pass
+> **Judge:** fail on E5: The opening sentence asks to "confirm current availability, lead times and commercial terms for the items listed above". The PartW paragraph then asks again to "confirm the current manufacturing and delivery lead time under the current process", so lead time is asked for twice.
 
 ### `gpt-6.1-sol?effort=low` · drafts 1 · validator PASS · 3.48 s
 
@@ -1516,7 +1516,7 @@ Could you please confirm current availability, lead time and commercial terms fo
 
 In addition, could you confirm the current committed lead time for HandleGrip and whether any delivery fluctuations could affect this order?
 
-> **Judge:** fail on E2: 'let us know whether the recent quality issues affect this order' names a past supplier problem and marks it as recent.; E5: Lead time is asked twice: 'confirm current availability, lead time and commercial terms for HandleGrip' in the first paragraph and 'confirm the current committed lead time for HandleGrip' in the second.
+> **Judge:** fail on E2: 'let us know whether the recent quality issues affect this order' names a problem the supplier had before ('recent quality issues'), and the requests also raise 'delivery fluctuations'.; E5: The lead time is asked twice: 'confirm current availability, lead time and commercial terms for HandleGrip' in the first paragraph and 'confirm the current committed lead time for HandleGrip' in the second paragraph.
 
 ### `gpt-5.4-mini?effort=low` · drafts 1 · validator PASS · 2.27 s
 
@@ -1524,7 +1524,7 @@ Could you please confirm current availability, lead time and commercial terms fo
 
 Please also confirm whether there are any quality considerations affecting HandleGrip and, if so, what inspection evidence and corrective measures you can provide for this order.
 
-> **Judge:** fail on E5: The first paragraph asks the supplier to 'confirm current availability, lead time and commercial terms' and then asks 'whether the committed lead time for this order remains unchanged'. Both ask about the lead time.
+> **Judge:** pass
 
 ### `gpt-6-luna?effort=none` · drafts 1 · validator PASS · 1.96 s
 

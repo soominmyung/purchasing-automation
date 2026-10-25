@@ -89,21 +89,30 @@ The user's correction: the email's style applies to every point, question or pro
 where it suits; "Whatever a point says, the question says nothing about a problem the supplier had
 before or when"; wording from INPUT rewritten where it does not suit the email; no "also in different
 words" in the repeat rule; no style examples (removed from the purchase request and the email: the
-ones in `docs/Examples.zip` say "our stock review" and ask in lists); no "pipeline". E4 then rewritten
-so that an indirect question about a past problem covers its point (it had failed what E2 requires).
+ones in `docs/Examples.zip` say "our stock review" and ask in lists); no "pipeline". Then two checks
+were rewritten and the same emails scored again: E4, so that an indirect question about a past problem
+covers its point (it had failed what E2 requires); E6, so that an earlier delivery means sooner than
+the standard lead time allows, such as expedited or partial delivery by the requested date (it had
+read "earlier" as earlier than the requested date, and failed Sol for not adding a dispatch question
+the prompt says to leave out when a point already asks for that).
 
 | Setting | E2 | E4 | E5 | E6 | Judge: any fail | Reading | Time | Cost per email |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `gpt-5.4-mini` none | 7 | 0 | 2 | 0 | 8 | 7 | 2.4 s | $0.0010 |
-| `gpt-5.4-mini` low | 3 | 1 | 6 | 0 | 8 | 6 | 2.5 s | $0.0013 |
-| `gpt-6-luna` none | 0 | 0 | 1 | 0 | 1 | 3 | 2.3 s | $0.0001 |
+| `gpt-5.4-mini` none | 6 | 0 | 3 | 0 | 6 | 7 | 2.4 s | $0.0010 |
+| `gpt-5.4-mini` low | 2 | 1 | 4 | 0 | 6 | 6 | 2.5 s | $0.0013 |
+| `gpt-6-luna` none | 2 | 0 | 1 | 0 | 3 | 3 | 2.3 s | $0.0001 |
 | `gpt-6-luna` low | 2 | 0 | 0 | 0 | 2 | 1 | 3.4 s | $0.0002 |
-| `gpt-6-luna` medium | 1 | 0 | 0 | 0 | 1 | 0 | 5.2 s | $0.0003 |
-| **`gpt-6.1-sol` low** | 0 | 0 | 0 | 2 | 2 | **0** | **3.3 s** | $0.0024 |
-| `gpt-6.1-sol` medium | 0 | 0 | 0 | 1 | 1 | 0 | 5.0 s | $0.0033 |
+| `gpt-6-luna` medium | 1 | 0 | 1 | 0 | 2 | 0 | 5.2 s | $0.0003 |
+| **`gpt-6.1-sol` low** | 0 | 0 | 0 | 0 | **0** | **0** | **3.3 s** | $0.0024 |
+| `gpt-6.1-sol` medium | 0 | 0 | 0 | 0 | 0 | 0 | 5.0 s | $0.0033 |
 
-Files: `eval_results/email_model_comparison.jsonl`, `email_model_judged.jsonl` (E4 rewritten),
-`email_model_v3_judged.jsonl` (before), side by side: `eval_results/email_model_comparison.md`.
+With both checks rewritten, the judge and the reading agree: Sol none at either effort; Luna's fails are
+the problem words it keeps ("the cause of the loose-terminal failure", now failed, as read; "any
+product-standard discrepancies"); `gpt-5.4-mini`'s are the past problems it copies in.
+
+Files: `eval_results/email_model_comparison.jsonl`, `email_model_judged.jsonl` (E4 and E6 rewritten),
+`email_model_v3_judged.jsonl` (before both), `email_model_v3b_judged.jsonl` (E4 only), side by side:
+`eval_results/email_model_comparison.md`.
 Rounds 1 and 2: `email_model_v1_*`, `email_model_v2_*`.
 
 The same point, eval_12, "Was the loose-terminal failure in the January PowerModuleZ batch isolated…":
@@ -121,13 +130,13 @@ What the reading found in round 3:
   preference.
 - `gpt-6.1-sol` rewrites them as ordinary questions about this order ("confirm compliance with the
   applicable product standards", "the production and order fulfilment schedule").
-- The judge's E6 fails on Sol (eval_05, 18, 20): the points already ask for expedited or partial
-  delivery by the requested date, so Sol, as the prompt says, added no dispatch question; the judge
-  read "an earlier delivery" as earlier than the requested date rather than than the standard lead
-  time.
-- The judge wavered on Luna's "the cause of the loose-terminal failure" (passed twice, failed once):
-  E2's second sentence ("a question about how a step of this order will proceed passes") outweighed
-  its first.
+- Before E6 was rewritten, the judge failed Sol on eval_05, 18 and 20: the points already ask for
+  expedited or partial delivery by the requested date, so Sol, as the prompt says, added no dispatch
+  question; the judge read "an earlier delivery" as earlier than the requested date. With the new
+  wording all six passed in every run.
+- Before E6 was rewritten, the judge wavered on Luna's "the cause of the loose-terminal failure"
+  (passed twice, failed once): E2's second sentence ("a question about how a step of this order will
+  proceed passes") outweighed its first. In the last scoring it failed it.
 - The validator passed every email again, the January PowerModuleZ sentence and the Armenian word
   included.
 
