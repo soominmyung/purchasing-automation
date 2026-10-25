@@ -231,6 +231,75 @@ The SFT failures are J8, invalid JSON (C1, 2–3 in the smaller runs) and citati
 - **Accept the result for now:** at this scale, the untuned model with the production prompt is
   better than the fine-tuned one, and the production analysis stays on `gpt-6.1-sol`.
 
+## 7a. Why quality fell: the cause, tested (2026-10-26)
+
+Three tests separate the causes: the expedite questions on Critical cases, an in-distribution
+evaluation, and where the phrases come from.
+
+**1. SFT learned the teacher's policy, and kept the base model's wording.** On the 18 evaluation
+cases that have a Critical item:
+
+| | Supplier questions | Of them, asking for expedited or partial delivery | Of those, naming the gap ("bridge … gap") |
+|---|---|---|---|
+| `gpt-6.1-sol` | 32 | 18 | **0** |
+| Gemma 4 12B, untuned | 11 | 2 | 2 |
+| SFT 85, seed 1 | 26 | **21** | 20 |
+| SFT 85, seed 2 | 24 | **19** | 15 |
+
+- **The teacher asks the supplier about expediting for Critical items.** It does so 18 times, and
+  never names the gap.
+- **The untuned model rarely asks** (2 times), and both times it names the gap.
+- **SFT learned to ask as often as the teacher** (19–21 times), which is what the teacher's data
+  shows. It did not learn the teacher's wording: the words come from the actions. "Alternative
+  source" and "bridge … gap" are in 21 and 60 of the teacher's 300 actions, and in 0 of its 156
+  supplier questions. They appear in 17 and 21 of the fine-tuned model's 33 supplier questions.
+
+So the fall in readiness is mostly the model doing the right thing (asking the supplier for
+expedited delivery of a Critical item) in the wrong words. A habit the untuned model showed only
+twice is now exercised about twenty times. On the evaluation cases without a Critical item, the
+fine-tuned model had no J8 failure (0 of 7).
+
+**2. On data like its training data, SFT changed little.** The 13 validation scenarios were held
+out from training, but are of the training distribution (same generator, Korean food and household
+products, dated documents). The teacher passed all 13; they were chosen from passing runs.
+
+| 13 in-distribution cases | Ready | Blocking failures by check |
+|---|---|---|
+| Gemma 4 12B, untuned | 3 | J1b 6, J8 5, C10 4, J7a 2, and one each of J1a, C6, J6a, J6b, J6c, C2, C4 |
+| SFT 85, seed 1 | 2 | J8 5, J7a 4, C10 3, C5 2, J6b 2, and one each of J6a, J1b, C2, C4, C1 |
+| SFT 85, seed 2 | 4 | J8 4, C5 3, C10 3, J1b 2, J7a 2, J6b 2, and one each of J6a, J6c, C2, C4, C1 |
+
+- **One gain:** SFT cut distortion of the documents (J1b 6 → 1–2).
+- **What it did not change:**
+  - the internal figures in supplier questions (J8 5 → 4–5);
+  - the arithmetic after a change (C10 4 → 3).
+- **Overall:** readiness stayed about where it was (3 → 2–4). With 85 examples the model moved toward
+  the teacher in some rules and not in others. It did not get the many rules right at once that
+  "ready" requires.
+
+**3. On the evaluation set the shift made it worse.** The evaluation cases differ from the
+training data:
+
+- industrial parts (MetalBolt, CircuitBoardA), not food and household goods;
+- short, undated, generic history documents;
+- 43% Critical items, against 18%.
+
+The Critical share is where test 1's pattern happens, so the evaluation set turned it into the
+main failure (17 of 18 Critical cases).
+
+**The cause, in one paragraph.**
+
+- SFT on 85 verified examples moved Gemma 4 12B toward the teacher's behaviour: it asked suppliers
+  about expediting, and it distorted documents less.
+- It did not reach the teacher's precision in the details that the checks enforce: which field may
+  name the gap, and the arithmetic after a change.
+- Where a learned behaviour met an untouched habit, readiness fell, and most on an evaluation set
+  weighted to the cases where they meet.
+- It is not overfitting: validation loss fell to the last epoch. Nor is it a broken setup: the
+  in-distribution results match the untuned model.
+- It is a capability and data-size gap: a 12B model, 85 examples, and long structured answers with
+  many rules.
+
 ## 8. Decision: stop here, production stays on `gpt-6.1-sol`
 
 **Decided by the user on 2026-10-26.** No DPO and no further SFT rounds. The analysis agent
