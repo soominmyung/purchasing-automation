@@ -195,15 +195,23 @@ reported measure, not a new blocking check.
 
 ## Decision
 
-**Open, for the user.**
+**Gemma 4 12B (`google/gemma-4-12B-it`), decided by the user on 2026-10-25.**
 
-- **Gemma 4 12B is the leading candidate.** It is a server-class general model with the best format
-  and faithfulness. Its main gap, no allowance for an unsized delay, is a policy the teacher's
-  outputs show every time, so training should change it. Change detection measures whether it did.
-- **Gemma 4 E4B** has the most accurate figures but breaks the output's structure. It is built for
-  phones and laptops (about 4.5B effective), which limits how many rules it holds. The user is
-  wary of it.
-- **Gemma 4 26B-A4B** (a mixture of experts, about 4B active) was left out of the screening on size
-  alone. It needs fp8 to fit the 5090 and 4-bit for an L4. Screening it once was proposed.
-- The Qwen and Ministral models apply the changes but get nearly every changed item's figures
-  wrong, which training on final answers is unlikely to fix.
+- **Its main gap turned out to be fixable.** Reading the outputs showed that Gemma 4 12B found the
+  delays: it recorded them as findings in 8 of the 9 cases, and in 5 asked for the lead time to be
+  confirmed before ordering. What it did not do was put the provisional allowance into the lead
+  time. That is a policy stated in the prompt and shown in every teacher output, the kind of
+  behaviour SFT is likely to change, not a failure to notice.
+- **Everything else it already does best.** It was the most often ready (14–15/25), with faithful
+  findings, the output's format kept, and one arithmetic slip.
+- **Gemma 4 E4B was set aside despite the most accurate figures.** It is built for phones and
+  laptops, with about 4.5B effective parameters. Its failures are in holding the prompt's many
+  rules at once: no final lead time per item in 14 cases, wrong citations in 11–13. A model that
+  small has less room to improve with training, and the rules will only grow.
+- **Qwen3.5-9B and Ministral 3** apply the changes but get nearly every changed item's figures
+  wrong (21–22 of 22). That is arithmetic without reasoning, which training on final answers is
+  unlikely to fix.
+- **It fits the deployment.** At 12B it is about 12 GB at fp8, served on one L4.
+
+The SFT results will report, beside readiness, whether training made it apply the allowances: its
+change detection against Sol's changes and the scenarios' labels.

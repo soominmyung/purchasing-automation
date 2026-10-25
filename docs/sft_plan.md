@@ -301,7 +301,9 @@ on the official model card before a model is chosen.
 - **So** a T4 would rule out the fp16-against-fp8 comparison. The plan keeps the L4.
 
 
-**How the model is chosen (proposed, Open):**
+**Chosen (2026-10-25): Gemma 4 12B** — see `docs/sft_base_screening.md`, Decision.
+
+**How the model was chosen:**
 
 1. Run every candidate untuned, with the same prompt, on part of the evaluation set.
 2. Read the outputs side by side.

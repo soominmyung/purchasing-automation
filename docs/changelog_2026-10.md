@@ -963,8 +963,10 @@ English or Korean).
   ready (14/25) partly because it changed the lead time in only 2 of the 11 cases where Sol did,
   and a missing change is not checked. Change detection against Sol (and the scenarios' labels)
   is to be reported beside readiness in the SFT results.
-- **Open, for the user:** the base model(s). Gemma 4 12B and Gemma 4 E4B are the realistic
-  candidates; training both was proposed.
+- **Decided by the user: Gemma 4 12B.** It found the delays but did not put a provisional allowance
+  into the lead time, a policy SFT on the teacher's outputs can teach; Gemma 4 E4B (built for
+  devices, about 4.5B effective) broke the output's structure and has less room to improve; Qwen
+  and Ministral got nearly every changed figure wrong.
 
 ## Evaluation
 
