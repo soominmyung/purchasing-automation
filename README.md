@@ -18,11 +18,13 @@ A multi-agent LLM pipeline that jointly analyzes an inventory snapshot together 
   LangGraph multi-agent system on GPT-4o, with a supplier-email validator and an analysis-quality
   evaluator kept simple on GPT-4o as well. Deployed on the company's on-premises SAP ERP server
   with the IT manager's help, and first used experimentally by a few members of the purchasing
-  team. Fine-tuning Llama-3-8B to replace GPT-4o was considered; GPT-4o was kept.
+  team. A simple Llama-3-8B fine-tune was trained and reviewed as a replacement for GPT-4o;
+  GPT-4o was kept.
 - **Feb 2026: reconstructed for this repository.** The company's code stayed with the company, so
   the system was rebuilt here from scratch. The February commits record that reconstruction, not
   the first development.
-- **Mar–Aug 2026.** Llama-3-8B QLoRA SFT and DPO, then self-hosted serving with vLLM (FP8).
+- **Mar–Aug 2026.** The Llama-3-8B fine-tuning rebuilt and taken further here: QLoRA SFT and DPO on
+  Vertex AI, then self-hosted serving with vLLM (FP8).
 - **Oct 2026: v5 overhaul.** The work between code and LLMs redrawn, evaluation checks and a
   validated judge, every agent's model chosen by measurement, and SFT retraining on the current
   pipeline (`docs/changelog_2026-10.md`).
