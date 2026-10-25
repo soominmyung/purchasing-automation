@@ -56,34 +56,46 @@ def _score(group: dict, analysis: dict, docs: list[dict]) -> dict:
     return {**ev, "unparsed": False}
 
 
+def _one(model: str, s: dict) -> dict:
+    group = preprocess(s)
+    input_json = {"snapshot_date": SNAPSHOT_DATE, "supplier": group["supplier"], "items": group["items"]}
+    started = time.time()
+    try:
+        analysis, docs = agents.run_analysis_agent(input_json, history_override=s["history"])
+        error = None
+    except Exception as e:  # a timeout or a server error is a result too
+        analysis, docs, error = {"unparsed_output": ""}, s["history"], f"{type(e).__name__}: {e}"[:300]
+    seconds = round(time.time() - started, 1)
+    return {"scenario_id": s["scenario_id"], "category": s.get("category"), "labels": s.get("labels"),
+            "model": model, "prompt_version": PROMPT_VERSION, "prompt": ANALYSIS_AGENT_SYSTEM,
+            "generated_at": datetime.now().isoformat(timespec="seconds"), "analysis_seconds": seconds,
+            "concurrent_workers": WORKERS, "error": error, "input": input_json, "history_docs": docs,
+            "analysis": analysis, "evaluation": _score(group, analysis, docs)}
+
+
+WORKERS = 1  # --workers: cases in parallel (the time per analysis is then not comparable with 1)
+SCENARIOS = None  # --scenarios: another scenario file (e.g. the tie-in generalisation set)
+
+
 def run_model(model: str) -> None:
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    import threading
     agents.AGENT_MODELS["analysis"] = model
     if model.startswith("local:"):  # an API model keeps its production effort (Sol: medium)
         agents.AGENT_EFFORT["analysis"] = None
     path = out_file(model)
     done = _done(path)
-    with open(path, "a", encoding="utf-8") as f:
-        for s in load_scenarios():
-            if s["scenario_id"] in done:
-                continue
-            group = preprocess(s)
-            input_json = {"snapshot_date": SNAPSHOT_DATE, "supplier": group["supplier"], "items": group["items"]}
-            started = time.time()
-            try:
-                analysis, docs = agents.run_analysis_agent(input_json, history_override=s["history"])
-                error = None
-            except Exception as e:  # a timeout or a server error is a result too
-                analysis, docs, error = {"unparsed_output": ""}, s["history"], f"{type(e).__name__}: {e}"[:300]
-            seconds = round(time.time() - started, 1)
-            score = _score(group, analysis, docs)
-            f.write(json.dumps({
-                "scenario_id": s["scenario_id"], "category": s.get("category"), "labels": s.get("labels"),
-                "model": model, "prompt_version": PROMPT_VERSION, "prompt": ANALYSIS_AGENT_SYSTEM,
-                "generated_at": datetime.now().isoformat(timespec="seconds"), "analysis_seconds": seconds,
-                "error": error, "input": input_json, "history_docs": docs, "analysis": analysis, "evaluation": score,
-            }, ensure_ascii=False, default=str) + "\n")
-            f.flush()
-            print(f"  {s['scenario_id']:<8} {seconds:>6}s  {score['verdict']}  {', '.join(score['failed'])}", flush=True)
+    scenarios = load_scenarios() if SCENARIOS is None else [json.loads(l) for l in open(SCENARIOS, encoding="utf-8")]
+    todo = [s for s in scenarios if s["scenario_id"] not in done]
+    lock = threading.Lock()
+    with open(path, "a", encoding="utf-8") as f, ThreadPoolExecutor(WORKERS) as ex:
+        for fut in as_completed([ex.submit(_one, model, s) for s in todo]):
+            r = fut.result()
+            with lock:
+                f.write(json.dumps(r, ensure_ascii=False, default=str) + "\n")
+                f.flush()
+            score = r["evaluation"]
+            print(f"  {r['scenario_id']:<8} {r['analysis_seconds']:>6}s  {score['verdict']}  {', '.join(score['failed'])}", flush=True)
     print(f"-> {path}")
 
 
@@ -129,8 +141,10 @@ if __name__ == "__main__":
     ap.add_argument("--sol", action="store_true")
     ap.add_argument("--report", action="store_true")
     ap.add_argument("--tag", default="")
+    ap.add_argument("--workers", type=int, default=1)
+    ap.add_argument("--scenarios", type=Path)
     a = ap.parse_args()
-    TAG = a.tag
+    TAG, WORKERS, SCENARIOS = a.tag, a.workers, a.scenarios
     if a.model:
         run_model(a.model)
     if a.sol:
