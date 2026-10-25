@@ -6,7 +6,7 @@ Each entry gives what changed, why, and what was measured where something was.
 
 **Status:** committed on main from 88571b7 to the commit that adds this file. The version
 before these changes is kept on branch `legacy/v1` (3866d60). Not yet committed:
-`mcp_servers/`, and `scripts/eval_v2_score.py` until it is moved onto the shared checks.
+`scripts/eval_v2_score.py`, until it is moved onto the shared checks.
 
 ## Pipeline
 
@@ -973,8 +973,28 @@ English or Korean).
 
 ## MCP servers
 
-`mcp_servers/` (history and replenishment servers, Claude Desktop config example). Docs
-to be written after testing in Claude Desktop.
+Redesigned for v5 and tested once on 2026-10-25; not used by the pipeline, by decision (the user,
+2026-10-25: built to show MCP, then set aside for the reasons below). Full record: `docs/mcp.md`.
+
+- `purchasing-history`: the pipeline's history lookup (`search_history`), now with `as_of` (the
+  pipeline uses the snapshot date; the draft used today), and the store's suppliers and items as
+  resources.
+- `purchasing-replenishment`: rewritten. The draft gave only the 18-week figures, published the
+  analysis agent's system prompt and told clients to work no date out themselves. Now: the figures
+  for one item at any lead time (risk level and latest order date recalculated, the snapshot-date
+  floor, as in `with_lead_times`), every item of a stock CSV, and the risk rule; no prompt.
+- Test (`scripts/check_mcp_servers.py`, stdio, `dev/runs/2026-10-25_160908_mcp-servers-test`): every
+  tool and resource answered; BushingRing Low at 18 weeks and Medium at 22, as in the pipeline's run.
+  It found that a client passes only a minimal environment, so the history store had no key; the
+  config example now sets it.
+- Why the pipeline does not use them: it must look up the history and work out the figures for every
+  item every time, which a model with tools would decide for itself, and the checks and the judge rely
+  on that fixed input; v5 removed the arithmetic from the model, so tools would put a step back; the
+  buyers work from the documents, not an MCP client; a desktop client would send company data to its
+  own model, outside the pipeline's settings; and both servers only wrap the pipeline's functions.
+- **README and portfolio:** "MCP servers were built and tested for the history and the stock figures,
+  but not used, because the pipeline gives the model a fixed, complete input and code does the
+  arithmetic; tools would let the model skip a lookup and would vary the input the evaluation checks.
 
 ## Not done, by decision
 

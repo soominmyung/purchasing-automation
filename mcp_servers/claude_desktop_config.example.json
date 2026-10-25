@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "purchasing-history": {
+      "command": "python",
+      "args": ["C:/path/to/purchasing_automation/mcp_servers/history_server.py"],
+      "env": {"OPENAI_API_KEY": "<the key the history store was built with>"}
+    },
+    "purchasing-replenishment": {
+      "command": "python",
+      "args": ["C:/path/to/purchasing_automation/mcp_servers/replenishment_server.py"]
+    }
+  }
+}
