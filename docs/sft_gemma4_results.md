@@ -312,6 +312,40 @@ So the quality cost of fp8 is small, about the size of the run-to-run variation,
 be zero. Its extra J6b failures come with the extra lead-time changes it made (3 against 1).
 These are measured with the production checks, not a preference score.
 
+**Case by case** (the 16 cases where any run failed; the other 9 were ready in all three):
+
+| Case | bf16, run 1 | bf16, run 2 | fp8 |
+|---|---|---|---|
+| eval_01 | J8 | J8 | J1b, J7a |
+| eval_02 | J1b | ready | ready |
+| eval_04 | ready | ready | J1a |
+| eval_06 | J8 | J8 | J8 |
+| eval_09 | J1b, J1c | J1b | J1b |
+| eval_10 | C10, J1b | C10, J1b | J1b |
+| eval_11 | ready | ready | C10, J6b |
+| eval_13 | C5 | C5, C10 | C10, J6b |
+| eval_14 | J6b | ready | ready |
+| eval_15 | ready | ready | J1b, J6b |
+| eval_16 | ready | ready | J6b |
+| eval_18 | J1a, J1b | J1b | J1a, J1b |
+| eval_19 | J1c | J1c | J1c |
+| H1 | ready | J1b | ready |
+| H2 | C6, C10, J6b, J8 | C6, C10, J6b | J1b, J6b |
+| H3 | J1b | J1b | ready |
+
+**Every one of fp8's five J6b failures is the same omission.** It proposed a change of a size the
+documents do not give, and did not say it was its estimate to be confirmed:
+
+- lead time 22 weeks for an unresolved strike (eval_11, the same 22 weeks as Sol);
+- 25 weeks (eval_13);
+- 19 weeks (H2);
+- a 50% quantity increase for an unsized surge (eval_15, eval_16).
+
+bf16 mostly made no change in these cases, so it had nothing to fail. In other words, fp8 here
+made the allowance the prompt asks for more often, but left out the "to be confirmed" wording; it
+did not get its judgement wrong. The other differences (J1a, J1b, J7a) move between runs at bf16
+as well.
+
 ## 10. Files
 
 | What | Where |
