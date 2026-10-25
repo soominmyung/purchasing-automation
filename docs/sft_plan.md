@@ -18,9 +18,11 @@ when the work is done.
 The v5 pipeline differs on both sides:
 
 - **Input.** Code works out every figure, and the history comes as numbered documents.
-- **Output.** The analysis is two calls:
-  1. the changes;
-  2. the text, written from the figures as code recalculates them after the changes.
+- **Output.** The analysis is one call that returns structured fields in the order of the work:
+  findings from the documents, the proposed changes, the figures after the changes
+  (`figures_after_changes`), stock findings, questions, actions and the summary. Code checks the
+  figures after the changes value by value (C10), and renders the report from the fields
+  (changelog item 23).
 
 The March model has never seen this input or this output, so its data cannot be reused. Its 25
 training inputs could be converted, but 25 is far too few.
@@ -30,14 +32,13 @@ well the small model imitated GPT-4o.* This plan is built to answer that (§3.3)
 
 ## 1. What is trained
 
-**Decided:** the analysis agent only, both steps, in one LoRA adapter. The approval and email agents
+**Decided:** the analysis agent only, in one LoRA adapter. The approval and email agents
 are left out.
 
 - The analysis is where the pipeline's judgement happens. The approval and email agents write short
   text, cheaply, with `gpt-6.1-sol` at low effort.
-- One pipeline run gives two training examples:
-  - step 1, the changes, from the pipeline's figures and history;
-  - step 2, the text, from the figures after the changes.
+- One pipeline run gives one training example: the analysis prompt and input (the figures and the
+  numbered history documents), and the analysis JSON.
 - Rewrite calls (the analysis sent back with check failures) are not trained; see §2.2.
 
 ## 2. Training data
@@ -52,15 +53,15 @@ suppliers was that it is too many, and the plan agreed with that. Cost is not th
 would cost about $15–20). The reason is that 300 is a guess. The plan instead:
 
 1. Generate about **120 supplier scenarios**, about 12 for each of about 10 types.
-2. Keep those whose teacher output passes (§2.2). We expect about 100, which gives about 200 training
-   examples.
+2. Keep those whose teacher output passes (§2.2). We expect about 100, one training example
+   each.
 3. Train on **25, 50 and 100 suppliers** (nested subsets, each type in the same proportion). Measure
    each model on the evaluation set (§3).
 4. Stop where the curve flattens. If it is still rising at 100, generate more.
 
 The learning curve is a planned figure for the README and the portfolio. It turns "how much data?"
 from a guess into a measured answer, for example: "from 50 to 100 suppliers, first-answer blocking
-failures fell only from X to Y". **Each point is trained twice, with two seeds (decided by the user, 2026-10-25).** With 50–200
+failures fell only from X to Y". **Each point is trained twice, with two seeds (decided by the user, 2026-10-25).** With 25–100
 examples, the seed (the order the examples are shown in, the LoRA initialisation, dropout) can move
 the result as much as the data does. With one run per point, a flat or rising curve could be luck.
 Each point is drawn as the mean of the two runs, with their spread as an error bar. A gain between
@@ -93,9 +94,11 @@ near-copies.
 - **Kept:**
   - only runs whose **first answer passes every blocking check**: code checks C1–C10, and the judge
     (`claude-haiku-5-5`, high effort, three runs, majority vote);
-  - each kept run gives both steps' input and output exactly as the pipeline sent and received them.
-- **Not kept: outputs that passed only after a rewrite.** Step 2's input is built from step 1's output.
-  Pairing a corrected output with an input built from the uncorrected one would teach a mismatch.
+  - each kept run gives its input and output exactly as the pipeline sent and received them.
+- **Not kept: outputs that passed only after a rewrite.** A rewrite answers a different input: the
+  first output plus the failures. Pairing the corrected output with the original input would credit
+  the model with an answer it reached only with the checks' help, so only first answers that passed
+  are used.
 - **Failed outputs are stored, not discarded.** They can be the rejected side of DPO pairs later
   (§3.5).
 - **Recorded:** the teacher's raw first-answer pass rate before filtering. The student is compared
@@ -248,8 +251,8 @@ before it is reused.
 | Base model | Llama-3-8B, base | **a current instruct model** (decided); which one is **Open**, §5 | chat format, following a system prompt and JSON output come with instruct tuning |
 | Prompt format | its own `### Instruction` template | **the pipeline's exact system and user messages, in the model's chat template** | training and serving see the same input, so the model drops into the pipeline unchanged |
 | Loss | on the whole text, prompt included, with packing | **on the answer only** (completion-only) | otherwise much of the training goes into reproducing the long prompt |
-| Sequence length | 4,096 | **6,144–8,192**, set from the longest example | the two analysis calls together took 3.9–4.8k input tokens in recent runs (about 2–2.5k per call), plus the output; no example may be cut |
-| LoRA | r 16, α 32, lr 2e-4, 5 epochs | r 16, α 32, lr 2e-4, **2–3 epochs** | 5 epochs on about 200 examples risks overfitting |
+| Sequence length | 4,096 | **6,144–8,192**, set from the longest example | the analysis call took 3.9–4.8k input tokens in recent runs (prompt and input), plus about 1–2k output tokens; no example may be cut |
+| LoRA | r 16, α 32, lr 2e-4, 5 epochs | r 16, α 32, lr 2e-4, **2–3 epochs** | 5 epochs on about 100 examples risks overfitting |
 | Checkpoint choice | none | **10% of the generated data held out as validation**; the checkpoint is chosen by validation loss | the 25 evaluation cases are used only for the final measurement, never to choose a checkpoint |
 | GPU, training | Vertex AI T4 (16 GB, no bf16) | **the user's PC, RTX 5090 (32 GB, bf16, fp8), under WSL2 or Docker**; the final configuration run once more as a **Vertex AI custom training job** with the same container | the 5090 has more memory and several times the speed of an L4, at no hourly cost, which the learning curve's many runs need; the Vertex run shows the same job reproduced in the cloud (decided by the user, 2026-10-25) |
 | GPU, serving and measurement | — | **an L4 (24 GB) on GCP**, the production serving VM (§6) | measured on the GPU it is deployed on, not on a development PC; continues `docs/inference_serving_vllm.md` |
