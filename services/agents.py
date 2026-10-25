@@ -454,10 +454,10 @@ def report_node(state: PurchasingState):
 
 def approval_node(state: PurchasingState):
     """The purchase request: the approval agent writes Purpose and Justification, code the rest.
-    No agent call when no item is due for a request (every item Low)."""
+    Reached only when an item is due for a request after the analysis (after_report)."""
     analysis, items, docs = state["analysis_output"], state["items"], state.get("history_docs") or []
     approval, payload = None, {}
-    if documents.requested_items(items):
+    if documents.items_to_request(items, analysis, state["snapshot_date"]):
         payload = documents.approval_input(state["supplier"], items, analysis, docs, state["snapshot_date"])
         approval = run_approval_agent(payload)
     md, problems = documents.render_purchase_request(
@@ -484,7 +484,8 @@ def finish_node(state: PurchasingState):
     and the full results are in the quality-check document, which also gets the purchase
     request's checks."""
     update = {"pr_md": documents.fill_check_notes(
-        state.get("pr_md") or "", [state.get("evaluation_result") or {}, state.get("approval_check") or {}])}
+        state.get("pr_md") or "", [state.get("evaluation_result") or {}, state.get("approval_check") or {}])
+        if state.get("pr_md") else ""}  # no purchase request when every item is still Low
     if state.get("evaluation_result"):
         md = evaluation_markdown(state["supplier"], state["evaluation_result"], run_id=state.get("run_id") or "",
                                  snapshot_date=state.get("snapshot_date") or "",
@@ -584,7 +585,16 @@ documents_flow.add_node("email_draft", instrument("email_draft", email_draft_nod
 documents_flow.add_node("validator", instrument("validator", validator_node))
 documents_flow.add_node("email_doc", instrument("email_doc", email_doc_node))
 documents_flow.set_entry_point("report")
-documents_flow.add_edge("report", "approval")
+
+
+def after_report(state: PurchasingState) -> str:
+    """Every item still Low after the analysis: the run ends with the analysis report, whose Summary
+    says so; no purchase request, check or email (the user, 2026-10-25)."""
+    return "approval" if documents.items_to_request(state["items"], state["analysis_output"],
+                                                    state["snapshot_date"]) else "end"
+
+
+documents_flow.add_conditional_edges("report", after_report, {"approval": "approval", "end": END})
 documents_flow.add_edge("approval", "email_draft")
 documents_flow.add_edge("approval", "approval_check")
 documents_flow.add_edge("email_draft", "validator")

@@ -79,6 +79,8 @@ def full_run(case: dict, group: dict, folder: Path) -> dict:
                 else:
                     state[k] = v
     for name, key in DOCUMENTS:
+        if not state.get(key):  # every item still Low: no purchase request or email
+            continue
         (folder / f"{name}.md").write_text(state.get(key) or "", encoding="utf-8")
         save_markdown_to_docx(folder / f"{name}.docx", state.get(key) or "")
     return {

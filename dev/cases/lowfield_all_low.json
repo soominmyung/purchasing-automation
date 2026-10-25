@@ -1,0 +1,16 @@
+{
+ "name": "lowfield_all_low",
+ "purpose": "Every item Low, and the history gives no reason to change that (2026-10-25). Expected: the analysis runs, every item stays Low, the run ends with the analysis report, whose Summary says no purchase request or supplier email was prepared; no purchase request or email. Not part of the evaluation set.",
+ "known_limits": [],
+ "csv": "SnapshotDate,2025-04-05\n\nItemCode,ItemName,SupplierName,AvailableStock,WksToOOS\n540001,FlangeGasket,LowfieldSupplies,4000,40\n540002,ShaftCollar,LowfieldSupplies,5200,52\n",
+ "history": [
+  {
+   "supplier": "LowfieldSupplies",
+   "items": [],
+   "item_codes": [],
+   "date": "2025-02-14",
+   "source": "lowfield_review_2025-02.docx",
+   "text": "LowfieldSupplies has delivered every order on time over the past year, with no quality issues recorded."
+  }
+ ]
+}

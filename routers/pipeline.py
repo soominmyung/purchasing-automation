@@ -203,6 +203,13 @@ def _run_pipeline_inner(
                     "content_base64": _read_file_base64(analysis_saved_path),
                 })
 
+            # Every item still Low after the analysis: the run ended with the analysis report, whose
+            # Summary says so; no purchase request or email file
+            if not pr_md and not email_text:
+                progress("nothing_to_request", {"supplier": supplier})
+                record.finish_group(entry, final_state, files)
+                continue
+
             # 2. PR 처리
             pr_filename = f"pr_{snapshot_date}_{safe_supplier}_{record.run_id}.docx"
             files["pr"] = pr_filename

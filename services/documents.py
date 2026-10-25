@@ -87,6 +87,18 @@ def requested_items(items: list[dict]) -> list[dict]:
     return [it for it in ordered_items(items) if _risk_of(it) in REQUESTED_RISKS]
 
 
+# Written into the analysis report's Summary when every item is still Low after the analysis; the
+# run ends with the report (the user, 2026-10-25)
+NOTHING_TO_REQUEST = ("**No purchase request or supplier email was prepared:** every item is Low risk after this "
+                      "analysis, with its latest order date months away.")
+
+
+def items_to_request(items: list[dict], analysis: dict, snapshot_date: str | None) -> list[dict]:
+    """The items due for a purchase request, by their risk level after the analysis's lead-time
+    changes (an item Low at 18 weeks may not be at the analysis's lead time)."""
+    return requested_items(with_lead_times(items, analysis if isinstance(analysis, dict) else {}, snapshot_date))
+
+
 def changes_by_item(analysis: dict) -> dict[str, dict[str, dict]]:
     """{item_code: {"qty": change}}; the first quantity change per item counts."""
     out: dict[str, dict[str, dict]] = {}
@@ -458,8 +470,8 @@ def render_analysis_report(supplier: str, snapshot_date: str, items: list[dict],
     out = [f"# Purchasing Analysis — {supplier}", "", *_date_header(snapshot_date), ""]
     if data_issue_lines:
         out += [DATA_ISSUES_HEADING, *[f"- {ln}" for ln in data_issue_lines], ""]
-    out += ["## Summary", "", _highlight_changes(str(analysis.get("summary") or "(no summary was returned)").strip(),
-                                                 analysis), ""]
+    out += ["## Summary", ""] + ([NOTHING_TO_REQUEST, ""] if not requested_items(items) else []) + [
+        _highlight_changes(str(analysis.get("summary") or "(no summary was returned)").strip(), analysis), ""]
 
     out += ["## Items", "", "| Item | Risk | Weeks to stockout | Lead time | Order by | Quantity |",
             "| --- | --- | --- | --- | --- | --- |"]

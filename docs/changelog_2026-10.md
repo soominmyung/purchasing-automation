@@ -932,6 +932,23 @@ English or Korean).
   emails it caught all 13 real faults and failed 8 of 162 clean ones, none of Sol low's; `gpt-4o-mini`,
   given the same prompt, failed 55 of them for wrong reasons.
 
+### 27. Every item Low: the run ends with the analysis report *(2026-10-25)*
+
+- **Decided by the user:** the analysis still runs (the history may change a lead time and so a risk
+  level); if every item is still Low after it, the run ends with the analysis report, whose Summary
+  opens with "No purchase request or supplier email was prepared: every item is Low risk after this
+  analysis, with its latest order date months away." (`documents.NOTHING_TO_REQUEST`, written by
+  code). No purchase request, check or email; the API sends a `nothing_to_request` progress event and
+  makes no purchase-request or email file (`routers/pipeline.py`).
+- **Fixed on the way:** whether an item is due for a request is now judged on its risk level after
+  the analysis's lead-time changes (`documents.items_to_request`); the purchase request node had used
+  the 18-week level, so an item Low at 18 weeks but Medium at the analysis's lead time was left out.
+- **Tested** on two new dev cases: `lowfield_all_low` (both items Low, a clean record: the report
+  only, 15.9 s, `dev/runs/2026-10-25_155908_...`) and `delayvale_low_becomes_medium` (both Low at 18
+  weeks, a notice of four weeks longer: BushingRing, 36 weeks to stockout, is Medium at 22 weeks, so
+  the run went on to a purchase request and an email, `dev/runs/2026-10-25_155928_...`). The second
+  is why the analysis runs even when every item is Low.
+
 ## Evaluation
 
 - **Rubric** (`docs/eval_rubric.md`): fixed checklist replacing imitation-of-GPT-4o scoring;
@@ -989,9 +1006,8 @@ to be written after testing in Claude Desktop.
 - Email validator: settled 2026-10-25 (item 26). An email that still fails after the last rewrite is
   kept, and the draft note says why (the user, 2026-10-25: `documents.render_email`, `check_failure`).
   Not done: giving the validator this run's actual internal figures to compare against.
-- Every item Low: no model call (the user, 2026-10-25); how the result is shown, especially in the
-  demo, to be settled. The purchase request gets no data-issues section (the user, 2026-10-25; it has
-  none today).
+- Every item Low: done 2026-10-25 (item 27). The purchase request gets no data-issues section (the
+  user, 2026-10-25; it has none today).
 - ~~Later: a second stage for the purchase request~~: dropped, out of the project's scope (the user,
   2026-10-25). The design, kept for the record (designed 2026-10-22, not built). The
   request is submitted days after the analysis, after the supplier has answered. Design: the

@@ -1,0 +1,16 @@
+{
+ "name": "delayvale_low_becomes_medium",
+ "purpose": "Every item Low at the pipeline's 18 weeks, but the supplier has announced lead times four weeks longer (2026-10-25). At 22 weeks, BushingRing (36 weeks to stockout) is Medium (below 22 + 17 = 39); SealPlate (50 weeks) stays Low. Expected: the analysis raises the lead time, so the run does not end at the report: a purchase request and an email for BushingRing. Shows why the analysis runs even when every item is Low. Not part of the evaluation set.",
+ "known_limits": [],
+ "csv": "SnapshotDate,2025-04-05\n\nItemCode,ItemName,SupplierName,AvailableStock,WksToOOS\n550001,BushingRing,DelayvaleParts,3600,36\n550002,SealPlate,DelayvaleParts,5000,50\n",
+ "history": [
+  {
+   "supplier": "DelayvaleParts",
+   "items": [],
+   "item_codes": [],
+   "date": "2025-03-20",
+   "source": "delayvale_lead_time_notice_2025-03.docx",
+   "text": "DelayvaleParts announced that from April 2025 lead times for all products are four weeks longer while it replaces a production line; it expects this to last until the end of 2025."
+  }
+ ]
+}
