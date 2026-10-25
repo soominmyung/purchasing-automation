@@ -216,9 +216,11 @@ The measures are chosen so that the answer does not rest on resemblance to the t
 5. **Generalisation to an unseen type** (§2.3). Following the rules on a kind of history never trained
    on is not imitation.
 6. **The purpose is a deployment requirement, not "as good as GPT".** Served from the company's own GCP
-   project (§6), the stock figures and supplier history go to no model company's API, cost is fixed, and nothing depends on
-   an outside API. So the question is whether the small model is good enough for this role and where
-   it falls short. Its shortfalls are reported with real examples.
+   project (§6), the analysis, the call that receives the most data (every item's figures and every
+   history document), goes to no model company; its cost is fixed by the GPU's hours, and it no longer
+   depends on an outside model's availability or changes. The other agents still use APIs (§6.3). So
+   the question is whether the small model is good enough for this role and where it falls short. Its
+   shortfalls are reported with real examples.
 
 ### 3.4 What gets reported
 
@@ -308,11 +310,7 @@ company's GCP project**, with vLLM. The pipeline itself stays on the on-prem SAP
 server has no GPU. This is the set-up actually built and measured (§6.4), and it is the same recipe as
 `docs/inference_serving_vllm.md`.
 
-Serving on the SAP server itself was considered and set aside. vLLM runs only on Linux, so on that
-Windows server it would need a Linux VM under Hyper-V with the GPU passed through to it: a set-up that
-was never built or tested here. A Windows-native engine (llama.cpp or Ollama with a GGUF of the model)
-would avoid Linux. But it is a different engine from the one measured, so the measurements would not
-apply to it.
+The SAP server is not used for serving because it has no GPU.
 
 ### 6.1 Where it runs
 
@@ -339,9 +337,22 @@ apply to it.
 
 ### 6.3 Where the data goes
 
-The stock figures and supplier history leave the building for the analysis. They go only to a VM in
-the company's own GCP project, under its own account, region and firewall. They are not sent to a
-model company's API, as they are with `gpt-6.1-sol`. The other agents still call their APIs, as today.
+What each step of a run sends, and to whom, with the analysis served from GCP:
+
+| Step | What it sends | Where it goes |
+|---|---|---|
+| History ingest (when a document is added) | the document's text, for its embedding | OpenAI embeddings API (Chroma embeds at ingest; retrieval does not use it) |
+| **Analysis, both calls** | every item's figures and the supplier's history documents in full | **the company's GCP VM** (with `gpt-6.1-sol` today: OpenAI) |
+| Judge (evaluation) | the same input as the analysis, plus the analysis | Anthropic (`claude-haiku-5-5`) |
+| Purchase request (approval agent) | the requested items' figures, and the findings, changes and actions about them | OpenAI (`gpt-6.1-sol`) |
+| Supplier email (draft agent) | item names, quantities, delivery dates, the questions for the supplier | OpenAI (`gpt-6.1-sol`) |
+| Email validator | the email's text and the names of the items left out | Anthropic (`claude-haiku-5-5`) |
+| Tracing | structure, timings, token counts; prompt and response text hidden where real data runs | LangSmith (`docs/observability.md`) |
+
+So serving the analysis from GCP takes the analysis call off OpenAI, but not the whole run: the judge
+still receives the full input, and the purchase request and email agents receive parts of it. Keeping
+all of the company's data off model companies' APIs would need those agents self-hosted too, or the
+judge left out in production. Neither is planned.
 
 ### 6.4 Measurement
 
