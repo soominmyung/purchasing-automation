@@ -60,8 +60,12 @@ would cost about $15–20). The reason is that 300 is a guess. The plan instead:
 
 The learning curve is a planned figure for the README and the portfolio. It turns "how much data?"
 from a guess into a measured answer, for example: "from 50 to 100 suppliers, first-answer blocking
-failures fell only from X to Y". With so few examples one training run can be noisy, so each point
-may be trained twice with different seeds if GPU time allows (**Open**). Variety matters more than
+failures fell only from X to Y". **Each point is trained twice, with two seeds (decided by the user, 2026-10-25).** With 50–200
+examples, the seed (the order the examples are shown in, the LoRA initialisation, dropout) can move
+the result as much as the data does. With one run per point, a flat or rising curve could be luck.
+Each point is drawn as the mean of the two runs, with their spread as an error bar. A gain between
+two sizes counts only if it is larger than the spread between seeds. The seeds and every run's
+results are recorded. Variety matters more than
 count, so the types are balanced at every size.
 
 **Types** (aligned with the evaluation set's categories, plus the v5 cases found in development):
@@ -135,8 +139,7 @@ buyers when the bundle is refused. This is a good choice for these reasons:
   good analysis is judged by the existing rules and by reading. Setting a rule for it would decide a
   purchasing question the user has not decided.
 
-**Open:** whether to also hold out one existing medium-severity type, such as "demand surge in a market
-not stated", as a second test.
+**Decided (the user, 2026-10-25):** no second held-out type; the tie-in sale is the only one.
 
 ## 3. Measurement
 
