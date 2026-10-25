@@ -2,8 +2,8 @@
 
 The record of the SFT retraining done on 2026-10-25. It covers the plan (`docs/sft_plan.md`), the
 base model choice (`docs/sft_base_screening.md`), the training data (`docs/sft_training_data.md`),
-the training settings, the learning curve and the evaluation. **The evaluation is in progress:
-sections 6–7 hold the first adapter's results and are completed as the others finish.** Tables
+the training settings, the learning curve and the evaluation. **Evaluated on 2026-10-25 (all six adapters): at this size SFT did not
+improve on the untuned model.** Tables
 come from `python scripts/report_sft_results.py`.
 
 ## 1. The question
@@ -112,7 +112,7 @@ The loss still falls at 85 runs. The 50 → 85 gain (0.07) is larger than the sp
 (at most 0.03). Validation loss measures closeness to the teacher's answers, not passing the
 checks, so whether more data is needed is decided on the evaluation (section 6).
 
-## 6. Evaluation (in progress)
+## 6. Evaluation
 
 **Set-up:**
 
@@ -168,8 +168,68 @@ Options under consideration, for the user to decide:
 
 ## 7. Results by size and seed
 
-*(to fill when the evaluation finishes: the table for all six adapters, from
-`scripts/report_sft_results.py`)*
+**25 evaluation cases.** "Ready if J8 set aside" removes the one pattern of section 6 to show
+whether anything else improved.
+
+| Model | Ready | Ready if J8 set aside | Lead-time changes applied (of Sol's 11) | Changed items with a wrong figure | Supplier questions with "bridge … gap" | Blocking failures by check |
+|---|---|---|---|---|---|---|
+| `gpt-6.1-sol` | 24 | 24 | 11 | 0/22 | — | J7a 1 |
+| Gemma 4 12B, untuned | **14** | **16** | 1 | 1/1 | — | J1b 5, J8 3, J1c 2, C10 2, J6b 2, C5 1, J1a 1, C6 1 |
+| SFT 25 runs, seed 1 | 5 | 14 | 1 | 2/2 | 12/21 | J8 11, C4 4, J7a 3, J1b 2, J1c 2, C10 2, C1 2, J6b 1, J1a 1 |
+| SFT 25, seed 2 | 6 | 16 | 2 | 3/3 | 16/29 | J8 14, C4 5, J7a 3, C10 2, J1c 1, J1b 1, C2 1 |
+| SFT 50, seed 1 | 10 | 13 | 2 | 3/3 | 12/23 | J8 11, C4 9, J7a 3, J1b 2, C10 2, J1c 1, J6b 1, C2 1 |
+| SFT 50, seed 2 | 8 | 16 | 1 | 1/1 | 14/28 | J8 13, C4 5, C2 2, J1b 1, J7a 1, C10 1, C1 1 |
+| SFT 85, seed 1 | 3 | 12 | 3 | 5/5 | 21/33 | J8 17, J7a 5, C4 4, C10 3, J1c 2, J1b 2, C2 1, J1a 1 |
+| SFT 85, seed 2 | 6 | 12 | 6 | 9/12 | 16/31 | J8 14, C4 6, J7a 6, C10 5, J1b 1, J1c 1 |
+
+**Tie-in generalisation set (7):**
+
+| | Ready |
+|---|---|
+| Sol | 7 |
+| untuned | 4 |
+| SFT 25 | 0 / 3 (seed 1 / seed 2) |
+| SFT 50 | 2 / 4 |
+| SFT 85 | 5 / 2 |
+
+The SFT failures are J8, invalid JSON (C1, 2–3 in the smaller runs) and citations (C4).
+
+**What it shows:**
+
+1. **SFT at this size made the model worse, at every size and seed.** Readiness fell from 14 to
+   3–10. The J8 pattern appears in every adapter, already at 25 runs: 12–21 of each adapter's
+   supplier questions carry the action's "to bridge the N-week gap", against 0 of 156 in the
+   teacher's data. Wrong citations (C4) rose too, from 0 untuned to 4–9.
+2. **Setting J8 aside, nothing improved either.** 12–16 ready against 16 untuned.
+3. **Applying the lead-time allowance rose with data but not the arithmetic.** Changes applied
+   went from 1 to 6 of 11 at 85 runs (seed 2), but 9 of the 12 changed items had a wrong figure.
+   The policy the teacher shows is being learned; computing the figures after it is not, as
+   expected of answers trained without reasoning (`docs/sft_base_screening.md`).
+4. **Validation loss and task results disagree.** Loss fell steadily (0.45 → 0.33), while
+   readiness did not rise. The model came closer to the teacher's wording, phrases included,
+   without keeping the rules behind it, such as which field may name the gap.
+
+**Reading of the cause (to be tested, not settled):**
+
+- With 25–85 examples of long, structured answers, the model picks up frequent phrases across
+  fields. "To bridge the N-week gap" is in 60 of 300 teacher actions, and supplier questions about
+  expediting have the same shape.
+- The evaluation set is weighted to Critical items (43%, against 18% in training), where this
+  happens.
+- Greedy decoding (temperature 0) makes a learned phrase come out every time.
+
+**Options, for the user to decide:**
+
+- **More data, matched to the evaluation's mix** (more Critical items). The validation loss had not
+  levelled off.
+- **Targeted examples**, where a Critical item's supplier question and its action appear together
+  and differ only in what they may say.
+- **DPO** on pairs from the SFT model's own outputs that differ in this phrase (on-policy pairs;
+  `docs/sft_plan.md`, section 3.5).
+- **Reasoning traces**, so that the arithmetic after a change is worked out rather than recalled
+  (section 3 of the screening record).
+- **Accept the result for now:** at this scale, the untuned model with the production prompt is
+  better than the fine-tuned one, and the production analysis stays on `gpt-6.1-sol`.
 
 ## 8. Files
 
