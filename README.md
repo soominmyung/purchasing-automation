@@ -139,7 +139,7 @@ short placeholder prompt; its figures are not comparable with these and are no l
 - The email agent is not given stock figures, risk levels or internal questions, and its output is
   checked for them.
 - LangSmith receives the run tree, times, tokens and model names only; prompt and response text and
-  supplier names are kept out ([`docs/observability.md`](docs/observability.md)).
+  supplier names are kept out.
 - Each run is recorded on the company server as JSON (inputs, history used, outputs, checks, times,
   tokens), with run and check statistics appended to CSV files.
 - All data in this repository is synthetic.
