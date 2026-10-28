@@ -1,250 +1,217 @@
 # Multi-agent Purchasing AI Suite
 
-A multi-agent LLM pipeline that jointly analyzes an inventory snapshot together with supplier and item history context via RAG, automating the manual work previously handled by purchasing staff — **from inventory-risk analysis and replenishment planning to drafting analysis reports, purchase request forms, and supplier emails**.
+A purchasing-decision pipeline: from a stock CSV and the company's supplier and item history
+documents, it writes an **analysis report** for the purchasing officer (buyer), a **purchase
+request** for the approvers and a **draft email to the supplier**, one set per supplier. Code does the arithmetic,
+retrieval and document assembly; LLMs read the history and write; every draft is checked by code
+and by an LLM judge before the buyer sees it.
 
-*Rather than stopping at a simple stock check, it uses RAG to automatically retrieve and analyze relevant context scattered across many documents, including supplier delivery performance and delay history, transaction and negotiation records, customs/regulatory/safety issues, item market performance, and item-specific issue history.* Each output is then **independently audited by a separate agent for data and logical consistency, producing a quality-evaluation report alongside it**. The email draft also goes through a **self-correction loop that checks for internal information leakage and rewrites the draft if any risk is found**.
-
-![Multi-Agent Purchasing AI Workflow](docs/workflow_diagram.png)
-
-> **Demo:** https://soominmyung.com/purchasing-automation
+> **Demo:** https://soominmyung.com/purchasing-automation (synthetic data)
 >
-> **Source:** https://github.com/soominmyung/purchasing-automation
+> **Portfolio (Korean, 7 pages):** [docs/Purchasing_AI_Suite_ko.pdf](docs/Purchasing_AI_Suite_ko.pdf)
 
-> A polished A4 version of this write-up is available as a [PDF](docs/portfolio_a4_en.pdf).
+| | |
+|---|---|
+| Code and LLM roles | Code: risk, order dates and quantities, history retrieval, document assembly. LLM: reading the history, judgements, wording |
+| History retrieval | Metadata-based RAG: documents found by their supplier, item and date headers, given to the model whole |
+| Quality checks | 36 checks across the three documents (code and LLM judge); a failed analysis or email is sent back with the reasons, up to two rewrites |
+| Model choice | Every agent's model and effort chosen on the same inputs, scored by the checks and read by hand (`docs/evaluation_record.md`) |
+| Time and cost | About 80 s and $0.05 for one supplier with seven items, all checks included, no rewrite |
+
+---
 
 ## Project history
 
 - **Sep–Dec 2025, at Korea Foods.** Prototyped in n8n with the purchasing team, then built as a
-  LangGraph multi-agent system on GPT-4o, with a supplier-email validator and an analysis-quality
-  evaluator kept simple on GPT-4o as well. Deployed on the company's on-premises SAP ERP server
-  with the IT manager's help, and first used experimentally by a few members of the purchasing
-  team. A simple Llama-3-8B fine-tune was trained and reviewed as a replacement for GPT-4o;
-  GPT-4o was kept.
+  LangGraph multi-agent system on GPT-4o and deployed on the company's on-premises server, where a
+  few members of the purchasing team used it on real data.
 - **Feb 2026: reconstructed for this repository.** The company's code stayed with the company, so
-  the system was rebuilt here from scratch. The February commits record that reconstruction, not
-  the first development.
-- **Mar–Aug 2026.** The Llama-3-8B fine-tuning rebuilt and taken further here: QLoRA SFT and DPO on
-  Vertex AI, then self-hosted serving with vLLM (FP8).
-- **Oct 2026: v5 overhaul.** The work between code and LLMs redrawn, evaluation checks and a
-  validated judge, every agent's model chosen by measurement, and SFT retraining on the current
-  pipeline (`docs/changelog_2026-10.md`).
+  the system was rebuilt here from scratch, on synthetic data. The February commits record that
+  reconstruction, not the first development.
+- **Mar–Aug 2026.** A first self-hosting study: Llama-3-8B fine-tuning and vLLM serving.
+- **Oct 2026: v5 overhaul.** The work between code and LLMs redrawn, the checks written and the
+  judge validated, every agent's model chosen by measurement, and the self-hosting question
+  measured again on the current pipeline. Every change and its reason is in
+  [`docs/changelog_2026-10.md`](docs/changelog_2026-10.md).
 
+### Branches
 
----
+| Branch | What it holds |
+|---|---|
+| `main` | The current version (v5), described here |
+| `legacy/v1` | The state before the v5 overhaul (16 Oct 2026), including the Llama-3-8B SFT/DPO study |
+| `feature/local-model-pipeline` | The state on 2 Mar 2026, when a local model was first wired in |
+| `legacy/gpt4o` | The February 2026 reconstruction: GPT-4o for every agent, history chunked and embedded |
 
-## At a Glance
-
-<table>
-<tbody>
-<tr><td><b>Period</b></td><td>Sep 2025 – present (at Korea Foods until Dec 2025; developed further since)</td></tr>
-<tr><td><b>Role</b></td><td>Solo project — architecture, development, deployment</td></tr>
-<tr><td><b>Domain</b></td><td>Generative AI-based inventory-risk analysis &amp; automated document generation</td></tr>
-<tr><td><b>Core stack</b></td><td>Python, FastAPI, LangGraph, ChromaDB, GPT-4o, Docker, GCP Cloud Run</td></tr>
-<tr><td><b>Starting point</b></td><td>n8n low-code prototype → re-architected as a Python service</td></tr>
-</tbody>
-</table>
+The three older branches point at earlier commits of `main`; they hold no work that `main` lacks.
+Results and claims in their READMEs belong to those versions and were superseded (see
+[Self-hosting](#self-hosting-measured-not-adopted)).
 
 ---
 
-## The Problem
+## How a run works
 
-Purchasing staff review hundreds of SKU-level inventory records and, on that basis, spend considerable manual effort writing documents such as analysis reports, purchase request forms, and supplier emails.
+1. **Input.** The buyer exports the stock position from an SAP Business One user query as a CSV and
+   uploads it. The pipeline validates every row and groups the items by supplier, since ordering,
+   negotiation and enquiries all happen per supplier.
+2. **Figures in code.** Risk level from weeks to stockout against the 18-week lead time, latest
+   order and delivery dates, and the suggested quantity (26 weeks of sales after arrival).
+3. **History in code.** For each supplier and item, the documents of the 12 months before the
+   snapshot, the latest five per scope, matched on their headers.
+4. **Analysis (LLM).** `gpt-6.1-sol` states the facts in the history, each citing its document, and
+   proposes lead-time or quantity changes, questions for the supplier and actions, each citing the
+   facts it rests on. Code recalculates every figure after a proposed change.
+5. **Checks.** Code checks first; then the judge (`claude-haiku-5-5`). A blocking failure sends the
+   analysis back with the reasons, up to two rewrites; if it still fails, the attempt with the
+   fewest failures is used and re-checked.
+6. **Documents.** The analysis report is assembled in code. If anything needs ordering, the
+   purchase request (`gpt-6.1-sol`) and the supplier email (`gpt-6.1-sol`) are written in parallel,
+   each from only what it needs: the email agent never receives stock figures or risk levels.
+7. **Document checks.** The purchase request is checked for added or altered facts; the email is
+   checked for anything internal (code and Haiku, rewritten up to twice) and then for coverage and
+   tone (judge, warnings).
+8. **Output.** Word drafts for the buyer, each with a note at the top listing what is unresolved.
+   The quality-check document and the run record stay on the server for the operator.
 
-The challenge is that this process is **highly dependent on staff availability and experience**. **When time pressure or limited familiarity with a supplier or item prevents a full review** of evidence scattered across many documents — a supplier's delivery and quality history, past negotiation terms, customs/regulatory/safety issues, and an item's market performance — **the result can be inefficient ordering and potential margin loss**.
+The diagram of the whole flow: [`docs/pipeline_diagram_en.png`](docs/pipeline_diagram_en.png).
 
-## What It Does
+### Evidence trail
 
-Given an inventory snapshot, the system automatically produces four outputs.
-
-1. **Purchasing analysis report** — supplier-grouped inventory-risk assessment and replenishment planning
-2. **Quality-evaluation report** — a separate agent audits the analysis for data and logical consistency
-3. **Purchase request form (PR)** — formatted per supplier for the approval process
-4. **Supplier email draft** — outbound communication for delivery and stock-availability inquiries
-
-The inventory snapshot is provided as a CSV of items flagged for potential shortage, while supplier and item history documents are uploaded, embedded into a vector DB, and then automatically retrieved during the analysis stage.
-
----
-
-## Architecture
-
-### PoC-to-Production — from n8n prototype to production code
-
-I first validated the concept quickly with an **n8n** low-code workflow. By wiring nodes together, this stage confirmed the feasibility of the "CSV → grouping → LLM analysis → document generation" flow.
-
-Once validated, I re-architected the entire workflow in **Python (FastAPI + LangGraph)** to implement complex branching logic, state management, and container deployment. In the process I moved the node-based flow onto an async API and a state graph, refined it into a deployable service with API-key authentication and streaming, and set up CI/CD (GitHub Actions → Cloud Run) for the public demo (actual operations run on the company's local server).
-
-### Multi-agent pipeline (LangGraph)
-
-Six specialized agents are connected as a LangGraph state graph, and the validator node loops back to an earlier step to rewrite when needed.
-
-![Multi-agent pipeline](docs/pipeline_diagram_en.png)
-
-**Why multi-agent?**
-
-Compared to handling everything with a single monolithic prompt, this design offers:
-
-- **Modularity** — each step can be swapped or improved independently without touching the others; in practice, I isolated just the analysis agent to test replacing GPT-4o with a self-hosted Llama-3-8B model.
-- **Early error containment** — because the evaluation agent independently audits the analysis, a flawed analysis is caught before it propagates into the downstream steps (PR, email).
-- **Precise self-correction and validation** — when the validator node detects a problem, it can pinpoint exactly which step needs a rewrite instead of re-running the entire pipeline from scratch.
-
-### Core Components
-
-**RAG knowledge base (ChromaDB)**
-
-- **Chunking & Storage** — supplier-record and item-history PDFs (uploaded individually or in bulk as ZIP) are chunked (1,000 chars, 200-char overlap), converted to OpenAI embeddings, and stored in five independent collections split by document type (supplier history, item history, and report/PR/email examples).
-- **Chunk Size & Overlap Tuning** — reviewing the actual supplier/item history documents, I found they typically run about 1–2 A4 pages, and used that as the basis to benchmark chunk sizes of 500, 1,000, and 1,500 characters for storage/retrieval efficiency. A too-small chunk size (500 chars) caused context loss, while a too-large one (1,500 chars) caused context blending across different events, so I chose 1,000 characters as the optimal size, and set a 20% (200-char) overlap so that context spanning a chunk boundary isn't lost.
-- **Workflow-tailored design** — building on the observation that the actual supplier/item history documents follow a convention of stating the supplier name and item code at the top, I designed **reliable metadata filtering using regex alone**, without any complex ontology implementation.
-    - **Metadata tagging** — at ingest time, regex extracts the supplier name and item code and attaches them as document metadata. Since every child chunk inherits the parent document's metadata after chunking, the filter always applies correctly even when a given chunk's text doesn't literally contain that name.
-    - **Explicit metadata filtering + most-recent-first retrieval (two-stage retrieval)** — when the analysis agent looks up history, it passes the actual supplier name and item code the pipeline already knows as a metadata filter, narrowing the candidate set to documents belonging to that supplier/item only. Since filtering alone already leaves nothing but documents that genuinely belong to that supplier/item, it then fetches the top N by **the document's own recorded date (event_date)** — no similarity ranking involved. If date extraction fails, it falls back to the ingest timestamp. Other filtering strategies can, of course, be swapped in depending on the retrieval purpose.
-    - **Strength** — pure semantic similarity search risks pulling in similar narratives from other suppliers (e.g. comparable shipping-delay cases), but the metadata filter blocks this cross-contamination at the source. Building on an existing documentation convention, this was achieved without implementing any ontology or knowledge graph.
-- **Mandatory history lookups** — leaving the decision to the model invites **skipped lookups even when history exists**: the input already carries stock levels and weeks-to-out-of-stock, so the model can conclude it has enough. That is not hallucination but an analysis missing available evidence, which is harder to notice. The prompt therefore requires exactly one supplier-history and one item-history lookup, followed by rules that any incident found must surface as a critical question and that an empty result must be stated as "no history available" — skipping the lookup would deny those later rules any chance to fire.
-- **Purpose-differentiated retrieval strategy** — the supplier/item history collections and the example (analysis report/PR/email best-practice) collections both fetch the top N by the document's own date (event_date), but differ in whether they filter first. History retrieval is looking for "facts about this supplier/item," so it must narrow by metadata before ranking by date; the example collection is a style reference for "how has the company's format recently changed," so there's no need to narrow to a specific entity — pulling the top N by date from the whole collection is enough. So both collections parse a date from the document text at ingest time and store it as event_date (falling back to the ingest timestamp if parsing fails), and only the history collections additionally layer a metadata filter on top.
-
-**AI quality-evaluation (Evaluator) agent** — A separate evaluation agent cross-references the analysis agent's output (JSON) against the source supplier/item history it was based on, scoring it out of 10 on four criteria — **numeric accuracy, source faithfulness (hallucination check), soundness of reasoning, and sensitive-information leakage**. Because it compares against the exact history retrieved by the analysis agent — passed directly rather than re-fetched — it avoids the failure mode of misjudging a genuinely grounded statement as "unsourced" and wrongly scoring it as a hallucination.
-
-**Guardrail — self-correction loop** — The email output passes through the validator node, which checks for internal information leakage. If a leak is detected, it is not returned as-is; the graph loops back to regenerate the draft.
-
-**Real-time streaming (SSE)** — Instead of a single request-response, the progress of each pipeline stage (CSV parsing → grouping → analysis → document generation) is streamed to the client in real time via Server-Sent Events, showing the current pipeline stage live and surfacing errors immediately when they occur.
-
-**Hybrid design — deterministic computation vs. LLM reasoning** — In the supplier-grouping stage, the recommended order date and quantity are **computed with a Python formula** based on `WksToOOS` (weeks to out-of-stock) and `CurrentStock`. Values a clear formula can produce are handled by deterministic code rather than left to LLM reasoning, removing any room for hallucination; the LLM then takes that result and focuses solely on contextual interpretation and document authoring over the prioritized, structured data. Keeping the calculation out of the LLM call also cuts token spend and latency.
-
-**Security & Observability** — The public demo has header-based API-key authentication (`X-API-Key`) and per-IP rate limiting to prevent token abuse by anonymous users; the in-house deployment implements per-user intranet ID/PW login. LangSmith tracks token usage, latency, and prompt performance for every node, and custom logic outside LangChain is also instrumented with `@traceable`.
-
-**Deployment** — The public demo runs as a Docker container on GCP Cloud Run (serverless, scale-to-zero) so anyone can access it, with CI/CD via GitHub Actions building and auto-deploying the image on every push to `main`. For actual in-house operations, the app runs continuously on the same 24/7 local server as SAP ERP, so the team uses it over the intranet — an environment with no cold-start or vector-store volatility issues.
+Source documents are numbered `[1], [2]…`; each fact cites its documents and is numbered
+`[F1], [F2]…`; each proposed change, question and action cites the facts behind it. Facts drawn
+from the stock figures carry no document number and are listed apart. Code checks that every
+citation resolves; the judge checks that each one supports what rests on it.
 
 ---
 
-## Fine-tuning Study: SFT + DPO on Llama-3-8B
+## Quality checks
 
-I tested whether the GPT-4o analysis agent could be replaced with a self-hosted model. **The goal was to reduce per-call cost and data-exposure risk**, and the approach was to distill GPT-4o's knowledge into Llama-3-8B.
+| Document | Checks | By | On failure |
+|---|---|---|---|
+| Analysis | C1–C10 (format, items, figures, citations, recalculated dates) and J1a–J8 (history stated, not distorted, applied to the right supplier and item; changes justified and sized; supplier questions free of internal data) | Code, LLM judge | Blocking: rewrite (up to 2). Warnings: note in the draft |
+| Purchase request | P1a–c (nothing added, figures as given, meaning kept), P2 (length), P3 (citations) | LLM judge, code | Note in the draft |
+| Supplier email | E1–E3 (no internal data, no past supplier problem, no item outside the order) | Code, Haiku | Rewrite (up to 2), then note |
+| | E4–E7 (every point asked, no repeat, earliest dispatch asked, tone of a request) | LLM judge | Note in the draft |
 
-### Training data
+Definitions: [`docs/eval_rubric.md`](docs/eval_rubric.md). Check ids were renumbered on 29 Oct 2026;
+records written before use the old ids (mapping in the rubric).
 
-- **Data source** — instead of real company data, I used **synthetic purchasing scenarios** generated by GPT-4o.
-- **Scenario composition** — each consists of inventory rows (item code, item name, supplier, risk grade, current stock, weeks-to-out-of-stock) and supplier/item history (natural language).
-- **Adversarial cases included** — I deliberately included cases like data contradictions (high stock yet imminent stockout), conflicting context (a "trusted" label vs. a recent failure), ambiguous history, and missing values, to improve robustness. A model trained on such cases, when faced with similar production cases, responds by **explicitly stating contradictions or gaps as such** rather than masking them or fabricating information.
-- **Knowledge distillation** — the analysis GPT-4o produced for these scenarios (JSON: analysis report, critical questions, supplementary timeline) was treated as ground truth for Llama to reproduce.
-- **Fine-tuning scope** — limited to the **output of the analysis agent** being replaced, not the whole pipeline.
-
-### Stage 1 — Supervised Fine-Tuning (SFT)
-
-- Llama-3-8B + QLoRA (4-bit, LoRA rank 16 — ~41M trainable params / 8B, 0.51%)
-- 25 teacher examples (analysis JSON GPT-4o generated per scenario) — of the 30 scenarios, the last 5 are held out for evaluation and never used in training
-- Vertex AI, 1× Tesla T4, 5 epochs, 367s — training loss 1.14 → 0.41
-- Artifact: `gs://purchasing-automation-models/sft-runs/lora_adapter/` · [W&B](https://wandb.ai/msm1640-/purchasing-automation-sft)
-
-### Stage 2 — Direct Preference Optimization (DPO)
-
-- 25 preference pairs (holdout of 5 excluded). `chosen` is fixed to the GPT-4o ground-truth analysis JSON, and `rejected` is selected by having the SFT model generate 4 candidates per prompt at temperature 0.8, scoring them with a GPT-4o judge, and **taking only the lowest-scoring one**. The judge was instructed to evaluate only data accuracy and reasoning quality — not style — so that stylistic differences would not leak into the preference signal.
-- Vertex AI, Tesla T4, 3 epochs, ~14 min · Unsloth `PatchDPOTrainer()` + TRL `DPOTrainer`
-- Artifact: `gs://purchasing-automation-models/dpo-runs/lora_adapter/` · [W&B](https://wandb.ai/msm1640-/purchasing-automation-dpo)
-
-### Evaluation (GPT-4o-as-judge, 5-example holdout)
-
-Two criteria scored 1–10 each (data accuracy, reasoning quality) and averaged, against GPT-4o ground truth as reference.
-
-| Model | Avg. score | Valid JSON |
-|:---|:---:|:---:|
-| Base Llama-3-8B | 0.0 / 10 | 0% |
-| **Llama-3-8B SFT** | **9.5 / 10** | **100%** |
-| Llama-3-8B SFT + DPO | 8.5 / 10 | 100% |
-| GPT-4o (reference) | 10.0 / 10 | 100% |
-
-- **SFT** reached about **95% of GPT-4o's quality** with valid structured output on every example — validating self-hosted-model feasibility.
-- **DPO regressed** (9.5 → 8.5) despite judge-verified preference pairs. Root cause: most regressed examples dropped the `critical_questions` field, even though `chosen` includes it in all 25 cases and `rejected` in only 7 — DPO's contrastive learning adjusts the whole-sequence probability and cannot pinpoint *which part* is responsible (a lack of **credit assignment**), so a few noisy exceptions drove generalization the wrong way at this small sample size.
-- **Conclusion:** at this scale (25 pairs), **SFT alone** is the more reasonable choice; the remaining 5% gap does not justify the extra engineering (multi-attribute reward, or Best-of-N filtering + SFT) that a robust DPO retry would require.
+**The judge was validated before use** ([`docs/judge_selection.md`](docs/judge_selection.md)):
+on 51 samples with planted faults it caught 93.9%, with 3.9% of verdicts changing between runs and
+8.0% false alarms on 89 hand-scored verdicts. Letting Haiku reason before answering raised its
+detection from 83.7%.
 
 ---
 
-## Inference Serving & Quantization (vLLM)
+## Model choice
 
-The fine-tuning study produced a self-hostable analysis model; this stage measures **how efficiently it can actually be served** — the deciding factor for the GPT-4o → self-hosted migration. I served the fine-tuned Llama-3-8B (base + LoRA) on a single **NVIDIA L4 (24 GB, GCP `g2-standard-8`)** via the official **vLLM** OpenAI-compatible container, benchmarked against the naive HuggingFace `generate()` loop used in the original evaluation. Full write-up: [docs/inference_serving_vllm.md](docs/inference_serving_vllm.md).
+Each agent's model was chosen on fixed inputs, scored by the checks above and read by hand:
 
-### Continuous batching — throughput scales, latency stays flat
+| Agent | Chosen | Compared with | Record |
+|---|---|---|---|
+| Analysis | `gpt-6.1-sol`, medium effort | `gpt-4o`, `gpt-6-luna`, `claude-sonnet-5-5`, Gemini Flash (7 models, 9 settings) | [`analysis_model_selection.md`](docs/analysis_model_selection.md) |
+| Judge | `claude-haiku-5-5`, high effort | Haiku without reasoning, Haiku medium, `gpt-6-luna`, Gemini Flash-Lite | [`judge_selection.md`](docs/judge_selection.md) |
+| Purchase request | `gpt-6.1-sol`, low effort | `gpt-4o`, `gpt-5.4-mini`, `gpt-6-luna` at several efforts | [`approval_model_selection.md`](docs/approval_model_selection.md) |
+| Supplier email | `gpt-6.1-sol`, low effort | `gpt-5.4-mini`, `gpt-6-luna` at several efforts | [`email_model_comparison.md`](docs/email_model_comparison.md) |
+| Email validator | `claude-haiku-5-5`, medium effort | `gpt-4o-mini`, Haiku low and high | [`email_model_comparison.md`](docs/email_model_comparison.md) |
 
-| Concurrency | Throughput (tok/s) | p50 latency (s) |
-|:---:|:---:|:---:|
-| 1  | 16.1  | 7.94 |
-| 8  | 122.8 | 8.31 |
-| **16** | **242.2** | 8.44 |
-| 32 | 240.5 | 8.45 |
-
-Throughput rises **~15× from concurrency 1 → 16 (16 → 242 tok/s) while per-request latency stays ~8 s** — the signature of continuous batching, where requests are packed onto the GPU together so aggregate tokens/sec climbs without slowing any individual request. It saturates at ~16 (compute-bound here).
-
-### vs. the naive baseline & FP8 quantization
-
-- **vs. naive HuggingFace loop** — sequential `generate()` 11 tok/s → vLLM batched 242 tok/s (**~22×**) on the same GPU.
-- **FP8 quantization** (on-the-fly, Ada FP8 tensor cores) — **393 tok/s (~1.6× over FP16)**, and KV-cache capacity **21k → 81k tokens (~3.9×)** — headroom for longer contexts / more concurrent sequences.
-- **Quality check** — FP16 vs FP8 scored with the project's own GPT-4o-as-judge over **all 30 scenarios**: **7.2 → 7.1 / 10 (−0.1, no meaningful regression)**. Using all 30 is fair because the two share the same weights (quantization only), so no unseen-holdout is needed.
-
-Reproduce with `scripts/bench_vllm.py` (concurrency sweep), `scripts/bench_hf_baseline.py` (naive baseline), and `scripts/gen_serving_outputs.py` → `scripts/eval_quantization_quality.py` (quality check).
-
-**Takeaway** — end to end, **~36× the naive baseline on one L4** (11 → 242 → 393 tok/s); FP8 adds throughput and memory headroom at no quality cost. This closes the *serving* half of the self-hosting migration the fine-tuning study set up — the model is not only accurate enough (SFT ≈ 95% of GPT-4o) but also efficient to serve.
-
-### Cost analysis
-
-Token counts measured with `tiktoken` over the real system prompts, priced at GPT-4o's published rates:
-
-| | Current (GPT-4o) | Analysis agent localised |
-|---|---:|---:|
-| Analysis agent | $0.0176 | **$0.00037** |
-| Other six agents | $0.0430 | $0.0430 |
-| **Per supplier group** | **$0.0607** | **$0.0434 (−29%)** |
-
-Per token the self-hosted model is ~47× cheaper, but a GPU bills as a **fixed cost** — about $612/month at cloud L4 rates, putting breakeven near **1,200 runs/day**, well above what a purchasing team processes. So at this volume **data residency, not saving, is what justifies self-hosting**; migrating the remaining agents onto the same GPU would cut breakeven to roughly 340/day.
-
-Worth noting where the tokens go: **~40% of pipeline input is hand-offs between agents** — passing the analysis downstream, and giving the evaluator the same history the analysis saw. That is the price of modularity and of scoring against the right evidence, not waste to be optimised away.
+The scale of that work (about 1,360 outputs, 38,600 check verdicts, 1,050 outputs read):
+[`docs/evaluation_record.md`](docs/evaluation_record.md).
 
 ---
 
-## Tech Stack
+## Self-hosting: measured, not adopted
 
-* **Backend**: Python, FastAPI (async, SSE streaming)
-* **Orchestration**: LangGraph (state-based multi-agent), LangChain, LangSmith (LLMOps)
-* **LLM**: GPT-4o / GPT-4o-mini → fine-tuned Llama-3-8B (QLoRA)
-* **Fine-tuning**: Unsloth + TRL (SFTTrainer / DPOTrainer), QLoRA (4-bit), Vertex AI Custom Training, W&B
-* **Inference serving**: vLLM (containerized, continuous batching), FP8 quantization, NVIDIA L4 GPU
-* **Vector DB**: ChromaDB (RAG)
-* **Frontend**: React, TypeScript, Framer custom code components
-* **Data processing**: Pandas, PyPDF, python-docx
-* **Infra / CI-CD**: Docker, GCP Cloud Run, Vertex AI, Artifact Registry, GitHub Actions
+Gemma 4 12B was served with vLLM on one RTX 5090 and fine-tuned with QLoRA SFT
+([`docs/serving_gemma4_vllm.md`](docs/serving_gemma4_vllm.md),
+[`docs/sft_gemma4_results.md`](docs/sft_gemma4_results.md)):
+
+- **Serving is feasible:** in FP8 it takes 13.3 GiB (fits one L4), with 1.6–1.8× the throughput of
+  bf16 and a quality difference within run-to-run variation.
+- **The model is not good enough:** on the 25 evaluation cases the untuned model passed every
+  blocking check in 14, against 24 for `gpt-6.1-sol`; every fine-tuned adapter did worse (3–10).
+  Production stays on `gpt-6.1-sol`.
+
+The earlier Llama-3-8B study (on `legacy/v1`) scored outputs with a GPT-4o preference score and a
+short placeholder prompt; its figures are not comparable with these and are no longer claimed.
 
 ---
 
-## Local Setup & Quick Start
+## Data protection
 
-Get the project running locally with Docker.
+- The email agent is not given stock figures, risk levels or internal questions, and its output is
+  checked for them.
+- LangSmith receives the run tree, times, tokens and model names only; prompt and response text and
+  supplier names are kept out ([`docs/observability.md`](docs/observability.md)).
+- Each run is recorded on the company server as JSON (inputs, history used, outputs, checks, times,
+  tokens), with run and check statistics appended to CSV files.
+- Everything in this repository and the demo is synthetic.
 
-**1. Clone the repository**
+---
+
+## Running it
+
+**Requirements:** Python 3.11, an OpenAI key, an Anthropic key (judge and email validator).
+
 ```bash
 git clone https://github.com/soominmyung/purchasing-automation.git
 cd purchasing-automation
+pip install -r requirements.txt
+cp .env.example .env        # set OPENAI_API_KEY, ANTHROPIC_API_KEY, API_ACCESS_TOKEN
+uvicorn main:app --reload   # API docs at http://localhost:8000/docs
 ```
 
-**2. Set environment variables**
-```bash
-cp .env.example .env
-```
-Open `.env` and add your `OPENAI_API_KEY`. You can also set a custom `API_ACCESS_TOKEN` for header-based authentication.
+Or with Docker: `docker build -t purchasing-ai .` then `docker run -p 8080:8080 --env-file .env purchasing-ai`.
 
-**3. Run with Docker**
-```bash
-docker build -t purchasing-ai .
-docker run -p 8080:8080 --env-file .env purchasing-ai
+**History documents.** Upload PDFs to `POST /api/ingest/history` (or a ZIP to `/api/ingest/history/zip`).
+Each document starts with header lines that say what it is about: `Supplier:`, `Item:`,
+`ItemCode:`, `Date:`. A supplier only means the whole supplier; supplier and item, that item from
+that supplier; item only, the item whoever supplies it. On the company server, a shared folder is
+kept in sync instead (`/api/ingest/history/folder`).
+
+**Stock CSV.** Upload to `POST /api/run` (or `/api/run/stream` for progress events), with the `X-API-Key`
+header:
+
 ```
-The API is then available at `http://localhost:8080`, with interactive docs at `http://localhost:8080/docs`.
+SnapshotDate,2025-04-05
+
+ItemCode,ItemName,SupplierName,AvailableStock,WksToOOS
+100000,ItemA,SupplierA,100,25
+```
+
+- `AvailableStock`: on hand + on order − committed (SAP Business One `OITW`).
+- `WksToOOS`: available stock ÷ average weekly sales over the previous four months.
+- The snapshot date comes from the `SnapshotDate` line, or else from a DDMMYY date in the file name
+  (`050425.csv`). A snapshot more than three days old is refused (`max_snapshot_age_days`; the
+  sample's run date is fixed in `config.py` so it passes).
+
+A sample is in [`050425.csv`](050425.csv). Development cases with history documents are in
+[`dev/cases/`](dev/cases/); `python scripts/run_dev_case.py dev/cases/kestrel_components.json --label "…"`
+runs one through the whole pipeline and records it under `dev/runs/`.
+
+**Main settings** (`config.py`, overridable by environment variables): `evaluator_model`,
+`analysis_rewrites`, `history_window_months`, `history_docs_per_scope`, `prompt_version`,
+`langsmith_hide_content`, `deliver_evaluation_report`. Agent models and efforts are in
+`services/agents.py` (`AGENT_MODELS`, `AGENT_EFFORT`).
 
 ---
 
-## Project Structure
+## Repository
 
-* **main.py** — FastAPI entry point; **config.py** / **schemas.py** — settings & request/response models
-* **routers/** — API layer (pipeline, ingest, output)
-* **services/** — business logic (AI agents, vector store, security, grouping)
-* **utils/** — utilities (CSV parsing, PDF extraction, Word generation)
-* **scripts/** — fine-tuning pipeline (`train_sft.py`, `train_dpo.py`, `generate_dpo_pairs.py`, `eval_sft.py`, `eval_dpo.py`) and Vertex AI job submission; serving benchmarks (`bench_vllm.py`, `bench_hf_baseline.py`, `gen_serving_outputs.py`, `eval_quantization_quality.py`)
-* **training_data/** — GPT-4o-distilled teacher dataset (JSONL)
-* **eval_results/** — raw serving-evaluation artifacts (FP16 vs FP8 model outputs and judge scores)
-* **docs/** — documentation, portfolio write-up, and sample dataset (Examples.zip)
-* **.github/workflows/deploy.yml** — CI/CD pipeline configuration
-* **Dockerfile** — containerization config for Cloud Run (port 8080)
+| Path | Contents |
+|---|---|
+| `main.py`, `config.py`, `schemas.py` | FastAPI app, settings, request and response models |
+| `routers/` | API: `pipeline` (run), `ingest` (history documents), `output` (downloads) |
+| `services/` | `agents` (LangGraph graph and agents), `quality_checks` (code checks and judge), `documents` (document assembly), `item_grouping` (risk, dates, quantities), `vector_store` and `history_folder` (history store and shared-folder sync), `run_record`, `security` |
+| `utils/` | CSV parsing and validation, PDF reading, Word output |
+| `prompts/` | Prompts by version (`v5` in use); `prompts/CHANGES.md` records each change and its measured effect |
+| `scripts/` | Model comparisons, judge validation, dev runs, SFT and serving experiments |
+| `eval_data/`, `eval_results/` | Evaluation scenarios, judge calibration samples and hand scores; raw results of every comparison |
+| `dev/` | Development cases and recorded runs (kept apart from the evaluation set) |
+| `docs/` | Design records, comparisons and selections, changelog |
+| `mcp_servers/` | History and replenishment MCP servers, built and tested but not used in the pipeline ([`docs/mcp.md`](docs/mcp.md)) |
+
+## Tech stack
+
+Python · FastAPI · LangGraph · LangSmith · OpenAI and Anthropic APIs · ChromaDB · MCP ·
+QLoRA SFT (Unsloth, TRL) · vLLM · Docker · GitHub Actions · GCP Cloud Run
