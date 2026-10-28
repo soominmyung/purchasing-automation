@@ -491,10 +491,12 @@ def finish_node(state: PurchasingState):
     """Runs once the evaluation and both document branches are done. The purchase request's red
     draft note gets the blocking checks not passed and the warnings, which the buyer settles
     before submitting (the judge's results arrive only now, as the documents do not wait for
-    them). The analysis report gets none: it is built from the analysis after its rewrites,
-    and the full results are in the quality-check document, which also gets the purchase
-    request's checks."""
-    update = {"pr_md": documents.fill_check_notes(
+    them). The analysis report gets the analysis checks not passed at its top, so a buyer who
+    receives only the report (every item Low) still sees when its conclusion needs checking.
+    The quality-check document, with every result, goes to the operator (the user, 2026-10-28)."""
+    update = {"report_md": documents.fill_check_notes(state.get("report_md") or "",
+                                                      [state.get("evaluation_result") or {}]),
+              "pr_md": documents.fill_check_notes(
         state.get("pr_md") or "", [state.get("evaluation_result") or {}, state.get("approval_check") or {}])
         if state.get("pr_md") else ""}  # no purchase request when every item is still Low
     if state.get("evaluation_result"):

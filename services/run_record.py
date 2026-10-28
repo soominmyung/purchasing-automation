@@ -10,8 +10,14 @@ email check, and per node the time taken, tokens per model and any error.
 These files contain the company data that is kept out of LangSmith (docs/observability.md),
 so the folder needs restricted access and a retention period. Aggregation across runs:
 scripts/summarize_runs.py.
+
+Run statistics (the user, 2026-10-28): besides the JSON, each run appends flat rows to two CSV files
+in the same folder, which open in Excel and can be filtered and pivoted as the operator needs:
+  run_stats.csv      one row per supplier group: verdict, rewrites, email drafts, time, tokens
+  check_results.csv  one row per check per analysis attempt and per purchase-request check
 """
 import contextvars
+import csv
 import json
 import time
 import uuid
@@ -178,4 +184,68 @@ class RunRecord:
         RUNS_DIR.mkdir(parents=True, exist_ok=True)
         path = RUNS_DIR / f"{self.run_id}.json"
         path.write_text(json.dumps(self.data, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+        try:
+            _append_stats(self.data)
+        except Exception as e:  # the statistics never fail a run; the JSON above holds everything
+            print(f"run statistics not written: {type(e).__name__}")
         return path
+
+
+STATS_FIELDS = ["run_id", "started_at", "prompt_version", "analysis_model", "judge", "supplier", "group_status",
+                "items", "verdict", "blocking_failed", "warnings", "analysis_attempts", "used_attempt",
+                "purchase_request", "pr_check_verdict", "email_drafts", "email_passed", "seconds",
+                "input_tokens", "output_tokens", "error"]
+CHECK_FIELDS = ["run_id", "started_at", "prompt_version", "supplier", "stage", "attempt", "check", "severity",
+                "result"]
+
+
+def _result(v: dict) -> str:
+    return {True: "pass", False: "fail"}.get(v.get("pass"), "not checked")
+
+
+def _append_csv(path: Path, fields: list[str], rows: list[dict]) -> None:
+    if not rows:
+        return
+    new = not path.exists()
+    with open(path, "a", encoding="utf-8-sig" if new else "utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+        if new:
+            w.writeheader()
+        w.writerows(rows)
+
+
+def _append_stats(data: dict) -> None:
+    from services.quality_checks import SEVERITY, BLOCKING
+    base = {"run_id": data.get("run_id"), "started_at": data.get("started_at"),
+            "prompt_version": data.get("prompt_version")}
+    stats, checks = [], []
+    for g in data.get("groups") or []:
+        ev = g.get("evaluation") or {}
+        pr = g.get("approval_check") or {}
+        mail = g.get("email_validation") or {}
+        tokens = (g.get("totals") or {}).get("tokens") or {}
+        stats.append({**base, "analysis_model": (data.get("models") or {}).get("analysis"),
+                      "judge": (data.get("models") or {}).get("judge"), "supplier": g.get("supplier"),
+                      "group_status": g.get("status"), "items": len(g.get("items") or []),
+                      "verdict": ev.get("verdict"), "blocking_failed": ";".join(ev.get("failed") or []),
+                      "warnings": ";".join(ev.get("warnings") or []),
+                      "analysis_attempts": len(g.get("analysis_attempts") or []),
+                      "used_attempt": g.get("analysis_used_attempt") or len(g.get("analysis_attempts") or []),
+                      "purchase_request": bool((g.get("outputs") or {}).get("pr_md")),
+                      "pr_check_verdict": pr.get("verdict"), "email_drafts": mail.get("attempts"),
+                      "email_passed": mail.get("passed") if (g.get("outputs") or {}).get("email_md") else None,
+                      "seconds": (g.get("totals") or {}).get("seconds"),
+                      "input_tokens": sum((t or {}).get("input_tokens", 0) for t in tokens.values()),
+                      "output_tokens": sum((t or {}).get("output_tokens", 0) for t in tokens.values()),
+                      "error": g.get("error")})
+        for a in g.get("analysis_attempts") or []:
+            for cid, v in (a.get("checks") or {}).items():
+                checks.append({**base, "supplier": g.get("supplier"), "stage": "analysis", "attempt": a.get("attempt"),
+                               "check": cid, "severity": v.get("severity") or SEVERITY.get(cid, BLOCKING),
+                               "result": _result(v)})
+        for cid, v in (pr.get("checks") or {}).items():
+            checks.append({**base, "supplier": g.get("supplier"), "stage": "purchase_request", "attempt": 1,
+                           "check": cid, "severity": v.get("severity") or SEVERITY.get(cid, BLOCKING),
+                           "result": _result(v)})
+    _append_csv(RUNS_DIR / "run_stats.csv", STATS_FIELDS, stats)
+    _append_csv(RUNS_DIR / "check_results.csv", CHECK_FIELDS, checks)

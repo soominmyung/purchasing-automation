@@ -979,6 +979,27 @@ English or Korean).
   large at this scale; the failed attempt is kept as the record, and production stays on
   `gpt-6.1-sol`.
 
+### 30. The quality-check document goes to the operator; unresolved checks at the top of the analysis report; run statistics as CSV *(2026-10-28)*
+
+- **Decided by the user:** a buyer gets the drafts only: the analysis report, and when there is
+  something to order, the purchase request and the supplier email. The quality-check document added
+  work without adding anything the drafts' notes do not already say, so it is now the operator's.
+  It is saved on the server (`output/evaluation/`) beside the run record and not sent
+  (`config.deliver_evaluation_report`, default off; on for a demo that should show it).
+- **The analysis report gets the same top note as the purchase request** when an analysis check
+  is not passed (`documents.CHECK_NOTES`, filled in `agents.finish_node`; nothing when all
+  passed). Without it, a run where every item is Low would hide an unresolved check from the
+  buyer. For example, a lead-time cut whose size failed J6b turns Medium into Low, so the
+  conclusion "nothing to order" would rest on it.
+- **Run statistics** (`services/run_record.py`): each run appends flat rows to `runs/run_stats.csv`
+  (one per supplier group: verdict, rewrites, email drafts, time, tokens) and
+  `runs/check_results.csv` (one per check per attempt). They open in Excel for the operator's own
+  filters and pivots; `scripts/summarize_runs.py` still gives the summary by prompt version.
+- **Tested** with an API run of the sample CSV plus an all-Low supplier (`runs/2026-10-28_154208_8b5f`):
+  - no quality-check file was sent; four were saved on the server;
+  - all four analysis reports were ready, so they had no top note and no placeholder left;
+  - the CSV files were written: 4 rows, and 74 check rows.
+
 ## Evaluation
 
 - **Rubric** (`docs/eval_rubric.md`): fixed checklist replacing imitation-of-GPT-4o scoring;

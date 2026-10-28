@@ -467,7 +467,9 @@ def render_analysis_report(supplier: str, snapshot_date: str, items: list[dict],
     labels = _labels(numbered)
     changes = changes_by_item(analysis)
     items = with_lead_times(items, analysis, snapshot_date)
-    out = [f"# Purchasing Analysis — {supplier}", "", *_date_header(snapshot_date), ""]
+    # CHECK_NOTES: the analysis checks not passed, filled in by agents.finish_node (empty when all
+    # passed), so a buyer sees at the top whether the conclusion needs checking (the user, 2026-10-28)
+    out = [f"# Purchasing Analysis — {supplier}", "", *_date_header(snapshot_date), "", CHECK_NOTES]
     if data_issue_lines:
         out += [DATA_ISSUES_HEADING, *[f"- {ln}" for ln in data_issue_lines], ""]
     out += ["## Summary", ""] + ([NOTHING_TO_REQUEST, ""] if not requested_items(items) else []) + [

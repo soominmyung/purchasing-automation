@@ -161,27 +161,21 @@ def _run_pipeline_inner(
             email_text = final_state.get("email_md", "")
             evaluation_md = final_state.get("evaluation_md", "")
 
-            # 0. Evaluation Report 처리
+            # 0. Evaluation Report: the operator's (the user, 2026-10-28). Always saved on the server
+            # beside the run record; sent with the drafts only when deliver_evaluation_report is on.
             evaluation_filename = f"evaluation_{snapshot_date}_{safe_supplier}_{record.run_id}.docx"
             files["evaluation"] = evaluation_filename
-            if in_memory:
-                docx_bytes = markdown_to_docx_bytes(evaluation_md)
-                b64 = base64.b64encode(docx_bytes).decode("ascii")
+            evaluation_saved_path = save_evaluation_docx(snapshot_date, supplier, evaluation_md, run_id=record.run_id)
+            if settings.deliver_evaluation_report:
+                b64 = _read_file_base64(evaluation_saved_path)
                 evaluations.append({
                     "snapshot_date": snapshot_date, "supplier": supplier, "markdown": evaluation_md,
                     "checks": final_state.get("evaluation_result"),
-                    "filename": evaluation_filename, "saved_path": "", "content_base64": b64,
+                    "filename": evaluation_filename, "saved_path": "" if in_memory else evaluation_saved_path,
+                    "content_base64": b64,
                 })
                 if stream_mode:
                     progress("file_ready", {"filename": evaluation_filename, "content_base64": b64})
-            else:
-                evaluation_saved_path = save_evaluation_docx(snapshot_date, supplier, evaluation_md, run_id=record.run_id)
-                evaluations.append({
-                    "snapshot_date": snapshot_date, "supplier": supplier, "markdown": evaluation_md,
-                    "checks": final_state.get("evaluation_result"),
-                    "filename": evaluation_filename, "saved_path": evaluation_saved_path,
-                    "content_base64": _read_file_base64(evaluation_saved_path),
-                })
 
             # 1. Report 처리
             analysis_filename = f"analysis_{snapshot_date}_{safe_supplier}_{record.run_id}.docx"

@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     prompt_version: str = "v5"
     # Run records (services/run_record.py): one JSON file per run on the server.
     run_records_enabled: bool = True
+    # The quality-check document is the operator's: saved on the server beside the run record, not
+    # sent to the buyer, whose drafts carry the unresolved checks at their top (the user,
+    # 2026-10-28). True sends it with the drafts too (e.g. the public demo).
+    deliver_evaluation_report: bool = False
     run_records_dir: str = "runs"
     # True only behind a proxy that sets X-Forwarded-For (the Cloud Run demo). On the
     # company server the connection address is the requesting PC.
