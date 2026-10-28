@@ -33,8 +33,8 @@ from services.prompts import (
     EMAIL_VALIDATOR_TEMPLATE,
 )
 from services.quality_checks import (
-    BLOCKING, CHECK_NAMES, SEVERITY, approval_checks, approval_markdown, code_checks, evaluate_analysis,
-    evaluation_markdown, has_history,
+    BLOCKING, CHECK_NAMES, SEVERITY, approval_checks, approval_markdown, code_checks, email_checks, email_markdown,
+    evaluate_analysis, evaluation_markdown, has_history,
 )
 from services.run_record import instrument
 
@@ -309,6 +309,7 @@ class PurchasingState(TypedDict):
     pr_md: str
     email_text: str                   # the email agent's text, as checked by the validator
     email_md: str                     # the email draft with its item lines and note
+    email_check: dict[str, Any]       # the judge's checks on its requests (E4-E7, warnings)
     # Problems found while assembling the documents (bad citations, missing placeholder)
     document_issues: Annotated[list[str], operator.add]
     # The run id, shown at the foot of the report and in the purchase request
@@ -506,7 +507,11 @@ def finish_node(state: PurchasingState):
                                  used_attempt=state.get("analysis_used_attempt"))
         if state.get("approval_check"):
             md += approval_markdown(state["approval_check"])
+        if state.get("email_check"):
+            md += email_markdown(state["email_check"], state.get("is_valid_email"), state.get("iteration_count", 0))
         update["evaluation_md"] = md
+    if state.get("email_md"):
+        update["email_md"] = documents.fill_check_notes(state["email_md"], [state.get("email_check") or {}])
     return update
 
 def email_draft_node(state: PurchasingState):
@@ -583,6 +588,13 @@ def email_doc_node(state: PurchasingState):
         problems = problems + [f"the email check still failed after the last rewrite: {failure}"]
     return {"email_md": md, "document_issues": [f"email: {p}" for p in problems]}
 
+def email_check_node(state: PurchasingState):
+    """E4-E7 on the final email, by the judge, as the email models were compared: warnings shown in
+    the email's draft note, no rewrite (the user, 2026-10-29). The validator's E1-E3 come first."""
+    payload = documents.email_input(state["snapshot_date"], state["supplier"], state["items"], state["analysis_output"])
+    requests = documents.email_parts(state.get("email_text") or "")[0]["requests"]
+    return {"email_check": email_checks(payload, requests, judge=settings.evaluator_model, retries=settings.judge_retries)}
+
 # Build the graph.
 # The analysis is checked, and rewritten on a blocking failure (code or judge), before any
 # document is written, so the documents come only from an analysis that passed or used up its
@@ -597,6 +609,7 @@ documents_flow.add_node("approval_check", instrument("approval_check", approval_
 documents_flow.add_node("email_draft", instrument("email_draft", email_draft_node))
 documents_flow.add_node("validator", instrument("validator", validator_node))
 documents_flow.add_node("email_doc", instrument("email_doc", email_doc_node))
+documents_flow.add_node("email_check", instrument("email_check", email_check_node))
 documents_flow.set_entry_point("report")
 
 
@@ -619,13 +632,14 @@ documents_flow.add_conditional_edges(
         "email_doc": "email_doc",
     }
 )
-documents_flow.add_edge("email_doc", END)
+documents_flow.add_edge("email_doc", "email_check")
+documents_flow.add_edge("email_check", END)
 documents_flow.add_edge("approval_check", END)
 documents_graph = documents_flow.compile()
 
 # What the documents step hands back to the main graph
 DOCUMENT_KEYS = ("report_md", "approval", "approval_input", "approval_check", "pr_md",
-                 "email_text", "email_md", "iteration_count", "correction_feedback", "is_valid_email")
+                 "email_text", "email_md", "email_check", "iteration_count", "correction_feedback", "is_valid_email")
 
 
 def documents_node(state: PurchasingState):

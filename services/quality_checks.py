@@ -66,6 +66,8 @@ SEVERITY = {
     "J8": BLOCKING,
     "J9": WARNING, "J10": WARNING, "J11": WARNING,
     "P1a": WARNING, "P1b": WARNING, "P1c": WARNING, "P2": WARNING, "P3": BLOCKING,
+    # the email's E1-E3 (exposure) are the validator's, which sends it back to be rewritten
+    "E4": WARNING, "E5": WARNING, "E6": WARNING, "E7": WARNING,
 }
 SUMMARY_WORDS = 100
 
@@ -729,6 +731,58 @@ def approval_checks(payload: dict[str, Any], approval: dict[str, Any], citation_
 def approval_markdown(result: dict[str, Any]) -> str:
     return ("\n## Purchase Request Text\n\n"
             f"**Result:** {verdict_sentence(result)}\n\n" + checks_table(result, APPROVAL_CHECK_NAMES))
+
+
+# ----------------------------------------------------------------------------- supplier email text
+
+# The checks the email models were compared on (docs/email_model_comparison.md), beyond exposure:
+# warnings for the buyer, not rewrites (the user, 2026-10-29). Wording as in
+# scripts/compare_email_models.py after its second round.
+EMAIL_CHECK_NAMES = {
+    "E4": "Email covers every point to clarify",
+    "E5": "Email asks no question twice",
+    "E6": "Email asks the earliest dispatch where needed",
+    "E7": "Email promises no order and reads as a request",
+}
+_E_TEXT = {
+    "E4": "Every point in points_to_clarify is covered by a question that would get the information this order "
+          "needs, except what a point asks about items in other_items: that must be left out, and asking about such "
+          "an item fails. Where a point concerns a problem the supplier had before, an indirect question about how "
+          "the related step of this order will proceed or be checked covers it; the question need not ask about the "
+          "problem itself. One question may cover several points. Passes when points_to_clarify is empty.",
+    "E5": "No question is asked more than once.",
+    "E6": "For every item in ask_earliest_dispatch, the requests ask for its earliest dispatch date or a "
+          "delivery sooner than the standard lead time allows (such as expedited or partial delivery by the "
+          "requested date), through a point to clarify or a question of their own. Passes when "
+          "ask_earliest_dispatch is empty.",
+    "E7": "The requests promise no purchase order and do not write out the list of items again (referring "
+          "to the items listed above is fine). They read as polite, conversational requests to a business "
+          "partner in flowing sentences, not as an internal note or a list of questions; a point used as "
+          "written passes when it reads that way.",
+}
+
+
+def email_checks(payload: dict[str, Any], requests: str, judge: str, retries: int = 2) -> dict[str, Any]:
+    """E4-E7 by the judge on the email agent's requests against its input (as compared)."""
+    prompt = ("INPUT GIVEN TO THE WRITER (the email's requests paragraph; the greeting, purpose, item list, "
+              "closing and signature are added by code)\n" + json.dumps(payload, ensure_ascii=False, indent=2) +
+              "\n\nREQUESTS WRITTEN\n" + (requests or "") + "\n\nCHECKS\n" +
+              "\n".join(f"- {c}: {t}" for c, t in _E_TEXT.items()) + "\n\n"
+              'Return JSON only: {"<check id>": {"evidence": "<short quote or reason>", "pass": true|false, '
+              '"note": "<only if it fails: one plain sentence for the buyer>"}, ...} with one entry per check.')
+    judged = run_judge(judge, prompt, list(_E_TEXT), retries=retries)
+    results = {c: {"pass": v["pass"], "detail": v["evidence"], "note": v.get("note", "")} for c, v in judged.items()}
+    return {**verdict(results), "checks": results, "judge": judge}
+
+
+def email_markdown(result: dict[str, Any], validator_passed: bool | None, drafts: int) -> str:
+    exposure = ("passed" if validator_passed else "still failed after the last rewrite") if validator_passed is not None \
+        else "not run"
+    warnings = result.get("warnings") or []
+    return ("\n## Supplier Email\n\n"
+            f"**Exposure check (E1-E3, the validator):** {exposure} ({drafts} draft{'s' if drafts != 1 else ''}).  \n"
+            f"**Other checks (warnings):** {len(warnings)} of {len(result['checks'])} not passed.\n\n"
+            + checks_table(result, EMAIL_CHECK_NAMES))
 
 
 # ----------------------------------------------------------------------------- production entry point

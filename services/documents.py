@@ -413,6 +413,10 @@ _PLAIN_AREA = {
     "P1a": "Purpose and Justification",
     "P1b": "The figures in Purpose and Justification",
     "P1c": "The wording of Purpose and Justification",
+    "E4": "Whether the email asks every point to clarify",
+    "E5": "Whether the email repeats a question",
+    "E6": "Whether the email asks the earliest dispatch date",
+    "E7": "The email's wording",
 }
 
 
@@ -741,6 +745,7 @@ def render_email(email_text: str, items: list[dict], analysis: dict, supplier: s
     note = _red(EMAIL_NOTE)
     if check_failure:
         note += "  \n" + _red(f"The email check still failed after {drafts} drafts; check before sending: {check_failure}")
-    blocks = [note, f"Dear {supplier} Team,", EMAIL_PURPOSE, "\n".join(email_item_lines(items, analysis)),
+    # CHECK_NOTES: the judge's E4-E7 not passed, filled in by agents.finish_node (the user, 2026-10-29)
+    blocks = [note + "\n\n" + CHECK_NOTES, f"Dear {supplier} Team,", EMAIL_PURPOSE, "\n".join(email_item_lines(items, analysis)),
               parts["requests"], EMAIL_CLOSING, "\n".join(SIGNATURE)]
     return "\n\n".join(b for b in blocks if b) + "\n", problems

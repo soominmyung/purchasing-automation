@@ -161,6 +161,7 @@ class RunRecord:
             "document_issues": final_state.get("document_issues") or [],
             "evaluation": final_state.get("evaluation_result"),
             "approval_check": final_state.get("approval_check"),
+            "email_check": final_state.get("email_check"),
             "analysis_attempts": final_state.get("analysis_attempts") or [],
             "analysis_used_attempt": final_state.get("analysis_used_attempt"),
             "email_validation": {
@@ -245,6 +246,10 @@ def _append_stats(data: dict) -> None:
                                "result": _result(v)})
         for cid, v in (pr.get("checks") or {}).items():
             checks.append({**base, "supplier": g.get("supplier"), "stage": "purchase_request", "attempt": 1,
+                           "check": cid, "severity": v.get("severity") or SEVERITY.get(cid, BLOCKING),
+                           "result": _result(v)})
+        for cid, v in ((g.get("email_check") or {}).get("checks") or {}).items():
+            checks.append({**base, "supplier": g.get("supplier"), "stage": "email", "attempt": 1,
                            "check": cid, "severity": v.get("severity") or SEVERITY.get(cid, BLOCKING),
                            "result": _result(v)})
     _append_csv(RUNS_DIR / "run_stats.csv", STATS_FIELDS, stats)

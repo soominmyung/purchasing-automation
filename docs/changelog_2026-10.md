@@ -1002,6 +1002,26 @@ English or Korean).
   - all four analysis reports were ready, so they had no top note and no placeholder left;
   - the CSV files were written: 4 rows, and 74 check rows.
 
+### 31. The supplier email checked on E4-E7 in production, as warnings *(2026-10-29)*
+
+- **Found while writing the portfolio:** the production validator checked exposure only (E1 internal
+  information, E2 a past problem, E3 an item outside the email). E4-E7 (every point asked, no
+  question twice, the earliest dispatch asked where needed, no order promised and the tone of a
+  request) were used only to choose the email model (item 26). Leaving them out of production had not
+  been decided; it had not come up.
+- **Decided by the user:** E4-E7 run in production as warnings. After the validator loop ends, the
+  judge (`settings.evaluator_model`) checks the final requests against the email agent's input, with
+  the comparison's wording (`quality_checks.email_checks`, `_E_TEXT`). There is no rewrite: a
+  warning is shown in the email's draft note under "Please check" (`documents.render_email` now has
+  `CHECK_NOTES`, filled in `agents.finish_node`), and the results go to the quality-check document
+  ("Supplier Email") and to `check_results.csv` (stage `email`).
+- **Why warnings:** exposure must never reach the supplier, so E1-E3 send the email back. A missed
+  question or a stiff sentence can be fixed by the buyer when they read the draft, and a rewrite for
+  each would add time and send back emails the judge reads more strictly than a person.
+- **Tested** on the Kestrel dev case (`dev/runs/2026-10-29_000600_…`): the validator passed the first
+  draft and the judge passed E4-E7 with reasons, in 9.0 s, beside the purchase-request check; a
+  failed E5 given in code appeared in the note under "Please check", and nothing when all passed.
+
 ## Evaluation
 
 - **Rubric** (`docs/eval_rubric.md`): fixed checklist replacing imitation-of-GPT-4o scoring;
