@@ -6,7 +6,7 @@ Judge validation, prompt v5 (docs/judge_validation.md): each candidate judges th
 Modes:
   single  every applicable check of an output in one call, as production does
   split   one call per group of checks, the calls made at the same time:
-          J1-J2 (history and questions), J6-J7a (changes and figures), J8-J11 (the rest)
+          J1-J2 (history and questions), J3-J4 (changes and figures), J5-J8 (the rest)
 Purchase request samples (P1a-c) are judged as production does, one call for P1a-c, in single mode.
 
 The settings of a run are written once to eval_results/judge_validation_v5_settings.json (models,
@@ -55,7 +55,7 @@ PLANS = {
 PLAN = None
 PRICES = {"anthropic:claude-haiku-5-5": (0.10, 0.50), "gemini:gemini-3.1-flash-lite": (0.25, 1.50),
           "openai:gpt-6-luna": (0.10, 0.50)}  # $ per 1M tokens, input / output
-GROUPS = [["J1a", "J1b", "J1c", "J2a", "J2b", "J2c"], ["J6a", "J6b", "J6c", "J7a"], ["J8", "J9", "J10", "J11"]]
+GROUPS = [["J1a", "J1b", "J1c", "J2a", "J2b", "J2c"], ["J3a", "J3b", "J3c", "J4"], ["J5", "J6", "J7", "J8"]]
 WORKERS = 4
 
 _usage = threading.local()
@@ -151,7 +151,7 @@ def jobs(samples, smoke: bool):
         for mode in p["modes"]:
             chosen = samples
             if smoke:  # one analysis and one purchase request sample, once
-                chosen = [next(s for s in samples if s["target_check"] == "J7a" and s["base"].startswith("dev:")),
+                chosen = [next(s for s in samples if s["target_check"] == "J4" and s["base"].startswith("dev:")),
                           next(s for s in samples if s["target_check"].startswith("P"))]
             for rep in range(1, (1 if smoke else p["reps"]) + 1):
                 for s in chosen:
@@ -164,6 +164,8 @@ def jobs(samples, smoke: bool):
 def run(smoke: bool) -> None:
     fixed_settings()
     samples = [json.loads(l) for l in open(CALIBRATION, encoding="utf-8") if l.strip()]
+    for s in samples:  # the file keeps the check ids it was written with (before 2026-10-29)
+        s["target_check"] = q.current_id(s["target_check"])
     done = set()
     if RUNS.exists():
         for l in open(RUNS, encoding="utf-8"):
@@ -183,7 +185,7 @@ def run(smoke: bool) -> None:
                               "input_tokens": 0, "output_tokens": 0, "cost": 0}, f"{type(e).__name__}: {e}"
             row = {"sample_id": s["id"], "target_check": s["target_check"], "expected": s["expected"],
                    "base": s["base"], "model": model, "mode": mode, "rep": rep, "smoke": smoke,
-                   "at": datetime.now().isoformat(timespec="seconds"), "error": error, **res}
+                   "at": datetime.now().isoformat(timespec="seconds"), "error": error, "ids": IDS, **res}
             with lock:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n"); f.flush()
             mark = {True: "pass", False: "fail", None: "none"}[res["target_pass"]]
@@ -192,8 +194,19 @@ def run(smoke: bool) -> None:
                   flush=True)
 
 
+IDS = "2026-10-29"  # rows written since carry the renumbered check ids
+
+
+def _current(row: dict) -> dict:
+    """A row written before the renumbering, read with the current check ids."""
+    if row.get("ids") != IDS:
+        row["target_check"] = q.current_id(row["target_check"])
+        row["verdicts"] = {q.current_id(k): v for k, v in row["verdicts"].items()}
+    return row
+
+
 def report() -> None:
-    rows = [json.loads(l) for l in open(RUNS, encoding="utf-8") if l.strip()]
+    rows = [_current(json.loads(l)) for l in open(RUNS, encoding="utf-8") if l.strip()]
     rows = [r for r in rows if not r.get("smoke")]
     for p in PLAN:
         for mode in p["modes"]:

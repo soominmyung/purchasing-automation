@@ -42,14 +42,14 @@ CHECK_NAMES = {
     "J2a": "Supplier problem raised as a question",
     "J2b": "Item problem raised as a question",
     "J2c": "No question presumes a problem the data does not show",
-    "J6a": "Each proposed change goes the way its findings point",
-    "J6b": "Each proposed change is the size its findings support",
-    "J6c": "No item the same reason applies to is left out",
-    "J7a": "Stock figures quoted match the input",
-    "J8": "Questions marked for the supplier reveal nothing internal",
-    "J9": "Each question and action follows from its findings",
-    "J10": "No document with a problem for this order left unused",
-    "J11": "Findings state facts only",
+    "J3a": "Each proposed change goes the way its findings point",
+    "J3b": "Each proposed change is the size its findings support",
+    "J3c": "No item the same reason applies to is left out",
+    "J4": "Stock figures quoted match the input",
+    "J5": "Questions marked for the supplier reveal nothing internal",
+    "J6": "Each question and action follows from its findings",
+    "J7": "No document with a problem for this order left unused",
+    "J8": "Findings state facts only",
 }
 
 # Blocking: the analysis must not be used as it is if this fails; the verdict follows these
@@ -59,16 +59,26 @@ SEVERITY = {
     "C1": BLOCKING, "C2": BLOCKING, "C3": BLOCKING, "C4": BLOCKING, "C5": BLOCKING, "C6": BLOCKING,
     "C7": WARNING, "C8": WARNING, "C9": BLOCKING, "C10": BLOCKING,
     "J1a": BLOCKING, "J1b": BLOCKING, "J1c": BLOCKING,
-    "J2a": WARNING, "J2b": WARNING,  # until J10 has shown it can replace them
+    "J2a": WARNING, "J2b": WARNING,  # until J7 has shown it can replace them
     "J2c": WARNING,
-    "J6a": BLOCKING, "J6b": BLOCKING, "J6c": BLOCKING,  # J6: whether the proposed changes hold
-    "J7a": BLOCKING,
-    "J8": BLOCKING,
-    "J9": WARNING, "J10": WARNING, "J11": WARNING,
+    "J3a": BLOCKING, "J3b": BLOCKING, "J3c": BLOCKING,  # J3: whether the proposed changes hold
+    "J4": BLOCKING,
+    "J5": BLOCKING,
+    "J6": WARNING, "J7": WARNING, "J8": WARNING,
     "P1a": WARNING, "P1b": WARNING, "P1c": WARNING, "P2": WARNING, "P3": BLOCKING,
     # the email's E1-E3 (exposure) are the validator's, which sends it back to be rewritten
     "E4": WARNING, "E5": WARNING, "E6": WARNING, "E7": WARNING,
 }
+# Judge checks renumbered 2026-10-29 so the ids run without gaps (J3-J5 and J7b had been dropped
+# earlier). Records, calibration files and hand scores written before keep the old ids; read them
+# through current_id, and only them: J8 is an id in both numberings. Mapping also in docs/eval_rubric.md.
+LEGACY_IDS = {"J6a": "J3a", "J6b": "J3b", "J6c": "J3c", "J7a": "J4", "J8": "J5", "J9": "J6", "J10": "J7", "J11": "J8"}
+
+
+def current_id(cid: str) -> str:
+    return LEGACY_IDS.get(cid, cid)
+
+
 SUMMARY_WORDS = 100
 
 _JUDGE_TEXT = {
@@ -82,41 +92,41 @@ _JUDGE_TEXT = {
     "J2c": "No critical question presumes a supplier or item problem that the inputs do not show. "
            "Neutral questions that assume no problem, such as asking whether anything is about to "
            "change, pass. Questions about problems the inputs do show also pass.",
-    # J6: whether the proposed order-date and quantity changes hold (applies when there are any)
-    "J6a": "Each proposed change follows from the findings it cites: what those findings say is a reason "
+    # J3: whether the proposed order-date and quantity changes hold (applies when there are any)
+    "J3a": "Each proposed change follows from the findings it cites: what those findings say is a reason "
            "for the lead time in supplier_lead_time and lead_time_changes to be longer or shorter than "
            "18 weeks, or for the quantity in quantity_changes to be larger or smaller, as proposed.",
-    "J6b": "The size of each proposed change fits what the cited findings say, and its reason explains that "
+    "J3b": "The size of each proposed change fits what the cited findings say, and its reason explains that "
            "size. For an item's lead time this includes whether the supplier-wide reason and the item's own "
            "reasons were rightly added together or rightly taken as one. Where the findings report a delay or "
            "a change without giving its size, a size passes if the reason makes clear, in whatever words, that "
            "it is the analysis's own estimate rather than a figure from the documents and is to be confirmed, "
            "as long as it is in keeping with how the findings describe it (a slight increase, a significant "
            "delay).",
-    "J6c": "No item that a reason applies to is left without it: an item whose final lead time stays at "
+    "J3c": "No item that a reason applies to is left without it: an item whose final lead time stays at "
            "18 weeks while supplier_lead_time changes, or that misses a change other items get for the same "
            "reason, has a reason for that which the findings support. If there is no such item, this check "
            "passes.",
-    # J7: stock figures in the prose (the summary, the findings' text, the questions, the actions and
+    # J4: stock figures in the prose (the summary, the findings' text, the questions, the actions and
     # the changes' reasons; not the values in the change fields)
-    "J7a": "Every figure from the stock data quoted in the prose (the summary, the findings' text, the "
+    "J4": "Every figure from the stock data quoted in the prose (the summary, the findings' text, the "
            "questions, the actions and the changes' reasons; not the values in the change fields) matches "
            "that item's figures after the proposed changes exactly (the pipeline's figures for an item with no "
            "change): available stock, weeks to stockout, lead time, expected stockout weeks (the gap), "
            "suggested quantity, recommended order and delivery dates, risk level. Figures that come from "
            "the history documents are not judged here.",
-    "J8": "No critical question marked 'supplier' reveals anything internal to the company: its stock "
+    "J5": "No critical question marked 'supplier' reveals anything internal to the company: its stock "
           "levels or weeks to stockout, how short its stock is, its budget, or its own analysis or plans. "
           "What the supplier itself did or announced is not internal. Asking what expedited shipping, "
           "earlier or partial delivery the supplier can offer for an item, with quantities and dates, passes "
           "even though it shows the item is needed soon.",
-    "J9": "Each critical question and recommended action follows from the findings it cites: what those "
+    "J6": "Each critical question and recommended action follows from the findings it cites: what those "
           "findings say is a reason to ask that question or take that action. (Proposed changes are "
-          "judged in J6.)",
-    "J10": "These documents are behind no question, proposed change or action: {unused}. None of them "
+          "judged in J3.)",
+    "J7": "These documents are behind no question, proposed change or action: {unused}. None of them "
            "describes a problem that matters for this order and calls for a question, a change or an "
            "action; if one does, this check fails.",
-    "J11": "Every finding states only facts from its documents or from the stock figures, with no "
+    "J8": "Every finding states only facts from its documents or from the stock figures, with no "
            "judgement of what they mean for this order (that belongs in the questions, changes and "
            "actions).",
 }
@@ -414,17 +424,17 @@ def applicable_judge_checks(items: list[dict[str, Any]], history_docs: list[dict
     hs = any(d.get("supplier") for d in docs)
     hi = any(d.get("items") or d.get("item_codes") for d in docs)
     obj = _as_obj(analysis) or {}
-    checks = ["J1a", "J1b", "J1c", "J2c", "J7a"]
+    checks = ["J1a", "J1b", "J1c", "J2c", "J4"]
     if _entries(obj, "lead_time_changes") or _entries(obj, "quantity_changes") or isinstance(obj.get("supplier_lead_time"), dict):
-        checks += ["J6a", "J6b", "J6c"]
+        checks += ["J3a", "J3b", "J3c"]
     if any(q.get("ask") == "supplier" for q in _entries(obj, "critical_questions")):
-        checks.append("J8")
+        checks.append("J5")
     if _entries(obj, "critical_questions") or _entries(obj, "recommended_actions"):
-        checks.append("J9")
+        checks.append("J6")
     if unused_documents(obj, docs):
-        checks.append("J10")
+        checks.append("J7")
     if _entries(obj, "findings"):
-        checks.append("J11")
+        checks.append("J8")
     if labels is not None:
         if labels.get("supplier_issue") == "material":
             checks.append("J2a")
@@ -485,15 +495,15 @@ def history_block(history_docs: list[dict[str, Any]]) -> str:
 
 AFTER_FIELDS = ("item_code", "item_name", "available_stock", "wks_to_oos", "lead_time_weeks", "risk_level",
                 "expected_stockout_weeks", "suggested_quantity", "recommended_latest_po_date",
-                "recommended_latest_delivery_date")  # all the figures J7a compares the text with
+                "recommended_latest_delivery_date")  # all the figures J4 compares the text with
 
 
 def judge_prompt(supplier: str, items: list[dict[str, Any]], history_docs: list[dict[str, Any]],
                  analysis: Any, checks: list[str], labelled: bool, after: list[dict[str, Any]] | None = None) -> str:
     """items are the pipeline's figures (18 weeks), as the analysis received them; after, when the
     analysis proposes changes, each item's figures after them, worked out by the pipeline. Both are
-    shown, apart: the changes are judged against the first (J6), the text's figures against the
-    second (J7a). Shown only after, the judge read the new lead time as the input's and passed a
+    shown, apart: the changes are judged against the first (J3), the text's figures against the
+    second (J4). Shown only after, the judge read the new lead time as the input's and passed a
     lead-time change it should have failed (2026-10-24)."""
     lines = [f"- {c}: {check_text(c, items, labelled, analysis, history_docs)}" for c in checks]
     shown_after = (f"Figures after the proposed changes (worked out by the pipeline from the proposed lead times "

@@ -121,16 +121,27 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 
 ### Judge checks — yes or no
 
+Renumbered on 2026-10-29 so the ids run without gaps (`quality_checks.LEGACY_IDS`). Records, calibration
+files and hand scores written before keep the old ids:
+
+| Old | J6a | J6b | J6c | J7a | J8 | J9 | J10 | J11 |
+|---|---|---|---|---|---|---|---|---|
+| **Now** | J3a | J3b | J3c | J4 | J5 | J6 | J7 | J8 |
+
+The new J3-J5 reuse numbers of checks dropped earlier (old J3, J4a, J4b, J5): anything dated before
+2026-10-29, the change log below included, uses the old numbering, and a search of old records for
+today's J4 is a search for J7a.
+
 | ID | Passes when | Applies to | Severity |
 |---|---|---|---|
 | J1 | It invents no incident or trend that the history documents do not contain, does not distort what they say (for example, turning "high demand" into "medium demand"), and does not attribute a document to a supplier or item it does not name | All | Blocking |
 | J2a | At least one critical question addresses the supplier's problem | `supplier_issue = material` | Warning |
 | J2b | At least one critical question addresses an item's problem | `item_issue = material` | Warning |
 | J2c | No critical question presumes a supplier or item problem that the inputs do not show. Neutral questions that assume no problem pass | All | Warning |
-| J6a | Each proposed change follows from the findings it cites: they are a reason for the lead time to be longer or shorter than 18 weeks, or the quantity larger or smaller, as proposed | Any change proposed | Blocking |
-| J6b | The size of each change (lead time, factor) fits what the cited findings say, and its reason explains that size, including whether a supplier-wide and an item's own reason were rightly added or taken as one; where the findings give no size, a size passes if the reason makes clear, in whatever words, that it is the analysis's own estimate to be confirmed, and it is in keeping with how they describe the delay | Any change proposed | Blocking |
-| J6c | No item a reason applies to is left without it (an item kept at 18 weeks while the supplier's lead time changes, or one that misses a change others get for the same reason, needs a reason the findings support) | Any change proposed | Blocking |
-| J7a | Every figure from the stock data quoted in the prose (summary, findings' text, questions, actions, changes' reasons; not the values in the change fields) matches that item's figures after the proposed changes (the judge is given those). Figures from the history documents are J1's. (J7b, the "pipeline value → proposed value" form, was dropped on 2026-10-23: the text is written from the figures after the changes) | All | Blocking |
+| J3a | Each proposed change follows from the findings it cites: they are a reason for the lead time to be longer or shorter than 18 weeks, or the quantity larger or smaller, as proposed | Any change proposed | Blocking |
+| J3b | The size of each change (lead time, factor) fits what the cited findings say, and its reason explains that size, including whether a supplier-wide and an item's own reason were rightly added or taken as one; where the findings give no size, a size passes if the reason makes clear, in whatever words, that it is the analysis's own estimate to be confirmed, and it is in keeping with how they describe the delay | Any change proposed | Blocking |
+| J3c | No item a reason applies to is left without it (an item kept at 18 weeks while the supplier's lead time changes, or one that misses a change others get for the same reason, needs a reason the findings support) | Any change proposed | Blocking |
+| J4 | Every figure from the stock data quoted in the prose (summary, findings' text, questions, actions, changes' reasons; not the values in the change fields) matches that item's figures after the proposed changes (the judge is given those). Figures from the history documents are J1's. (J7b in the old numbering, the "pipeline value → proposed value" form, was dropped on 2026-10-23: the text is written from the figures after the changes) | All | Blocking |
 
 ### Checks on the purchase request text (production)
 
@@ -150,6 +161,8 @@ checks follow that split. Severity: see "Severity, verdicts and comparison" belo
 | Findings state facts only, with no judgement | Warning | |
 
 ### Checks dropped for v5
+
+Ids in this table are the old numbering (before 2026-10-29): the old J1b, J3, J4a, J4b, J5 and J7b are not today's checks of those numbers.
 
 | ID | Check | Why |
 |---|---|---|
@@ -226,6 +239,8 @@ on the same scenario can form preference pairs for DPO. Quantised serving varian
 the same way.
 
 ## Checks that were considered and dropped
+
+Ids in this table are the old numbering (before 2026-10-29): the old J1b, J3, J4a, J4b, J5 and J7b are not today's checks of those numbers.
 
 | ID | Check | Why it was dropped |
 |---|---|---|

@@ -1022,6 +1022,19 @@ English or Korean).
   draft and the judge passed E4-E7 with reasons, in 9.0 s, beside the purchase-request check; a
   failed E5 given in code appeared in the note under "Please check", and nothing when all passed.
 
+### 32. Judge checks renumbered without gaps *(2026-10-29)*
+
+- **Why:** dropped checks (J3, J4a-b, J5, J7b) had left the ids jumping from J2 to J6 and a lone J7a,
+  which reads as a mistake in the portfolio and the quality-check document (the user).
+- **Now:** J6a-c → J3a-c, J7a → J4, J8 → J5, J9 → J6, J10 → J7, J11 → J8 (`services/quality_checks.py`,
+  `services/documents.py`; table in `docs/eval_rubric.md`). C, P and E ids are unchanged.
+- **Records kept as written:** run records, `check_results.csv`, the calibration file, the hand
+  scores and the comparison documents before this date use the old ids. `quality_checks.current_id`
+  maps them; `scripts/run_judge_validation.py` and `run_judge_false_alarm.py` apply it to old data and
+  mark new rows (`"ids": "2026-10-29"`). Only old data goes through it: J8 is an id in both.
+- **Checked:** both reports recomputed from the old runs give the recorded figures under the new ids
+  (Haiku high: 93.9% detection, 3.9% flip, 8.0% false alarms).
+
 ## Evaluation
 
 - **Rubric** (`docs/eval_rubric.md`): fixed checklist replacing imitation-of-GPT-4o scoring;

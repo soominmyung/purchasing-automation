@@ -92,15 +92,20 @@ def run() -> None:
                 res, err = {"verdicts": {}, "seconds": None, "calls": 0, "input_tokens": 0, "output_tokens": 0, "cost": 0}, f"{type(e).__name__}: {e}"
             with lock:
                 f.write(json.dumps({"scenario_id": sid, "config": c, "rep": rep, "error": err,
-                                    "at": datetime.now().isoformat(timespec="seconds"), **res}, ensure_ascii=False) + "\n"); f.flush()
+                                    "at": datetime.now().isoformat(timespec="seconds"), "ids": jv.IDS, **res}, ensure_ascii=False) + "\n"); f.flush()
             fails = sum(v.get("pass") is False for v in res["verdicts"].values())
             print(f"  [{n}/{len(todo)}] {c.split(':')[1]:<40} r{rep} {sid:<8} checks {len(res['verdicts'])} judged fail {fails} "
                   f"{res['seconds']}s ${res['cost']}{' ERROR ' + err[:80] if err else ''}", flush=True)
 
 
 def report() -> None:
-    truth = {(s["scenario_id"], s["check"]): s["verdict"] for s in (json.loads(l) for l in open(SCORES, encoding="utf-8") if l.strip())}
+    # the hand scores, and rows written before 2026-10-29, keep the check ids of that time
+    truth = {(s["scenario_id"], q.current_id(s["check"])): s["verdict"]
+             for s in (json.loads(l) for l in open(SCORES, encoding="utf-8") if l.strip())}
     rows = [json.loads(l) for l in open(RUNS, encoding="utf-8") if l.strip()]
+    for r in rows:
+        if r.get("ids") != jv.IDS:
+            r["verdicts"] = {q.current_id(k): v for k, v in r["verdicts"].items()}
     for c in CONFIGS:
         R = [r for r in rows if r["config"] == c]
         if not R:

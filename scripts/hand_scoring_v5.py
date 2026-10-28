@@ -25,6 +25,8 @@ SCORES = ROOT / "eval_data" / "hand_scores_v5.jsonl"
 # one of each kind of scenario: clean with a Critical item, no history, ambiguous attribution with a
 # lead-time change, a supplier incident with a lead-time change, an item incident, a holdout
 CHOSEN = ["eval_02", "eval_06", "eval_08", "eval_11", "eval_14", "H2"]
+# Check ids as they were when the sheet was scored (before 2026-10-29); readers map them with
+# quality_checks.current_id.
 ORDER = ["J1a", "J1b", "J1c", "J2a", "J2b", "J2c", "J6a", "J6b", "J6c", "J7a", "J8", "J9", "J10", "J11"]
 KO = {
     "J1a": "이력에 대한 모든 서술이 주어진 문서에 있다. 지어낸 사건이나 추세가 없다.",
