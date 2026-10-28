@@ -206,7 +206,7 @@ runs one through the whole pipeline and records it under `dev/runs/`.
 | `eval_data/`, `eval_results/` | Evaluation scenarios, judge calibration samples and hand scores; raw results of every comparison |
 | `dev/` | Development cases and recorded runs (kept apart from the evaluation set) |
 | `docs/` | Design records, comparisons and selections, changelog |
-| `mcp_servers/` | History and replenishment MCP servers, built and tested but not used in the pipeline ([`docs/mcp.md`](docs/mcp.md)) |
+| `mcp_servers/` | History and replenishment MCP servers, built and tested but not used in the pipeline |
 
 ## Tech stack
 
