@@ -6,8 +6,6 @@ request** for the approvers and a **draft email to the supplier**, one set per s
 retrieval and document assembly; LLMs read the history and write; every draft is checked by code
 and by an LLM judge before the buyer sees it.
 
-> **Demo:** https://soominmyung.com/purchasing-automation (synthetic data)
->
 > **Portfolio (Korean, 7 pages):** [docs/Purchasing_AI_Suite_ko.pdf](docs/Purchasing_AI_Suite_ko.pdf)
 
 | | |
@@ -145,7 +143,7 @@ short placeholder prompt; its figures are not comparable with these and are no l
   supplier names are kept out ([`docs/observability.md`](docs/observability.md)).
 - Each run is recorded on the company server as JSON (inputs, history used, outputs, checks, times,
   tokens), with run and check statistics appended to CSV files.
-- Everything in this repository and the demo is synthetic.
+- All data in this repository is synthetic.
 
 ---
 
