@@ -68,3 +68,6 @@ docs/project_overview.md
 # Run records hold company data (services/run_record.py); never commit them.
 # Only the top-level folder: dev/runs/ holds development runs on synthetic data.
 /runs/
+
+# personal working record, kept local
+docs/changelog_2026-10.md

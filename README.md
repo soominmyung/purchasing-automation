@@ -29,8 +29,7 @@ and by an LLM judge before the buyer sees it.
 - **Mar–Aug 2026.** A first self-hosting study: Llama-3-8B fine-tuning and vLLM serving.
 - **Oct 2026: v5 overhaul.** The work between code and LLMs redrawn, the checks written and the
   judge validated, every agent's model chosen by measurement, and the self-hosting question
-  measured again on the current pipeline. Every change and its reason is in
-  [`docs/changelog_2026-10.md`](docs/changelog_2026-10.md).
+  measured again on the current pipeline.
 
 ### Branches
 
