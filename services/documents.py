@@ -285,7 +285,7 @@ def _highlight_changes(text: str, analysis: dict) -> str:
 
 def _cites(entry: dict, labels: dict[Any, str]) -> str:
     cited = [labels.get(i, f"F? (id {i})") for i in _list(entry.get("findings"))]
-    return f" ({', '.join(cited)})" if cited else ""
+    return f" [{', '.join(cited)}]" if cited else ""  # square brackets, as the document numbers
 
 
 # ----------------------------------------------------------------------------- report sections

@@ -304,6 +304,8 @@ separate `supplier_findings` / `item_findings`, now one numbered list.
 - **Sources shown by code.** Each finding ends with the numbers of its documents ([1]) or
   "(stock position)"; each question, change and action ends with the findings it cites (F1,
   F2). The model gives ids; code renders them and resolves document ids to file names.
+  (2026-10-28: the cited findings are shown in square brackets, [F1, F2], like the document
+  numbers; it is display only, no check reads it.)
 
 **Report layout (2026-10-22, revised the same day).** Facts first, then the judgements that
 cite them:
