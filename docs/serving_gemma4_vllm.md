@@ -175,7 +175,7 @@ At bf16 the model does not fit a 24 GB L4; at fp8 it does, with room for the KV 
 - **Repeats:** one fp8 run and two bf16 runs. Differences of one or two cases are within
   variation.
 - **The model:** untuned. QLoRA fine-tuned adapters were tried and were worse than the untuned
-  model (ready in 3–10 of 25 against 14), so none is used.
+  model (ready in 3–10 of 25 against 14), so none is used (`docs/sft_gemma4.md`).
 - **Speed is the engine's, not the pipeline's.** In the pipeline the judge (an API) is called
   after the analysis.
 
