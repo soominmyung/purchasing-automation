@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # author or a model of the same family. Provisional until judge validation: Claude Haiku
     # since 2026-10-23, after gemini-3.7-flash took 30-109 s per call and then returned 504,
     # 503 and 429. Needs CLAUDE_API_KEY (or ANTHROPIC_API_KEY).
-    # chosen by judge validation, 2026-10-24 (docs/judge_validation.md, docs/judge_selection.md): Haiku
+    # chosen by judge validation, 2026-10-24 (docs/judge_selection.md): Haiku
     # thinking at high effort, its answer shaped like the scoring sheet; one call per output
     evaluator_model: str = "anthropic:claude-haiku-5-5?effort=high&format=schema"
     # An analysis that fails a blocking code check is sent back to the analysis agent with the
@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     run_date: Optional[str] = "2025-04-06"
     # A self-hosted model served by vLLM (OpenAI-compatible API), used for a model named
     # "local:<served model name>": the SFT base-model screening on the RTX 5090 and, later, the
-    # fine-tuned analysis model on the GCP L4 VM (docs/sft_plan.md).
+    # fine-tuned analysis model on the GCP L4 VM.
     local_llm_url: str = "http://localhost:8000/v1"
     local_llm_api_key: Optional[str] = None
     local_llm_max_tokens: int = 6000
@@ -56,8 +56,8 @@ class Settings(BaseSettings):
     # Run records (services/run_record.py): one JSON file per run on the server.
     run_records_enabled: bool = True
     # The quality-check document is the operator's: saved on the server beside the run record, not
-    # sent to the buyer, whose drafts carry the unresolved checks at their top (the user,
-    # 2026-10-28). True sends it with the drafts too (e.g. the public demo).
+    # sent to the buyer, whose drafts carry the unresolved checks at their top
+    # (2026-10-28). True sends it with the drafts too (e.g. the public demo).
     deliver_evaluation_report: bool = False
     run_records_dir: str = "runs"
     # True only behind a proxy that sets X-Forwarded-For (the Cloud Run demo). On the
@@ -65,12 +65,6 @@ class Settings(BaseSettings):
     trust_forwarded_for: bool = False
 
 
-    # Vector store backend: "memory" | "chroma"
-    vector_store_backend: str = "memory"
-    
-    # Allow external domains (e.g., Framer)
-    extra_cors_origins: str = ""
-    
     # Security: per-IP daily request limit
     rate_limit_per_day: int = 5
     
@@ -85,7 +79,7 @@ class Settings(BaseSettings):
     langchain_project: str = "purchasing-automation"
     # True wherever real company data runs: traces then carry structure, timings, token
     # counts and model names, but no prompt or response text. Error messages are still
-    # sent, so exceptions must not quote data (see docs/observability.md).
+    # sent, so exceptions must not quote data.
     langsmith_hide_content: bool = False
 
     class Config:
