@@ -62,7 +62,7 @@ class LocalStore:
             return {"path": path, "ok": False, "error": str(e)}
 
     def delete(self, path: str) -> dict:
-        return {"ok": True, "chunks_removed": self.hf.remove_folder_document(path)}
+        return {"ok": True, "removed": self.hf.remove_folder_document(path)}
 
 
 class ApiStore:

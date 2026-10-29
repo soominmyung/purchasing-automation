@@ -1,6 +1,6 @@
 """
-Vector stores: history, analysis_examples, request_examples, email_examples.
-Corresponds to n8n Vector Store In-Memory + OpenAI Embeddings.
+The history store: one Chroma collection of purchasing history documents, each stored whole
+and retrieved by its header metadata.
 """
 import re
 import threading
@@ -11,7 +11,6 @@ from typing import Any
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from config import settings
 
@@ -56,23 +55,9 @@ def _open_store(collection_name: str) -> Chroma:
 
 
 def get_vector_stores() -> dict[str, Chroma]:
-    """history, analysis_examples, request_examples, email_examples."""
-    for name in (HISTORY_COLLECTION, "analysis_examples", "request_examples", "email_examples"):
-        _get_or_create_store(name)
+    """Open the history store at start-up."""
+    _get_or_create_store(HISTORY_COLLECTION)
     return _stores
-
-
-def _add_docs(collection_name: str, documents: list[Document], split: bool = True) -> None:
-    """split=False stores each document whole (history documents: at most two pages, retrieved
-    by metadata, never by similarity, so there is nothing to gain from chunks)."""
-    store = _get_or_create_store(collection_name)
-    if not split:
-        store.add_documents(documents)
-        return
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    splits = splitter.split_documents(documents)
-    if splits:
-        store.add_documents(splits)
 
 
 def _now_iso() -> str:
@@ -87,7 +72,7 @@ def _extract_event_date(text: str) -> str:
     """Parse the document's own 'Date: ...' line (existing report-writing convention) into an ISO date.
 
     Returns "" if no such line is found or it doesn't match a known format; callers fall back
-    to ingested_at in that case (see _most_recent) rather than mistaking an undated document for old.
+    to ingested_at in that case (see _doc_date) rather than mistaking an undated document for old.
     """
     match = _DATE_LINE_RE.search(text)
     if not match:
@@ -99,22 +84,6 @@ def _extract_event_date(text: str) -> str:
         except ValueError:
             continue
     return ""
-
-
-def _most_recent(collection_name: str, k: int, filter: dict[str, Any] | None = None, sort_key: str = "event_date") -> list[Document]:
-    """Return the k most recent chunks (optionally metadata-filtered), ranked by sort_key (not similarity).
-
-    Falls back to ingested_at when sort_key is missing/empty (e.g. event_date couldn't be
-    parsed from the document), so undated documents still rank by upload recency instead of
-    being buried behind every dated document.
-    """
-    store = _get_or_create_store(collection_name)
-    if store is None:
-        return []
-    raw = store._collection.get(where=filter, include=["metadatas", "documents"])
-    pairs = list(zip(raw.get("documents") or [], raw.get("metadatas") or []))
-    pairs.sort(key=lambda dm: dm[1].get(sort_key) or dm[1].get("ingested_at", ""), reverse=True)
-    return [Document(page_content=text, metadata=meta) for text, meta in pairs[:k]]
 
 
 # ----------------------------------------------------------------------------- history
@@ -193,14 +162,14 @@ def ingest_history(text: str, source: str = "", origin: str = "upload", fingerpr
         raise ValueError("The header names no supplier and no item (expected 'Supplier:' and/or 'Item:' lines).")
     if source:
         delete_history_source(origin, source)
-    _add_docs(HISTORY_COLLECTION, [Document(page_content=text,
-                                            metadata=history_metadata(header, source, origin, fingerprint))],
-              split=False)
+    # stored whole: a history document is at most two pages and is retrieved by its metadata
+    _get_or_create_store(HISTORY_COLLECTION).add_documents(
+        [Document(page_content=text, metadata=history_metadata(header, source, origin, fingerprint))])
     return header
 
 
 def delete_history_source(origin: str, source: str) -> int:
-    """Remove every chunk of one document. Returns how many chunks were removed."""
+    """Remove one document. Returns how many entries were removed (0 if it was not held)."""
     store = _get_or_create_store(HISTORY_COLLECTION)
     ids = store._collection.get(where={"source_id": f"{origin}:{source}"})["ids"]
     if ids:
@@ -264,7 +233,7 @@ def search_history(supplier: str, items: list[tuple[str, str]], as_of: str,
     store = _get_or_create_store(HISTORY_COLLECTION)
     raw = store._collection.get(where=where, include=["metadatas", "documents"])
 
-    # one entry per document (documents stored before 2026-10-19 may still be in chunks)
+    # one entry per document
     docs: dict[tuple, dict[str, Any]] = {}
     for text, m in zip(raw.get("documents") or [], raw.get("metadatas") or []):
         key = (m.get("source_id") or m.get("source"), m.get("supplier_name"), m.get("items"),
@@ -298,53 +267,3 @@ def search_history(supplier: str, items: list[tuple[str, str]], as_of: str,
         d.pop("_sort"), d.pop("_keys")
     return chosen, counts
 
-
-def ingest_analysis_examples(text: str) -> None:
-    """Ingest purchasing analysis reference examples."""
-    _add_docs(
-        "analysis_examples",
-        [Document(page_content=text, metadata={
-            "doc_type": "analysis_examples",
-            "ingested_at": _now_iso(),
-            "event_date": _extract_event_date(text),
-        })],
-    )
-
-
-def ingest_request_examples(text: str) -> None:
-    """Ingest purchase request reference examples."""
-    _add_docs(
-        "request_examples",
-        [Document(page_content=text, metadata={
-            "doc_type": "request_examples",
-            "ingested_at": _now_iso(),
-            "event_date": _extract_event_date(text),
-        })],
-    )
-
-
-def ingest_email_examples(text: str) -> None:
-    """Ingest email draft reference examples."""
-    _add_docs(
-        "email_examples",
-        [Document(page_content=text, metadata={
-            "doc_type": "email_examples",
-            "ingested_at": _now_iso(),
-            "event_date": _extract_event_date(text),
-        })],
-    )
-
-
-def search_analysis_examples(k: int = 3) -> list[Document]:
-    """Most recent analysis-report examples, ranked by the document's own date (style/tone reference, not fact retrieval)."""
-    return _most_recent("analysis_examples", k)
-
-
-def search_request_examples(k: int = 3) -> list[Document]:
-    """Most recent purchase-request examples, ranked by the document's own date (style/tone reference, not fact retrieval)."""
-    return _most_recent("request_examples", k)
-
-
-def search_email_examples(k: int = 3) -> list[Document]:
-    """Most recent supplier-email examples, ranked by the document's own date (style/tone reference, not fact retrieval)."""
-    return _most_recent("email_examples", k)

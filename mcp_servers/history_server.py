@@ -5,9 +5,10 @@ The pipeline already looks this up before the analysis agent runs, but only as p
 full run. Exposing it over MCP lets any client query the history on its own — useful
 when someone wants to check one supplier's record without generating a whole report.
 
-Retrieval mirrors services/agents.py: one history store, where each document says in its
-header which supplier and items it is about; documents are matched on those and returned
-most recent first by the document's own date. No similarity ranking is involved.
+Retrieval is the pipeline's own (services/vector_store.search_history): one history store,
+where each document says in its header which supplier and items it is about; documents are
+matched on those and returned most recent first by the document's own date. No similarity
+ranking is involved.
 
 Run: python mcp_servers/history_server.py
 """
