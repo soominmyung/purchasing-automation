@@ -1,22 +1,23 @@
-# Purchasing Automation - Python/FastAPI (n8n workflow port)
+# Purchasing Automation - Python/FastAPI
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 python-multipart>=0.0.6
 pydantic>=2.5.0
 pydantic-settings>=2.1.0
 
-# OpenAI
+# Model APIs: OpenAI (analysis, purchase request, email), Anthropic (judge, email validator)
 openai>=1.12.0
+anthropic>=1.15.0
 
 # LangChain (agents, tools, embeddings)
 langchain>=0.1.0
 langchain-openai>=0.0.5
 langchain-community>=0.0.20
-# Trying other providers' models as the analysis agent (scripts/run_dev_case.py --analysis-model)
-# needs langchain-anthropic or langchain-google-genai; production uses OpenAI only.
+langchain-anthropic>=1.7.6
+# Trying Gemini as an agent model (scripts/run_dev_case.py --analysis-model) needs langchain-google-genai.
 langgraph>=0.0.26
 
-# Vector store (in-memory / Chroma)
+# History store
 chromadb>=0.4.22
 
 # PDF extraction
@@ -25,7 +26,7 @@ pypdf>=4.0.0
 # CSV / data
 pandas>=2.1.0
 
-# Word 문서 저장
+# Word output
 python-docx>=1.1.0
 
 # Env
