@@ -13,7 +13,7 @@ Each output below carries **Issues:** or "No issue found". By model:
 | `gpt-5.4-mini` | The system's own terms ("shown in the pipeline", "pipeline figures") in 7; **false statements** that figures were revised where nothing was (eval_05, 17, 20); **placeholders left in the text** ("[none]", "[ ]", "[no document]") in 5; one wrong citation (eval_12); comments on its own input ("No changes ... are stated in the input") | 15 of 25 |
 | `gpt-6.1-sol` | "0 expected stockout weeks" twice; otherwise figures, wording and conditions carried over cleanly; long sentences | 2 of 25 |
 
-A first reading by Claude, not the judge's verdicts (P1a-c wait for the judge's validation).
+A first reading, not the judge's verdicts (P1a-c wait for the judge's validation).
 
 ## eval_01 · clean · GreenLineSupplies
 

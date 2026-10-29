@@ -1,6 +1,6 @@
 # Purchase request narrative: every model and effort, judged
 
-Judge: `anthropic:claude-haiku-5-5?effort=high&format=schema`, P1a-c, three runs, majority verdict. "Reading": the issue found by reading the text (Claude, before the judge's verdicts). Settings: `scripts/compare_approval_models.py`.
+Judge: `anthropic:claude-haiku-5-5?effort=high&format=schema`, P1a-c, three runs, majority verdict. "Reading": the issue found by reading the text (before the judge's verdicts). Settings: `scripts/compare_approval_models.py`.
 
 ## eval_01 · clean · GreenLineSupplies
 

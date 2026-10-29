@@ -1,89 +1,89 @@
-{"scenario_id": "eval_02", "check": "J1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_02", "check": "J1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_02", "check": "J1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_02", "check": "J2a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_02", "check": "J2b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_02", "check": "J2c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_02", "check": "J7a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_02", "check": "J8", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_02", "check": "J9", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_02", "check": "J10", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_02", "check": "J11", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_02", "check": "P1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24); \"a proven track record of timely deliveries\" summarises the document, not an added assessment."}
-{"scenario_id": "eval_02", "check": "P1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_02", "check": "P1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_06", "check": "J1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_06", "check": "J1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_06", "check": "J1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_06", "check": "J2c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_06", "check": "J7a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_06", "check": "J8", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_06", "check": "J9", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_06", "check": "J11", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_06", "check": "P1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24); confirmed pass after reading the judge's objection to \"aligning with its 18-week lead time\"."}
-{"scenario_id": "eval_06", "check": "P1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_06", "check": "P1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J2a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J2b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J2c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J6a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J6b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J6c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J7a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J8", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J9", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J10", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "J11", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "P1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "P1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_08", "check": "P1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J2a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J2b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J2c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J6a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J6b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J6c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J7a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J8", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J9", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J10", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "J11", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "P1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "P1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_11", "check": "P1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_14", "check": "J1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_14", "check": "J1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_14", "check": "J1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_14", "check": "J2a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_14", "check": "J2b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_14", "check": "J2c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_14", "check": "J7a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_14", "check": "J8", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_14", "check": "J9", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_14", "check": "J10", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_14", "check": "J11", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "J1a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "J1b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "J1c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "J2a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "J2b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "J2c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "J7a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "J8", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "J9", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "J10", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "J11", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "P1a", "verdict": "pass", "reason": "Scored by hand (2026-10-24); \"a proven track record of timely deliveries\" summarises the document, not an added assessment."}
+{"scenario_id": "eval_02", "check": "P1b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_02", "check": "P1c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_06", "check": "J1a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_06", "check": "J1b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_06", "check": "J1c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_06", "check": "J2c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_06", "check": "J7a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_06", "check": "J8", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_06", "check": "J9", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_06", "check": "J11", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_06", "check": "P1a", "verdict": "pass", "reason": "Scored by hand (2026-10-24); confirmed pass after reading the judge's objection to \"aligning with its 18-week lead time\"."}
+{"scenario_id": "eval_06", "check": "P1b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_06", "check": "P1c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J1a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J1b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J1c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J2a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J2b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J2c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J6a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J6b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J6c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J7a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J8", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J9", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J10", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "J11", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "P1a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "P1b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_08", "check": "P1c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J1a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J1b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J1c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J2a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J2b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J2c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J6a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J6b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J6c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J7a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J8", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J9", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J10", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "J11", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "P1a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "P1b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_11", "check": "P1c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_14", "check": "J1a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_14", "check": "J1b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_14", "check": "J1c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_14", "check": "J2a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_14", "check": "J2b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_14", "check": "J2c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_14", "check": "J7a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_14", "check": "J8", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_14", "check": "J9", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_14", "check": "J10", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_14", "check": "J11", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
 {"scenario_id": "eval_14", "check": "P1a", "verdict": "fail", "reason": "\"TechMarvelSupplies has a proven track record of consistent delivery and competitive pricing, supporting the decision to proceed with this supplier [1]\": an assessment the input does not give. A warning: the buyer may keep or edit it."}
-{"scenario_id": "eval_14", "check": "P1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "eval_14", "check": "P1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "J1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "J1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "J1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "J2a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "J2b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "J2c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "J6a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "J6b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "J6c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "J7a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "J8", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "J9", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "J11", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "P1a", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "P1b", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
-{"scenario_id": "H2", "check": "P1c", "verdict": "pass", "reason": "Scored by the user (2026-10-24)."}
+{"scenario_id": "eval_14", "check": "P1b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "eval_14", "check": "P1c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "J1a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "J1b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "J1c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "J2a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "J2b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "J2c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "J6a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "J6b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "J6c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "J7a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "J8", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "J9", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "J11", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "P1a", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "P1b", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
+{"scenario_id": "H2", "check": "P1c", "verdict": "pass", "reason": "Scored by hand (2026-10-24)."}
