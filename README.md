@@ -13,7 +13,7 @@ and by an LLM judge before the buyer sees it.
 | Code and LLM roles | Code: risk, order dates and quantities, history retrieval, document assembly. LLM: reading the history, judgements, wording |
 | History retrieval | Metadata-based RAG: documents found by their supplier, item and date headers, given to the model whole |
 | Quality checks | 36 checks across the three documents (code and LLM judge); a failed analysis or email is sent back with the reasons, up to two rewrites |
-| Model choice | Every agent's model and effort chosen on the same inputs, scored by the checks and read by hand (`docs/evaluation_record.md`) |
+| Model choice | Every agent's model and effort chosen on the same inputs, scored by the checks and read by hand (see [Model choice](#model-choice)) |
 | Time and cost | About 80 s and $0.05 for one supplier with seven items, all checks included, no rewrite |
 
 ---
@@ -30,19 +30,6 @@ and by an LLM judge before the buyer sees it.
 - **Oct 2026: v5 overhaul.** The work between code and LLMs redrawn, the checks written and the
   judge validated, every agent's model chosen by measurement, and the self-hosting question
   measured again on the current pipeline.
-
-### Branches
-
-| Branch | What it holds |
-|---|---|
-| `main` | The current version (v5), described here |
-| `legacy/v1` | The state before the v5 overhaul (16 Oct 2026), including the Llama-3-8B SFT/DPO study |
-| `feature/local-model-pipeline` | The state on 2 Mar 2026, when a local model was first wired in |
-| `legacy/gpt4o` | The February 2026 reconstruction: GPT-4o for every agent, history chunked and embedded |
-
-The three older branches point at earlier commits of `main`; they hold no work that `main` lacks.
-Results and claims in their READMEs belong to those versions and were superseded (see
-[Self-hosting](#self-hosting-measured-not-adopted)).
 
 ---
 
@@ -70,8 +57,6 @@ Results and claims in their READMEs belong to those versions and were superseded
 8. **Output.** Word drafts for the buyer, each with a note at the top listing what is unresolved.
    The quality-check document and the run record stay on the server for the operator.
 
-The diagram of the whole flow: [`docs/pipeline_diagram_en.png`](docs/pipeline_diagram_en.png).
-
 ### Evidence trail
 
 Source documents are numbered `[1], [2]…`; each fact cites its documents and is numbered
@@ -91,7 +76,7 @@ citation resolves; the judge checks that each one supports what rests on it.
 | | E4–E7 (every point asked, no repeat, earliest dispatch asked, tone of a request) | LLM judge | Note in the draft |
 
 Definitions: [`docs/eval_rubric.md`](docs/eval_rubric.md). Check ids were renumbered on 29 Oct 2026;
-records written before use the old ids (mapping in the rubric).
+records written before use the old ids (mapping: `LEGACY_IDS` in `services/quality_checks.py`).
 
 **The judge was validated before use** ([`docs/judge_selection.md`](docs/judge_selection.md)):
 on 51 samples with planted faults it caught 93.9%, with 3.9% of verdicts changing between runs and
@@ -106,22 +91,18 @@ Each agent's model was chosen on fixed inputs, scored by the checks above and re
 
 | Agent | Chosen | Compared with | Record |
 |---|---|---|---|
-| Analysis | `gpt-6.1-sol`, medium effort | `gpt-4o`, `gpt-6-luna`, `claude-sonnet-5-5`, Gemini Flash (7 models, 9 settings) | [`analysis_model_selection.md`](docs/analysis_model_selection.md) |
+| Analysis | `gpt-6.1-sol`, medium effort | `gpt-4o`, `gpt-6-luna`, `claude-sonnet-5-5`, Gemini Flash (5 models, 7 settings) | [`analysis_model_selection.md`](docs/analysis_model_selection.md) |
 | Judge | `claude-haiku-5-5`, high effort | Haiku without reasoning, Haiku medium, `gpt-6-luna`, Gemini Flash-Lite | [`judge_selection.md`](docs/judge_selection.md) |
 | Purchase request | `gpt-6.1-sol`, low effort | `gpt-4o`, `gpt-5.4-mini`, `gpt-6-luna` at several efforts | [`approval_model_selection.md`](docs/approval_model_selection.md) |
-| Supplier email | `gpt-6.1-sol`, low effort | `gpt-5.4-mini`, `gpt-6-luna` at several efforts | [`email_model_comparison.md`](docs/email_model_comparison.md) |
-| Email validator | `claude-haiku-5-5`, medium effort | `gpt-4o-mini`, Haiku low and high | [`email_model_comparison.md`](docs/email_model_comparison.md) |
-
-The scale of that work (about 1,360 outputs, 38,600 check verdicts, 1,050 outputs read):
-[`docs/evaluation_record.md`](docs/evaluation_record.md).
+| Supplier email | `gpt-6.1-sol`, low effort | `gpt-5.4-mini`, `gpt-6-luna` at several efforts | [`email_model_selection.md`](docs/email_model_selection.md) |
+| Email validator | `claude-haiku-5-5`, medium effort | `gpt-4o-mini`, Haiku low and high | [`email_model_selection.md`](docs/email_model_selection.md) |
 
 ---
 
 ## Self-hosting: measured, not adopted
 
 Gemma 4 12B was served with vLLM on one RTX 5090 and fine-tuned with QLoRA SFT
-([`docs/serving_gemma4_vllm.md`](docs/serving_gemma4_vllm.md),
-[`docs/sft_gemma4_results.md`](docs/sft_gemma4_results.md)):
+([`docs/serving_gemma4_vllm.md`](docs/serving_gemma4_vllm.md)):
 
 - **Serving is feasible:** in FP8 it takes 13.3 GiB (fits one L4), with 1.6–1.8× the throughput of
   bf16 and a quality difference within run-to-run variation.
@@ -129,7 +110,7 @@ Gemma 4 12B was served with vLLM on one RTX 5090 and fine-tuned with QLoRA SFT
   blocking check in 14, against 24 for `gpt-6.1-sol`; every fine-tuned adapter did worse (3–10).
   Production stays on `gpt-6.1-sol`.
 
-The earlier Llama-3-8B study (on `legacy/v1`) scored outputs with a GPT-4o preference score and a
+The earlier Llama-3-8B study scored outputs with a GPT-4o preference score and a
 short placeholder prompt; its figures are not comparable with these and are no longer claimed.
 
 ---
@@ -184,7 +165,8 @@ ItemCode,ItemName,SupplierName,AvailableStock,WksToOOS
 
 A sample is in [`050425.csv`](050425.csv). Development cases with history documents are in
 [`dev/cases/`](dev/cases/); `python scripts/run_dev_case.py dev/cases/kestrel_components.json --label "…"`
-runs one through the whole pipeline and records it under `dev/runs/`.
+runs one through the whole pipeline and records it under `dev/runs/`; a sample record of that case:
+[`dev/runs/2026-10-29_004531_judge-checks-renumbered-without-gaps-j3a-c-j4-j8/`](dev/runs/2026-10-29_004531_judge-checks-renumbered-without-gaps-j3a-c-j4-j8/).
 
 **Main settings** (`config.py`, overridable by environment variables): `evaluator_model`,
 `analysis_rewrites`, `history_window_months`, `history_docs_per_scope`, `prompt_version`,
@@ -201,11 +183,11 @@ runs one through the whole pipeline and records it under `dev/runs/`.
 | `routers/` | API: `pipeline` (run), `ingest` (history documents), `output` (downloads) |
 | `services/` | `agents` (LangGraph graph and agents), `quality_checks` (code checks and judge), `documents` (document assembly), `item_grouping` (risk, dates, quantities), `vector_store` and `history_folder` (history store and shared-folder sync), `run_record`, `security` |
 | `utils/` | CSV parsing and validation, PDF reading, Word output |
-| `prompts/` | Prompts by version (`v5` in use); `prompts/CHANGES.md` records each change and its measured effect |
+| `prompts/v5/` | The prompts in use (`prompt_version` in `config.py`); a version is frozen once results are recorded with it, and changes go into a new version folder |
 | `scripts/` | Model comparisons, judge validation, dev runs, SFT and serving experiments |
 | `eval_data/`, `eval_results/` | Evaluation scenarios, judge calibration samples and hand scores; raw results of every comparison |
-| `dev/` | Development cases and recorded runs (kept apart from the evaluation set) |
-| `docs/` | Design records, comparisons and selections, changelog |
+| `dev/` | Development cases (kept apart from the evaluation set) and one recorded run |
+| `docs/` | Quality checks, model selection records, serving measurement, portfolio (Korean PDF) |
 | `mcp_servers/` | History and replenishment MCP servers, built and tested but not used in the pipeline |
 
 ## Tech stack
