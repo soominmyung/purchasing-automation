@@ -1,7 +1,6 @@
 # Choosing the analysis model
 
-**2026-10-24.** The case for the analysis agent's model and effort, in one place. The full record of
-every run is in `docs/analysis_model_comparison.md`; this is the summary to cite.
+**2026-10-24.** How the analysis agent's model and effort were chosen.
 
 ## 1. The test cases
 
@@ -72,13 +71,13 @@ change has held, and one on the AnchorPlug defect; an action bridging HexBoltM12
 The same prompt (`prompts/v5/analysis.md`) for every model; only the analysis model and its effort
 change (`scripts/run_dev_case.py --analysis-model --analysis-effort`), the rest of the pipeline and
 the judge as in production. Each configuration two to four times per case. Every run is recorded
-with its prompts, settings, models, efforts, tokens and time (`dev/runs/`).
+with its prompts, settings, models, efforts, tokens and time (`scripts/run_dev_case.py`).
 
 ## 2. What was compared
 
 - **How the candidates were chosen:** no dearer per token than GPT-4o; the current generation of
   each line; not the judge's model; one per price tier and provider.
-- **Candidates:** `gpt-4o` (the model until then), `gpt-6.1-sol`, `gpt-6-luna`, `claude-sonnet-5-5`,
+- **Candidates:** `gpt-4o`, `gpt-6.1-sol`, `gpt-6-luna`, `claude-sonnet-5-5`,
   Gemini Flash.
 - **Effort:** each model's default first (second round: medium for Sol and Luna, high for Sonnet),
   then another level (third round: Luna high, Sonnet medium).
@@ -130,8 +129,8 @@ Sonnet costs about 1.3-1.6 times as much and is 1.5-2 times as fast.
 
 ## 6. What else bears on the choice
 
-- **The judge's family matters most.** The production judge provisionally chosen,
-  `claude-haiku-5-5` (`docs/judge_validation.md`), is a Claude model.
+- **The judge's family matters most.** The production judge, `claude-haiku-5-5`
+  (`docs/judge_selection.md`), is a Claude model.
   - With Sonnet, the analysis and the judge would be of one family, the case the self-preference
     literature warns about (Zheng et al., NeurIPS 2023; Panickssery, Bowman and Feng, NeurIPS 2024;
     Wataoka, Takahashi and Ri, 2024). If the judge passes Sonnet's output too readily, the blocking
@@ -148,8 +147,7 @@ Sonnet costs about 1.3-1.6 times as much and is 1.5-2 times as fast.
 - **Round 1 (one run per model and case): changing the model fixed what prompt revisions had not.**
   GPT-4o got 8 of Kestrel's 20 figures after the lead-time change wrong at first (order dates copied
   from the 18-week input, risk levels a level too low) and turned Nordic's customs hold, which the
-  supplier says is fixed, into a 22-week lead time. Several prompt revisions had not fixed its date
-  arithmetic; a probe showed why: asked "2025-09-06 minus 22 weeks", it was right 6 times in 9 with
+  supplier says is fixed, into a 22-week lead time. A probe showed why: asked "2025-09-06 minus 22 weeks", it was right 6 times in 9 with
   its working written out, and in the analysis it must write the date without working. The three
   newer models had every figure right at first, kept Nordic at 18 weeks and raised the defective
   AnchorPlug batch, which GPT-4o left out.
@@ -171,9 +169,10 @@ Sonnet costs about 1.3-1.6 times as much and is 1.5-2 times as fast.
     no date by which bridging supply must arrive.
   - Luna: "Confirm the revised lead time and delivery dates with KestrelComponents before placing the
     orders".
-- **Later, with Sol in place (changelog items 24-25):** asked to say when each check comes, Sol first
-  put supplier-wide checks "before placing each order" next to orders it said to place immediately;
-  told to judge the timing against each item's latest order date, it split the same check by item
+- **Later, with Sol in place (2026-10-24 and 25):** when the prompt asked when each check comes, Sol
+  first put supplier-wide checks "before placing each order" next to orders it said to place
+  immediately; with the rule changed to judge the timing against each item's latest order date, it
+  split the same check by item
   ("alongside the immediate HexBoltM12 order, without delaying it. Complete these checks before
   placing the remaining orders"), overdue items with a check put first went 9 to 0 in 25 analyses and
   dates in actions 38 to 72. Given the company's market, it told a UK demand rise from a Korean one

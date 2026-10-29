@@ -2,7 +2,7 @@
 
 A self-contained record of the serving measurement made on 2026-10-26: what was served, on what
 data, how quality and speed were measured, and what came out. It is the serving half of the
-self-hosting question; the model half (fine-tuning) is in `docs/sft_gemma4_results.md`.
+self-hosting question; the model half is summarised in section 8.
 
 ## In short
 
@@ -26,7 +26,7 @@ the pipeline's real analysis request.
 
 The analysis agent runs on `gpt-6.1-sol` through an API. Serving a model in-house would keep the
 analysis input (every item's figures and every history document) away from model companies, fix
-the cost, and remove the dependence on an outside API (`docs/sft_plan.md`, section 6). This
+the cost, and remove the dependence on an outside API. This
 measurement answers the serving half:
 
 - how much memory and speed self-hosting takes;
@@ -34,21 +34,13 @@ measurement answers the serving half:
 
 The question of whether an open model is good enough for the role is answered separately.
 
-**An earlier measurement this replaces.** In August 2026, a fine-tuned Llama-3-8B was served on a
-GCP L4 (`docs/inference_serving_vllm.md`). That measurement:
-
-- used a short placeholder prompt and 128 output tokens;
-- judged quantization quality with a GPT-4o preference score.
-
-This one uses the production request, and judges quality with the production checks.
-
 ## 2. What was served
 
 | | |
 |---|---|
-| Model | `google/gemma-4-12B-it`, untuned: the base chosen in the screening of five open models (`docs/sft_base_screening.md`) |
+| Model | `google/gemma-4-12B-it`, untuned: the best of five open-weight models screened untuned on the same 25 cases |
 | Engine | vLLM `v0.31.0` (Docker image `vllm/vllm-openai:v0.31.0`), OpenAI-compatible API |
-| GPU | NVIDIA RTX 5090, 32 GB (the user's PC; Windows holds about 1.6 GB) |
+| GPU | NVIDIA RTX 5090, 32 GB (Windows holds about 1.6 GB) |
 | Variants | **bf16** (`--dtype bfloat16`); **fp8** (the same, plus `--quantization fp8`: weights quantized to fp8 when loaded) |
 | Server flags | `--max-model-len 16384 --gpu-memory-utilization 0.92 --seed 0` (`scripts/serve_local_model.ps1`) |
 | Decoding | temperature 0, thinking off (`enable_thinking: false`), as the pipeline calls it |
@@ -56,11 +48,10 @@ This one uses the production request, and judges quality with the production che
 
 ## 3. The data
 
-**The 25 evaluation cases** that every model in this project was compared on (`docs/eval_rubric.md`,
-"Scenario set"). None was used in training.
+**The 25 evaluation cases** that every model in this project was compared on. None was used in training.
 
-- **Two sets:** 20 generated cases (`eval_data/eval_scenarios.jsonl`) and 5 from the earlier SFT
-  holdout (`eval_data/holdout_scenarios.jsonl`).
+- **Two sets:** 20 generated cases (`eval_data/eval_scenarios.jsonl`) and 5 held-out cases
+  (`eval_data/holdout_scenarios.jsonl`).
 - **Types:**
   - clean (5), no history (2), ambiguous attribution (3);
   - a clear supplier incident (3), a clear item incident (3);
@@ -69,8 +60,7 @@ This one uses the production request, and judges quality with the production che
 - **53 items:**
   - Critical 23, High 13, Medium 10, Low 7;
   - 11 cases where `gpt-6.1-sol` changed a lead time on delays in the history.
-- **Each case as the model receives it:** the production system prompt (`prompts/v5/analysis.md`,
-  with the 2026-10-25 `figures_after_changes` rule) and the pipeline's user JSON:
+- **Each case as the model receives it:** the production system prompt (`prompts/v5/analysis.md`) and the pipeline's user JSON:
   - snapshot date and supplier;
   - each item's figures as code works them out (risk level, gap, latest order and delivery
     dates, suggested quantity);
@@ -95,16 +85,16 @@ answer was scored by the production checks (`services/quality_checks.evaluate_an
 - **Judge checks**, by `claude-haiku-5-5` at high effort, a different model family from the
   writer:
   - J1a–c: history statements found in the documents, not distorted, not misattributed;
-  - J6a–c: each change follows from its findings, its size fits them (or is marked as an
+  - J3a–c: each change follows from its findings, its size fits them (or is marked as an
     estimate to be confirmed), and no item the reason applies to is left out;
-  - J7a: figures quoted in the text match the figures after the changes;
-  - J8: questions marked for the supplier reveal nothing internal.
+  - J4: figures quoted in the text match the figures after the changes;
+  - J5: questions marked for the supplier reveal nothing internal.
 - **The judge was validated before use** (`docs/judge_selection.md`): it caught 93.9% of 51 seeded
   faults, with 8.0% false alarms on 89 hand-scored verdicts.
 - **Verdict:** ready only if every blocking check passed.
 
-fp8 and the second bf16 run were run 6 cases at a time; the first bf16 run is the round-2
-screening run, one case at a time, with the same model, prompt and server flags. Comparing
+fp8 and the second bf16 run were run 6 cases at a time; the first bf16 run is the screening
+run of the untuned model, one case at a time, with the same model, prompt and server flags. Comparing
 the two bf16 runs measures run-to-run variation: decoding is not exactly repeatable even at
 temperature 0, least of all under batching.
 
@@ -148,27 +138,27 @@ At bf16 the model does not fit a 24 GB L4; at fp8 it does, with room for the KV 
 
 | | Ready | Lead-time changes applied (of Sol's 11) | Blocking failures by check |
 |---|---|---|---|
-| bf16, run 1 (one case at a time) | 14 | 1 | J1b 5, J8 3, J1c 2, C10 2, J6b 2, C5 1, J1a 1, C6 1 |
-| bf16, run 2 (6 at a time) | 15 | 1 | J1b 5, C10 3, J8 2, C5 1, J1c 1, C6 1, J6b 1 |
-| fp8 (6 at a time) | 13 | 3 | J1b 6, J6b 5, J1a 2, C10 2, J8 1, J7a 1, J1c 1 |
-| *`gpt-6.1-sol` (reference, API)* | *24* | *11* | *J7a 1 (a judge reading)* |
+| bf16, run 1 (one case at a time) | 14 | 1 | J1b 5, J5 3, J1c 2, C10 2, J3b 2, C5 1, J1a 1, C6 1 |
+| bf16, run 2 (6 at a time) | 15 | 1 | J1b 5, C10 3, J5 2, C5 1, J1c 1, C6 1, J3b 1 |
+| fp8 (6 at a time) | 13 | 3 | J1b 6, J3b 5, J1a 2, C10 2, J5 1, J4 1, J1c 1 |
+| *`gpt-6.1-sol` (reference, API)* | *24* | *11* | *J4 1 (a judge reading)* |
 
 **Case by case.** 9 cases were ready in all three runs, and 4 failed the same way in all three
 (eval_06, 09, 18, 19).
 
-- **The two bf16 runs disagree on 3 cases:** eval_02 (J1b in run 1, ready in run 2), eval_14 (J6b,
+- **The two bf16 runs disagree on 3 cases:** eval_02 (J1b in run 1, ready in run 2), eval_14 (J3b,
   then ready), H1 (ready, then J1b).
 - **fp8 against bf16:**
   - ready in fp8 only: H3, and fewer failures in eval_10 and H2;
   - failed in fp8 only: eval_04, 11, 15, 16, and eval_01 with different checks.
-- **What fp8's extra failures are.** All five of its J6b failures are one omission. It proposed a
+- **What fp8's extra failures are.** All five of its J3b failures are one omission. It proposed a
   size the documents do not give, and did not mark it as its estimate to be confirmed:
   - 22 weeks for an unresolved strike (eval_11, the value Sol chose);
   - 25 weeks (eval_13);
   - 19 weeks (H2);
   - a 50% quantity increase for an unsized surge (eval_15, eval_16).
 
-  In those cases bf16 made no change, so it had nothing to fail. The rest (J1a, J1b, J7a) moves
+  In those cases bf16 made no change, so it had nothing to fail. The rest (J1a, J1b, J4) moves
   between runs at bf16 as well.
 
 **Reading:**
@@ -184,19 +174,19 @@ At bf16 the model does not fit a 24 GB L4; at fp8 it does, with room for the KV 
   as it has less memory bandwidth, and only fp8 fits.
 - **Repeats:** one fp8 run and two bf16 runs. Differences of one or two cases are within
   variation.
-- **The model:** untuned. The fine-tuned adapters were worse than the untuned model and are not in
-  production (`docs/sft_gemma4_results.md`).
+- **The model:** untuned. QLoRA fine-tuned adapters were tried and were worse than the untuned
+  model (ready in 3–10 of 25 against 14), so none is used.
 - **Speed is the engine's, not the pipeline's.** In the pipeline the judge (an API) is called
   after the analysis.
 
 ## 8. Conclusion
 
-- **The serving side is ready for self-hosting.** In fp8, one 24 GB card holds the model, and it
-  answers the production request in about 6 s alone, or at 835 tokens per second across 16
-  requests.
+- **The serving side was measured as feasible.** In fp8 the model takes 13.3 GiB, within one 24 GB
+  card, and on the RTX 5090 it answered the production request in about 6 s alone, or at 835 tokens
+  per second across 16 requests.
 - **The model side is not.** The same checks put the best open model at 13–15 of 25 against Sol's
   24, and fine-tuning did not close the gap.
-- **So production stays on `gpt-6.1-sol` for now** (the user's decision, 2026-10-26), and serving is
+- **So production stays on `gpt-6.1-sol` for now** (decided 2026-10-26), and serving is
   the measured option if an open model closes the gap.
 
 ## 9. Files and how to repeat it
@@ -207,4 +197,4 @@ At bf16 the model does not fit a 24 GB L4; at fp8 it does, with room for the KV 
 | The whole comparison (bf16 then fp8: quality, then throughput) | `scripts/serve_quant_compare.ps1` |
 | Quality runs | `scripts/screen_base_models.py --model local:gemma-4-12b-it --tag serve-bf16 --workers 6`; tables from `scripts/report_sft_results.py` |
 | Throughput | `scripts/bench_vllm_v5.py --model gemma-4-12b-it --label gemma4-12b-bf16` |
-| Results | `eval_results/serving_bench_gemma4-12b-{bf16,fp8}.json`; `eval_results/sft_screen_gemma-4-12b-it_{fac-rule,serve-bf16,serve-fp8}.jsonl` (bf16 run 1 is the round-2 screening run, `fac-rule`) |
+| Results | `eval_results/serving_bench_gemma4-12b-{bf16,fp8}.json`; `eval_results/sft_screen_gemma-4-12b-it_{fac-rule,serve-bf16,serve-fp8}.jsonl` (bf16 run 1 is the screening run, tag `fac-rule`) |

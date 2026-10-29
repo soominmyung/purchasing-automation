@@ -1,8 +1,6 @@
 # Choosing the purchase request writer
 
-**2026-10-25.** The case for the approval agent's model, effort and prompt, in one place. The full
-record of every run is in `docs/approval_model_comparison.md` (rounds 1–5); this is the summary to
-cite.
+**2026-10-25.** How the approval agent's model, effort and prompt were chosen.
 
 ## 1. What the agent does
 
@@ -18,13 +16,13 @@ is filled in by code.
 
 - The same 25 inputs for every model: the approval input saved with each v5 base output, so every
   model got exactly what the pipeline gives (`scripts/compare_approval_models.py`).
-- Candidates: `gpt-4o` (in the role since the start, never compared), `gpt-6-luna` (cheapest),
+- Candidates: `gpt-4o`, `gpt-6-luna` (cheapest),
   `gpt-5.4-mini` (the email agent), `gpt-6.1-sol` (the analysis model). Not Claude or Gemini: Haiku is
   the judge that checks this text, and Gemini answered with 429/503 errors (Gemini 4 Argon: 429 on 5
   of 5 calls, and $4/$20 per million tokens from 2026-12-01).
 - Each reasoning model at set efforts, checked against the API first: `gpt-6-luna` and `gpt-5.4-mini`
   take none to xhigh and accept temperature 0 only at none; `gpt-6.1-sol` takes low to xhigh, at
-  temperature 1 only. The first run had left every model at its default and not recorded it.
+  temperature 1 only.
 - Three readings of every text:
   1. Code: P2 (sentence counts) and P3 (citations to documents that exist).
   2. The judge chosen in `docs/judge_selection.md` (Haiku, thinking at high effort): P1a–c (nothing
@@ -64,9 +62,9 @@ models:
 - Findings from the stock figures arrive with `"documents": []`; the models wrote the empty list out
   as "[ ]" or filled it with "[no document]" or a wrong number.
 
-Revised as the user set it out: the writer is a **purchasing officer putting the request to the
-approvers for their decision, objectively and neutrally, not arguing for the purchase** ("buyer"
-could read as someone persuading); figures in plain words, never field names, no mention of the tool
+In the revised prompt, the writer is a **purchasing officer putting the request to the approvers
+for their decision, objectively and neutrally, not arguing for the purchase** ("buyer" could read as
+someone persuading); figures in plain words, never field names, no mention of the tool
 or the input; findings with empty documents take no brackets. A first wording also asked the model to
 name "the current stock position" as the source; seven outputs then tied quantities to it ("the
 current stock position supports the suggested quantity of 780"), so that clause was taken out.
@@ -82,11 +80,11 @@ no timing ("Obtain confirmed lead times ... for this order, then ... reassess or
 the writer had to decide which checks come first. The same ambiguity was in the analysis report the
 buyer reads.
 
-Fixed in the analysis prompt, not the approval prompt (the user: a new approval rule would leave the
+Fixed in the analysis prompt, not the approval prompt (a new approval rule would leave the
 writer without footing whenever an action gave no timing). The first wording ("say before, alongside
 or after the order; no date needed") made the analysis put supplier-wide checks "before placing each
-order" next to "place ... immediately", and dropped dates. The kept wording, as the user set it, asks
-the model to **judge the timing realistically against the item's latest order date**, leave actions
+order" next to "place ... immediately", and dropped dates. The kept wording asks the model to
+**judge the timing realistically against the item's latest order date**, leave actions
 whose timing is already clear as they are, and keep every date. Across the 25 analyses:
 
 | Analyses | "Alongside" the order | Dates in actions | Overdue item with a check "before" it |
@@ -131,20 +129,19 @@ little (7 → 6 → 4); Sol carried the same inputs over cleanly even at low eff
 - **Round 3: recurring faults came from the prompt, not the models.** The prompt's own "the
   pipeline's figures" was repeated in the text; findings from the stock figures arrive with an empty
   document list, written out as "[ ]". The writer was made a purchasing officer putting the request
-  to the approvers neutrally (the user's wording); a clause asking it to name "the current stock
-  position" then made seven outputs tie quantities to it ("the current stock position supports the
+  to the approvers neutrally; a clause asking it to name "the current stock position" then made seven outputs tie quantities to it ("the current stock position supports the
   suggested quantity of 780 units"), so it was taken out (round 4).
 - **Round 5: the last fault came from the analysis agent.** Sol moved checks before the order because
   the analysis's actions gave no timing ("Obtain confirmed lead times ... for this order, then ...
   reassess ordering deadlines"), and the approval prompt asked it to decide which checks come first.
-  Fixed in the analysis prompt (changelog item 24), the fault was gone in both Sol settings. Luna,
+  Once the analysis prompt was fixed (2026-10-24), the fault was gone in both Sol settings. Luna,
   read at every effort under the same conditions, still misplaced figures and wording.
-- **What this taught:** read the outputs, not only the scores, and trace a fault to where it arises
-  (the prompt, the input, the agent upstream) before blaming the model.
+- **Lesson:** reading the outputs, not only the scores, and tracing each fault to where it arises
+  (the prompt, the input, the agent upstream) found causes that the scores attributed to the model.
 
 ## 5. Decision
 
-**`gpt-6.1-sol` at effort low** (decided by the user, 2026-10-25).
+**`gpt-6.1-sol` at effort low** (chosen 2026-10-25).
 
 **Why Sol: it carries the facts, figures and conditions over exactly, and adds nothing.** The
 approvers decide on this text, so what matters is that it says what the analysis says, no more and no
@@ -156,17 +153,17 @@ less. On the same inputs, the others did not:
 - `gpt-5.4-mini`: this tool's terms, false statements and empty placeholders in the approvers' text;
 - `gpt-4o`: its own assessment of the supplier, and figures wrong.
 
-**Why low effort:** on the latest prompts (round 5) low and medium both had no issue in 25 outputs; low takes less than half the time (5.3 s against
-12.8 s) and about three quarters of the cost ($0.0056 against $0.0076). The user compared on the
-latest prompts only: in rounds 2–4 low had more outputs with an issue (13 against 6, 9 of them a check
-moved before the order), but on prompts since changed, and the cause of that fault was removed in the
-analysis prompt.
+**Why low effort:** on the latest prompts (round 5) low and medium both had no issue in 25 outputs;
+low takes less than half the time (5.3 s against 12.8 s) and about three quarters of the cost
+($0.0056 against $0.0076). The choice rests on the latest prompts: in rounds 2–4 low had more
+outputs with an issue (13 against 6, most of them a check moved before the order), but on prompts
+since changed, and the cause of that fault was removed in the analysis prompt.
 
-## 6. A person in the loop
+## 6. Reading by hand alongside the scores
 
 Every comparison was read by hand as well as scored, and the reading changed the outcome more than
 once: it ruled out the model the metrics favoured (`gpt-5.4-mini`), traced recurring faults to the
 prompt and to the analysis agent's actions rather than to the models, and set the prompt changes
-(the purchasing officer's neutral role, the timing judged against the latest order date). When Luna
-had been left out of reading on an earlier impression, the user asked why; it was then read at every
-effort under the same conditions before being ruled out.
+(the purchasing officer's neutral role, the timing judged against the latest order date). Luna's
+texts at effort none in rounds 3–4 were at first scored but not read; they were then read at every
+effort under the same conditions before Luna was ruled out.
