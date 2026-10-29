@@ -7,11 +7,10 @@ snapshot date and where it came from, per supplier the items as preprocessed, th
 documents the model read (their text as it was then), every output, the evaluation, each
 email check, and per node the time taken, tokens per model and any error.
 
-These files contain the company data that is kept out of LangSmith (docs/observability.md),
-so the folder needs restricted access and a retention period. Aggregation across runs:
-scripts/summarize_runs.py.
+These files contain the company data that is kept out of LangSmith,
+so the folder needs restricted access and a retention period.
 
-Run statistics (the user, 2026-10-28): besides the JSON, each run appends flat rows to two CSV files
+Run statistics (2026-10-28): besides the JSON, each run appends flat rows to two CSV files
 in the same folder, which open in Excel and can be filtered and pivoted as the operator needs:
   run_stats.csv      one row per supplier group: verdict, rewrites, email drafts, time, tokens
   check_results.csv  one row per check per analysis attempt and per purchase-request check

@@ -40,7 +40,7 @@ RISK_HIGH_BELOW_WEEKS = 26
 RISK_MEDIUM_BELOW_WEEKS = 35
 # The same thresholds as margins over the lead time, so they move with it when the analysis
 # finds a lead time other than 18 weeks: Critical below the lead time, High below lead time + 8,
-# Medium below lead time + 17 (changelog item 21).
+# Medium below lead time + 17.
 HIGH_MARGIN_WEEKS = RISK_HIGH_BELOW_WEEKS - TOTAL_LEAD_WEEKS
 MEDIUM_MARGIN_WEEKS = RISK_MEDIUM_BELOW_WEEKS - TOTAL_LEAD_WEEKS
 RISK_ORDER = ["Critical", "High", "Medium", "Low"]
@@ -369,18 +369,6 @@ def data_issue_lines(items: list[dict[str, Any]], snapshot_warnings: list[str] |
                         if "WksToOOS" in fields else "suggested quantity was not calculated")
             lines.append(f"{label}: {'; '.join(parts)}. As a result, {not_done}.")
     return lines
-
-
-def insert_data_issues_section(markdown: str, lines: list[str]) -> str:
-    """Put the data-issues section before the document's first '## ' heading (after its header)."""
-    if not lines:
-        return markdown
-    section = DATA_ISSUES_HEADING + "\n" + "\n".join(f"- {ln}" for ln in lines) + "\n\n"
-    text = markdown or ""
-    m = re.search(r"(?m)^## ", text)
-    if not m:
-        return section + text
-    return text[:m.start()] + section + text[m.start():]
 
 
 def group_by_supplier_and_recommend(

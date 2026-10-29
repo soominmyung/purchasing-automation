@@ -2,11 +2,10 @@
 Agent prompts, loaded from prompts/<version>/.
 
 Each version folder holds the whole set the pipeline uses, so a run is described by one
-version name (settings.prompt_version), which is what run records store. Rules:
-- Work in the newest folder; typo-level fixes can be made there in place.
-- Once runs or evaluation results have been recorded with a version, do not edit it.
-  Copy it to a new folder and change that. prompts/CHANGES.md says what each version changed.
-- Files are read exactly as written, including leading and trailing whitespace.
+version name (settings.prompt_version), which is what run records store. A version is frozen
+once runs or evaluation results have been recorded with it; changes go into a new folder, so
+every recorded result can be traced to the exact prompt text that produced it. Files are read
+exactly as written, including leading and trailing whitespace.
 """
 from pathlib import Path
 

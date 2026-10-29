@@ -1,4 +1,4 @@
-"""Serve generated .docx files for download (Framer / HF Space). Temp files deleted after 5 min when use_temp_for_output."""
+"""Serve generated .docx files for download. Temp files deleted after 5 min when use_temp_for_output."""
 import re
 from pathlib import Path
 
@@ -34,7 +34,7 @@ def _resolve_path(filename: str) -> Path | None:
 @router.get("/output/list", dependencies=[Depends(verify_api_access)])
 def list_output():
     """
-    List generated .docx in output/temp (when use_temp_for_output). For Framer download list.
+    List generated .docx in output/temp (when use_temp_for_output), for a download list.
     Files older than temp_output_max_age_minutes are removed before listing.
     """
     if not _USE_TEMP:

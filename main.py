@@ -1,5 +1,5 @@
 """
-Purchasing Automation - FastAPI 앱.
+Purchasing Automation: the FastAPI app.
 """
 import os
 from contextlib import asynccontextmanager
@@ -15,7 +15,7 @@ import os
 import re
 
 if settings.langchain_tracing_v2:
-    # 하드닝: 환경 변수에서 특수문자 및 공백 제거 (Regex 기반)
+    # keep only the characters an API key can contain (stray spaces or quotes from the environment)
     clean_key = re.sub(r'[^a-zA-Z0-9_-]', '', (settings.langchain_api_key or ""))
     
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
@@ -35,10 +35,9 @@ from routers import pipeline, ingest, output
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """앱 시작 시 벡터스토어 초기화."""
+    """Open the history store at start-up."""
     get_vector_stores()
     yield
-    # shutdown 시 정리 (선택)
 
 
 app = FastAPI(
@@ -48,15 +47,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# --- 보안 및 사용량 제한 (Rate Limiting) ---
-# services/security.py 로 이동됨.
+# Access control and rate limiting: services/security.py.
 
-# --- CORS 설정 ---
-# 포트폴리오의 편의성을 위해 모든 Origin 허용 (보안은 X-API-Key 토큰으로 수행)
+# CORS: any origin; access is controlled by the API key header, not by origin.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,  # allow_origins=["*"] 인 경우 False여야 함
+    allow_credentials=False,  # must be False with allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )

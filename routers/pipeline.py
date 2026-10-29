@@ -1,6 +1,7 @@
 """
-파이프라인 API: CSV 업로드 → Item Grouping → Analysis Agent → Report / PR / Email 생성.
-스트리밍 시 complete 이벤트에 생성 파일 base64 포함 (HF Space 등 비영속 환경에서 다운로드 보장).
+Pipeline API: stock CSV -> item grouping -> analysis -> analysis report, purchase request and supplier
+email. Generated files can be returned base64-encoded in the response or the stream, for clients
+that do not fetch them from the server.
 """
 import asyncio
 from datetime import date
@@ -66,9 +67,9 @@ def _run_pipeline_inner(
     embed_files: bool,
     record: RunRecord,
 ) -> RunPipelineResponse:
-    """CSV 내용 + 파일명으로 파이프라인 실행 (공통 로직). progress_callback(step, detail) 호출.
-    스트리밍 시(progress_callback 있음): 디스크 저장 없이 메모리에서 .docx → base64만 전달.
-    embed_files=True: 디스크 저장 없이 메모리에서 .docx → base64만 JSON에 담아 반환 (HF Space 등)."""
+    """Run the pipeline on the content and file name of a CSV, calling progress_callback(step, detail).
+    When streaming (progress_callback given) or with embed_files=True, the .docx files are built in
+    memory and returned base64-encoded instead of being saved to disk."""
     stream_mode = progress_callback is not None
     in_memory = stream_mode or embed_files
 
@@ -124,7 +125,7 @@ def _run_pipeline_inner(
                 "items": items,
             }
         
-            # 그래프 스트리밍을 통해 각 노드 완료 시 진행 상황 알림
+            # report progress as each node of the graph finishes
             for event in purchasing_graph.stream(
                 {
                     "snapshot_date": snapshot_date,
@@ -143,25 +144,25 @@ def _run_pipeline_inner(
                      "metadata": {"supplier": supplier, "env": "production", "run_id": record.run_id}}
                 )
             ):
-                # event는 { "node_name": { "state_key": value } } 형태
+                # event: {node_name: {state_key: value}}
                 node_name = list(event.keys())[0]
                 progress(node_name, {"supplier": supplier})
             
-                # 마지막 상태를 계속 업데이트
+                # keep the latest state
                 for k, v in event[node_name].items():
                     if k in ("validation_log", "document_issues", "analysis_attempts"):  # accumulated
                         final_state.setdefault(k, []).extend(v)
                     else:
                         final_state[k] = v
 
-            # --- 결과 추출 및 파일 생성 (기존 로직 유지) ---
+            # --- outputs and files ---
             analysis_output = final_state.get("analysis_output", {})
             report_md = final_state.get("report_md", "")
             pr_md = final_state.get("pr_md", "")
             email_text = final_state.get("email_md", "")
             evaluation_md = final_state.get("evaluation_md", "")
 
-            # 0. Evaluation Report: the operator's (the user, 2026-10-28). Always saved on the server
+            # 0. Evaluation Report: the operator's (2026-10-28). Always saved on the server
             # beside the run record; sent with the drafts only when deliver_evaluation_report is on.
             evaluation_filename = f"evaluation_{snapshot_date}_{safe_supplier}_{record.run_id}.docx"
             files["evaluation"] = evaluation_filename
@@ -177,7 +178,7 @@ def _run_pipeline_inner(
                 if stream_mode:
                     progress("file_ready", {"filename": evaluation_filename, "content_base64": b64})
 
-            # 1. Report 처리
+            # 1. analysis report
             analysis_filename = f"analysis_{snapshot_date}_{safe_supplier}_{record.run_id}.docx"
             files["analysis"] = analysis_filename
             if in_memory:
@@ -204,7 +205,7 @@ def _run_pipeline_inner(
                 record.finish_group(entry, final_state, files)
                 continue
 
-            # 2. PR 처리
+            # 2. purchase request
             pr_filename = f"pr_{snapshot_date}_{safe_supplier}_{record.run_id}.docx"
             files["pr"] = pr_filename
             if in_memory:
@@ -224,7 +225,7 @@ def _run_pipeline_inner(
                     "content_base64": _read_file_base64(pr_saved_path),
                 })
 
-            # 3. Email 처리
+            # 3. supplier email
             email_filename = f"email_draft_{snapshot_date}_{safe_supplier}_{record.run_id}.docx"
             files["email_draft"] = email_filename
             if in_memory:
@@ -280,7 +281,7 @@ def _require_fresh_snapshot(snapshot_date: str) -> None:
 
 
 def _read_file_base64(path_str: str) -> str | None:
-    """Read file and return base64 string so Framer can download without /api/output/download (HF Space)."""
+    """A saved file as base64, for clients that do not fetch it from /api/output/download."""
     path = Path(path_str)
     if not path.is_file():
         return None
@@ -291,10 +292,10 @@ def _read_file_base64(path_str: str) -> str | None:
 
 
 @router.post("/run", response_model=RunPipelineResponse, dependencies=[Depends(verify_api_access)])
-async def run_pipeline_upload(request: Request, file: UploadFile = File(..., description="CSV 파일 (내용은 서버에서 읽음)")):
+async def run_pipeline_upload(request: Request, file: UploadFile = File(..., description="Stock CSV")):
     """
-    CSV **파일**만 업로드하면 서버가 내용을 읽어 파이프라인 실행.
-    파일명에 DDMMYY(예: 050425)가 있으면 스냅샷 날짜(2025-04-25)로 사용.
+    Run the pipeline on an uploaded stock CSV. The snapshot date comes from the SnapshotDate line,
+    or else from a DDMMYY date in the file name (050425 -> 2025-04-05).
     """
     if not settings.openai_api_key:
         raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
@@ -314,10 +315,10 @@ async def run_pipeline_upload(request: Request, file: UploadFile = File(..., des
 
 
 @router.post("/run/embed", response_model=RunPipelineResponse, dependencies=[Depends(verify_api_access)])
-async def run_pipeline_embed(request: Request, file: UploadFile = File(..., description="CSV 파일 (디스크 저장 없이 JSON에 base64 포함)")):
+async def run_pipeline_embed(request: Request, file: UploadFile = File(..., description="Stock CSV")):
     """
-    CSV 업로드 후 파이프라인 실행. **디스크에 저장하지 않고** 생성된 .docx를 base64로 JSON에 담아 반환.
-    HF Space 등에서 브라우저가 응답 수신 후 바로 다운로드할 수 있도록 함 (스트리밍/임시 저장 불필요).
+    Run the pipeline and return the generated .docx files base64-encoded in the JSON response,
+    without saving them on the server.
     """
     if not settings.openai_api_key:
         raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
@@ -334,7 +335,7 @@ async def run_pipeline_embed(request: Request, file: UploadFile = File(..., desc
 
 
 async def _stream_pipeline_events(csv_content: str, csv_filename: str, ip: str = "unknown"):
-    """파이프라인 진행 이벤트를 SSE로 yield."""
+    """Yield the progress events of the pipeline as Server-Sent Events."""
     q: queue.Queue = queue.Queue()
 
     def progress(step: str, detail: dict[str, Any]) -> None:
@@ -369,9 +370,9 @@ async def _stream_pipeline_events(csv_content: str, csv_filename: str, ip: str =
 
 
 @router.post("/run/stream", dependencies=[Depends(verify_api_access)])
-async def run_pipeline_stream(request: Request, file: UploadFile = File(..., description="CSV 파일 (진행 상황 스트리밍)")):
+async def run_pipeline_stream(request: Request, file: UploadFile = File(..., description="Stock CSV")):
     """
-    CSV 업로드 후 파이프라인 실행. 진행 단계를 Server-Sent Events로 스트리밍.
+    Run the pipeline and stream its progress as Server-Sent Events.
     step: csv_parsing, item_grouping, item_grouping_done, analysis, report, pr, email, complete
     """
     if not settings.openai_api_key:
@@ -398,8 +399,8 @@ async def run_pipeline_stream(request: Request, file: UploadFile = File(..., des
 @router.post("/run/json", response_model=RunPipelineResponse, dependencies=[Depends(verify_api_access)])
 def run_pipeline_json(req: RunPipelineRequest, request: Request):
     """
-    JSON으로 CSV 내용 + 파일명 전달 (API/스크립트용).
-    브라우저에서 파일만 올리고 싶으면 POST /api/run (파일 업로드) 사용.
+    Run the pipeline on CSV content and a file name sent as JSON (for scripts). To upload a file,
+    use POST /api/run.
     """
     if not settings.openai_api_key:
         raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
@@ -410,8 +411,8 @@ def run_pipeline_json(req: RunPipelineRequest, request: Request):
 @router.post("/group-only")
 def run_group_only(req: RunPipelineRequest):
     """
-    CSV만 파싱하여 Item Grouping만 수행 (LLM 호출 없음).
-    권장 PO일/납기일/수량 계산 결과만 반환.
+    Parse the CSV and group the items only (no LLM call): the recommended order and delivery
+    dates and quantities.
     """
     try:
         rows = parse_csv_rows(req.csv_content, req.csv_filename or "")

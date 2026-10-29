@@ -19,7 +19,7 @@ from langchain_openai import ChatOpenAI
 from config import settings
 from services import documents
 from services.item_grouping import data_issue_lines, group_risk_level
-# No style examples for the purchase request or the email (2026-10-25): the ones in docs/Examples.zip
+# No style examples for the purchase request or the email (2026-10-25): the earlier examples
 # contradict the current rules (an email saying "our stock review", questions as a list).
 from services.vector_store import search_history
 from services.prompts import (
@@ -42,17 +42,17 @@ from services.run_record import instrument
 # Model per agent, recorded with every run (services/run_record.py).
 AGENT_MODELS = {
     # chosen 2026-10-24 over gpt-4o, gpt-6-luna and claude-sonnet-5-5 on the same prompt and cases
-    # (docs/analysis_model_comparison.md): the most specific questions and actions from the history
+    # (docs/analysis_model_selection.md): the most specific questions and actions from the history
     "analysis": "gpt-6.1-sol",
     # chosen 2026-10-25 over gpt-4o, gpt-6-luna and gpt-5.4-mini on the same 25 inputs, at set efforts
     # (docs/approval_model_selection.md): carries facts, figures and wording over without additions
     "approval": "gpt-6.1-sol",
     # chosen 2026-10-25 over gpt-5.4-mini and gpt-6-luna at set efforts, on 25 inputs in three rounds
-    # (docs/email_model_comparison.md): rewrites the analyst's points as plain questions about this
+    # (docs/email_model_selection.md): rewrites the analyst's points as plain questions about this
     # order without naming the supplier's past problems; gpt-5.4-mini copied them in whatever the prompt said
     "email_draft": "gpt-6.1-sol",
     "email_rewrite": "gpt-6.1-sol",
-    # chosen 2026-10-25 over gpt-4o-mini (docs/email_model_comparison.md, Validator): of another family
+    # chosen 2026-10-25 over gpt-4o-mini (docs/email_model_selection.md, The validator): of another family
     # than the email writer; caught every fault in 239 test emails and failed none of Sol's
     "email_validator": "claude-haiku-5-5",
     "judge": settings.evaluator_model,
@@ -89,7 +89,7 @@ def _llm(model: str = "gpt-4o", effort: str | None = None):
                              max_retries=settings.llm_retries, **extra)
     if model.startswith("local:"):
         # vLLM's OpenAI-compatible server. Thinking is switched off where a model's chat template
-        # has it (Qwen3.5), as the training targets are final answers (docs/sft_plan.md, section 4).
+        # has it (Qwen3.5), as the training targets are final answers.
         # Mistral models use vLLM's Mistral tokenizer, which takes no chat-template arguments.
         name = model.removeprefix("local:")
         extra = {} if "ministral" in name.lower() else {"chat_template_kwargs": {"enable_thinking": False}}
@@ -494,7 +494,7 @@ def finish_node(state: PurchasingState):
     before submitting (the judge's results arrive only now, as the documents do not wait for
     them). The analysis report gets the analysis checks not passed at its top, so a buyer who
     receives only the report (every item Low) still sees when its conclusion needs checking.
-    The quality-check document, with every result, goes to the operator (the user, 2026-10-28)."""
+    The quality-check document, with every result, goes to the operator (2026-10-28)."""
     update = {"report_md": documents.fill_check_notes(state.get("report_md") or "",
                                                       [state.get("evaluation_result") or {}]),
               "pr_md": documents.fill_check_notes(
@@ -578,8 +578,8 @@ def should_continue(state: PurchasingState):
 def email_doc_node(state: PurchasingState):
     """The email draft: everything but the requests is written in code (greeting, purpose, item
     lines, closing, signature, draft note); the validator sees only the agent's requests. When the
-    last draft still failed the validator, it is kept and the draft note says why (the user,
-    2026-10-25)."""
+    last draft still failed the validator, it is kept and the draft note says why
+    (2026-10-25)."""
     failure = "" if state.get("is_valid_email") else (state.get("correction_feedback") or "the reason was not recorded")
     md, problems = documents.render_email(state.get("email_text") or "", state["items"], state["analysis_output"],
                                           state["supplier"], check_failure=failure,
@@ -590,7 +590,7 @@ def email_doc_node(state: PurchasingState):
 
 def email_check_node(state: PurchasingState):
     """E4-E7 on the final email, by the judge, as the email models were compared: warnings shown in
-    the email's draft note, no rewrite (the user, 2026-10-29). The validator's E1-E3 come first."""
+    the email's draft note, no rewrite (2026-10-29). The validator's E1-E3 come first."""
     payload = documents.email_input(state["snapshot_date"], state["supplier"], state["items"], state["analysis_output"])
     requests = documents.email_parts(state.get("email_text") or "")[0]["requests"]
     return {"email_check": email_checks(payload, requests, judge=settings.evaluator_model, retries=settings.judge_retries)}
@@ -615,7 +615,7 @@ documents_flow.set_entry_point("report")
 
 def after_report(state: PurchasingState) -> str:
     """Every item still Low after the analysis: the run ends with the analysis report, whose Summary
-    says so; no purchase request, check or email (the user, 2026-10-25)."""
+    says so; no purchase request, check or email (2026-10-25)."""
     return "approval" if documents.items_to_request(state["items"], state["analysis_output"],
                                                     state["snapshot_date"]) else "end"
 

@@ -32,7 +32,7 @@ def _ensure_dirs() -> None:
 
 
 def cleanup_temp_output() -> None:
-    """Delete files in output/temp older than temp_output_max_age_minutes (HF Space: avoid accumulation)."""
+    """Delete files in output/temp older than temp_output_max_age_minutes (so they do not accumulate)."""
     if not TEMP_DIR.is_dir():
         return
     now = time.time()
@@ -176,7 +176,7 @@ def save_markdown_to_docx(file_path: Path, content: str) -> Path:
 
 
 def markdown_to_docx_bytes(content: str) -> bytes:
-    """Build .docx in memory (no disk). For stream/base64 download (HF Space, Framer)."""
+    """Build .docx in memory (no disk), for files returned base64-encoded."""
     doc = Document()
     _content_to_docx_paragraphs(doc, content)
     buffer = io.BytesIO()

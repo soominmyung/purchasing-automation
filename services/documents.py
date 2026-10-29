@@ -1,6 +1,6 @@
 """
 The documents the pipeline produces, assembled in code from the analysis agent's fields
-(prompt v5; layout and reasons in docs/changelog_2026-10.md, item 16):
+(prompt v5):
 
 - the analysis report, for the buyer: facts first (Findings), then the judgements that cite
   them (Critical Questions, Proposals, Recommended Actions), then the figures per item
@@ -88,7 +88,7 @@ def requested_items(items: list[dict]) -> list[dict]:
 
 
 # Written into the analysis report's Summary when every item is still Low after the analysis; the
-# run ends with the report (the user, 2026-10-25)
+# run ends with the report (2026-10-25)
 NOTHING_TO_REQUEST = ("**No purchase request or supplier email was prepared:** every item is Low risk after this "
                       "analysis, with its latest order date months away.")
 
@@ -472,7 +472,7 @@ def render_analysis_report(supplier: str, snapshot_date: str, items: list[dict],
     changes = changes_by_item(analysis)
     items = with_lead_times(items, analysis, snapshot_date)
     # CHECK_NOTES: the analysis checks not passed, filled in by agents.finish_node (empty when all
-    # passed), so a buyer sees at the top whether the conclusion needs checking (the user, 2026-10-28)
+    # passed), so a buyer sees at the top whether the conclusion needs checking (2026-10-28)
     out = [f"# Purchasing Analysis — {supplier}", "", *_date_header(snapshot_date), "", CHECK_NOTES]
     if data_issue_lines:
         out += [DATA_ISSUES_HEADING, *[f"- {ln}" for ln in data_issue_lines], ""]
@@ -745,7 +745,7 @@ def render_email(email_text: str, items: list[dict], analysis: dict, supplier: s
     note = _red(EMAIL_NOTE)
     if check_failure:
         note += "  \n" + _red(f"The email check still failed after {drafts} drafts; check before sending: {check_failure}")
-    # CHECK_NOTES: the judge's E4-E7 not passed, filled in by agents.finish_node (the user, 2026-10-29)
+    # CHECK_NOTES: the judge's E4-E7 not passed, filled in by agents.finish_node (2026-10-29)
     blocks = [note + "\n\n" + CHECK_NOTES, f"Dear {supplier} Team,", EMAIL_PURPOSE, "\n".join(email_item_lines(items, analysis)),
               parts["requests"], EMAIL_CLOSING, "\n".join(SIGNATURE)]
     return "\n\n".join(b for b in blocks if b) + "\n", problems

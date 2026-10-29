@@ -1,4 +1,4 @@
-"""Pydantic schemas: n8n workflow input/output structures.
+"""Pydantic schemas: the API's request and response structures.
 
 Runtime contract — only RunPipelineRequest / RunPipelineResponse are enforced; they
 validate the API boundary in routers/pipeline.py.

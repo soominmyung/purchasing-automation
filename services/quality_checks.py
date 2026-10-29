@@ -23,7 +23,6 @@ REQUIRED_FIELDS = {"summary": str, "findings": list, "critical_questions": list,
                    "lead_time_changes": list, "quantity_changes": list, "figures_after_changes": list,
                    "recommended_actions": list}
 DEFAULT_LEAD_WEEKS = 18  # services/item_grouping.py, TOTAL_LEAD_WEEKS
-NO_HISTORY_SENTENCE = "No historical supplier or item data available"
 
 CHECK_NAMES = {
     "C1": "Output format",
@@ -53,7 +52,7 @@ CHECK_NAMES = {
 }
 
 # Blocking: the analysis must not be used as it is if this fails; the verdict follows these
-# alone. Warning: usable, but a person should look. (docs/eval_rubric.md, decided 2026-10-23)
+# alone. Warning: usable, but a person should look (docs/eval_rubric.md).
 BLOCKING, WARNING = "blocking", "warning"
 SEVERITY = {
     "C1": BLOCKING, "C2": BLOCKING, "C3": BLOCKING, "C4": BLOCKING, "C5": BLOCKING, "C6": BLOCKING,
@@ -71,7 +70,7 @@ SEVERITY = {
 }
 # Judge checks renumbered 2026-10-29 so the ids run without gaps (J3-J5 and J7b had been dropped
 # earlier). Records, calibration files and hand scores written before keep the old ids; read them
-# through current_id, and only them: J8 is an id in both numberings. Mapping also in docs/eval_rubric.md.
+# through current_id, and only them: J8 is an id in both numberings.
 LEGACY_IDS = {"J6a": "J3a", "J6b": "J3b", "J6c": "J3c", "J7a": "J4", "J8": "J5", "J9": "J6", "J10": "J7", "J11": "J8"}
 
 
@@ -745,8 +744,8 @@ def approval_markdown(result: dict[str, Any]) -> str:
 
 # ----------------------------------------------------------------------------- supplier email text
 
-# The checks the email models were compared on (docs/email_model_comparison.md), beyond exposure:
-# warnings for the buyer, not rewrites (the user, 2026-10-29). Wording as in
+# The checks the email models were compared on (docs/email_model_selection.md), beyond exposure:
+# warnings for the buyer, not rewrites (2026-10-29). Wording as in
 # scripts/compare_email_models.py after its second round.
 EMAIL_CHECK_NAMES = {
     "E4": "Email covers every point to clarify",
