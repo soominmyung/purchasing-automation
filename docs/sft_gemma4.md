@@ -105,8 +105,9 @@ user message
    └─ text                the document body
 ```
 
-In production the history documents are retrieved in code by these headers; in the training data
-the scenario's documents are given directly, in the same form.
+How each item figure is worked out: `docs/stock_figures.md`. In production the history documents
+are retrieved in code by these headers; in the training data the scenario's documents are given
+directly, in the same form.
 
 Every field of the assistant message (the answer to learn):
 
@@ -338,7 +339,7 @@ user message
    └─ text                문서 본문
 ```
 
-운영에서는 이력 문서를 이 헤더로 코드가 검색해 오고, 학습 데이터에서는 시나리오의 문서를 같은 형태로
+품목 수치의 계산 방법은 `docs/stock_figures.md`에 있습니다. 운영에서는 이력 문서를 이 헤더로 코드가 검색해 오고, 학습 데이터에서는 시나리오의 문서를 같은 형태로
 직접 넣었습니다.
 
 Assistant 메시지(배울 답)의 전체 필드:

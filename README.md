@@ -40,7 +40,8 @@ and by an LLM judge before the buyer sees it.
    uploads it. The pipeline validates every row and groups the items by supplier, since ordering,
    negotiation and enquiries all happen per supplier.
 2. **Figures in code.** Risk level from weeks to stockout against the 18-week lead time, latest
-   order and delivery dates, and the suggested quantity (26 weeks of sales after arrival).
+   order and delivery dates, and the suggested quantity (26 weeks of sales after arrival), all
+   counted from the snapshot date ([`docs/stock_figures.md`](docs/stock_figures.md)).
 3. **History in code.** For each supplier and item, the documents of the 12 months before the
    snapshot, the latest five per scope, matched on their headers.
 4. **Analysis (LLM).** `gpt-6.1-sol` states the facts in the history, each citing its document, and
