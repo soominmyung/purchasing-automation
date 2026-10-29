@@ -22,11 +22,12 @@ and by an LLM judge before the buyer sees it.
 
 - **Sep–Dec 2025, at Korea Foods.** Prototyped in n8n with the purchasing team, then built as a
   LangGraph multi-agent system on GPT-4o and deployed on the company's on-premises server, where a
-  few members of the purchasing team used it on real data.
+  few members of the purchasing team used it on real data. A first fine-tuning study, Llama-3-8B
+  with QLoRA SFT, as a self-hosted alternative to the API.
 - **Feb 2026: reconstructed for this repository.** The company's code stayed with the company, so
   the system was rebuilt here from scratch, on synthetic data. The February commits record that
   reconstruction, not the first development.
-- **Mar–Aug 2026.** A first self-hosting study: Llama-3-8B fine-tuning and vLLM serving.
+- **Mar–Aug 2026.** The fine-tuning reproduced here on synthetic data, and the model served with vLLM.
 - **Oct 2026: v5 overhaul.** The work between code and LLMs redrawn, the checks written and the
   judge validated, every agent's model chosen by measurement, and the self-hosting question
   measured again on the current pipeline.
@@ -91,7 +92,7 @@ Each agent's model was chosen on fixed inputs, scored by the checks above and re
 
 | Agent | Chosen | Compared with | Record |
 |---|---|---|---|
-| Analysis | `gpt-6.1-sol`, medium effort | `gpt-4o`, `gpt-6-luna`, `claude-sonnet-5-5`, Gemini Flash (5 models, 7 settings) | [`analysis_model_selection.md`](docs/analysis_model_selection.md) |
+| Analysis | `gpt-6.1-sol`, medium effort | `gpt-4o`, `gpt-6-luna`, `claude-sonnet-5-5`, Gemini Flash (7 models, 9 settings) | [`analysis_model_selection.md`](docs/analysis_model_selection.md) |
 | Judge | `claude-haiku-5-5`, high effort | Haiku without reasoning, Haiku medium, `gpt-6-luna`, Gemini Flash-Lite | [`judge_selection.md`](docs/judge_selection.md) |
 | Purchase request | `gpt-6.1-sol`, low effort | `gpt-4o`, `gpt-5.4-mini`, `gpt-6-luna` at several efforts | [`approval_model_selection.md`](docs/approval_model_selection.md) |
 | Supplier email | `gpt-6.1-sol`, low effort | `gpt-5.4-mini`, `gpt-6-luna` at several efforts | [`email_model_selection.md`](docs/email_model_selection.md) |
@@ -102,7 +103,8 @@ Each agent's model was chosen on fixed inputs, scored by the checks above and re
 ## Self-hosting: measured, not adopted
 
 Gemma 4 12B was served with vLLM on one RTX 5090 and fine-tuned with QLoRA SFT
-([`docs/serving_gemma4_vllm.md`](docs/serving_gemma4_vllm.md)):
+([`docs/serving_gemma4_vllm.md`](docs/serving_gemma4_vllm.md),
+[`docs/sft_gemma4.md`](docs/sft_gemma4.md): the training data and what one example is):
 
 - **Serving is feasible:** in FP8 it takes 13.3 GiB (fits one L4), with 1.6–1.8× the throughput of
   bf16 and a quality difference within run-to-run variation.
