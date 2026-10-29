@@ -22,7 +22,7 @@ CASES = ROOT / "dev" / "cases"
 
 TOOL_CALLS = {
     "history_server": [
-        # the store on this PC holds three records migrated from the earlier store: one about
+        # the store on this PC holds three records: one about
         # SupplierA (undated), one about item 100004 ItemE (2024-11-28), one about item 100000
         ("purchasing_history", {"supplier_name": "SupplierA", "item_codes": ["100004", "100000"],
                                 "as_of": "2025-04-05", "limit": 3}),

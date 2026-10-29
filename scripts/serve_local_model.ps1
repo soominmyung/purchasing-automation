@@ -1,4 +1,4 @@
-# Serve one SFT candidate with vLLM on this PC's RTX 5090 (docs/sft_plan.md, section 5).
+# Serve one SFT candidate with vLLM on this PC's RTX 5090.
 # The pipeline calls it as "local:<name>" (config.py local_llm_url, services/agents._llm).
 #
 #   .\scripts\serve_local_model.ps1 -Model Qwen/Qwen3.5-9B -Name qwen3.5-9b

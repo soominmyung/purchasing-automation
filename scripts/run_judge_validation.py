@@ -1,5 +1,5 @@
 """
-Judge validation, prompt v5 (docs/judge_validation.md): each candidate judges the calibration set
+Judge validation, prompt v5 (docs/judge_selection.md): each candidate judges the calibration set
 (eval_data/judge_calibration_v5.jsonl) with the production judge prompt and wording
 (services/quality_checks.py), and every verdict is recorded with its tokens and time.
 
@@ -39,8 +39,8 @@ from services import quality_checks as q  # noqa: E402
 CALIBRATION = ROOT / "eval_data" / "judge_calibration_v5.jsonl"
 SETTINGS = RUNS = None  # set by --round: eval_results/judge_validation_v5_round<N>_{settings.json,runs.jsonl}
 
-# The plan agreed on 2026-10-24 (docs/judge_validation.md, Candidates): Haiku and Gemini 3.1
-# Flash-Lite are the production candidates, Luna a reference of the analysis model's family.
+# Candidates (docs/judge_selection.md): Haiku and Gemini 3.1 Flash-Lite are the production
+# candidates, Luna a reference of the analysis model's family.
 # Sonnet and Gemini Flash are left out on cost (and Flash on availability).
 PLANS = {
     "1": [{"model": "anthropic:claude-haiku-5-5", "modes": ["single", "split"], "reps": 3},
@@ -48,7 +48,7 @@ PLANS = {
           {"model": "openai:gpt-6-luna", "modes": ["single", "split"], "reps": 3}],
     # round 2 (2026-10-24): Haiku with the answer shaped like the scoring sheet (structured outputs,
     # format=schema) at medium (its default) and high effort; broken verdict strings read, every figure
-    # in the figures after the changes (docs/judge_validation.md, Results). Temperature cannot be set.
+    # in the figures after the changes (docs/judge_selection.md). Temperature cannot be set.
     "2": [{"model": "anthropic:claude-haiku-5-5?effort=medium&format=schema", "modes": ["single", "split"], "reps": 3},
           {"model": "anthropic:claude-haiku-5-5?effort=high&format=schema", "modes": ["single", "split"], "reps": 3}],
 }

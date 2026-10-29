@@ -1,5 +1,5 @@
 """
-Calibration set for judge validation, prompt v5 (docs/judge_validation.md).
+Calibration set for judge validation, prompt v5 (docs/judge_selection.md).
 
 Seeded faults: each is one base output with one deliberate fault aimed at one judge check, so the
 right verdict for that check is known to be "fail". Every fault is written out below as an exact

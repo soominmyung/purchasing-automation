@@ -50,7 +50,7 @@ MAX_DRAFTS = 3  # as agents.should_continue
 JUDGE = settings.evaluator_model
 REPS = 3
 
-# The judge's checks, from the email prompt's rules as the user set them (2026-10-25; second wording
+# The judge's checks, from the email prompt's rules (2026-10-25; second wording
 # after the first run: E4 fails a question on an item outside the email, E6 takes a point's question,
 # E7 no longer fails wording taken over from a point)
 E_TEXT = {

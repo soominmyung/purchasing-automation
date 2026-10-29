@@ -41,7 +41,7 @@ if "--timing" in sys.argv:  # the texts written from the analyses rebuilt after 
     BASE = ROOT / "eval_results" / "v5_base_outputs_timing.jsonl"
     OUT = ROOT / "eval_results" / "approval_model_judged_timing.jsonl"
     SETTINGS = ROOT / "eval_results" / "approval_model_judged_timing_settings.json"
-if "--estimate" in sys.argv:  # the chosen setting on the analyses rebuilt after changelog item 25
+if "--estimate" in sys.argv:  # the chosen setting on the analyses rebuilt after the UK-demand and estimate-basis rules
     TEXTS = ROOT / "eval_results" / "approval_model_comparison_estimate.jsonl"
     BASE = ROOT / "eval_results" / "v5_base_outputs_estimate.jsonl"
     OUT = ROOT / "eval_results" / "approval_model_judged_estimate.jsonl"
@@ -138,7 +138,7 @@ def report() -> None:
 def reading_notes() -> dict:
     """(setting, scenario) -> the issue note from reading the text: the first run's notes from
     eval_results/approval_model_comparison.md, the effort runs' from approval_model_issues_effort.json."""
-    if "--timing" in sys.argv:  # read in full, no issue found for either Sol setting (docs/approval_model_comparison.md, round 5)
+    if "--timing" in sys.argv:  # read in full, no issue found for either Sol setting (docs/approval_model_selection.md)
         return {}
     if "--revised" in sys.argv:  # the texts written with the revised prompt have notes of their own
         revised = json.loads((ROOT / "eval_results" / "approval_model_issues_revised.json").read_text(encoding="utf-8"))
@@ -165,7 +165,7 @@ def sheet() -> None:
     maj, notes = majority(rows), reading_notes()
     L = ["# Purchase request narrative: every model and effort, judged", "",
          f"Judge: `{JUDGE}`, P1a-c, three runs, majority verdict. \"Reading\": the issue found by reading the text "
-         "(Claude, before the judge's verdicts). Settings: `scripts/compare_approval_models.py`.", ""]
+         "(before the judge's verdicts). Settings: `scripts/compare_approval_models.py`.", ""]
     for b in bases:
         sid, p = b["scenario_id"], b["approval_input"]
         L += [f"## {sid} · {b['category']} · {p['supplier']}", "", "**Input given to the agent**", ""]

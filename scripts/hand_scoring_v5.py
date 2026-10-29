@@ -1,5 +1,5 @@
 """
-Hand scoring for judge validation, prompt v5 (docs/judge_validation.md, the false-alarm test).
+Hand scoring for judge validation, prompt v5 (docs/judge_selection.md).
 
 A person scores unmodified v5 base outputs (eval_results/v5_base_outputs.jsonl) on every judge check
 that applies, worded exactly as the judge receives it and chosen by the same code the judge uses,
@@ -60,8 +60,8 @@ def sheet() -> None:
          "(which part of the output decides it). Judge the output against the inputs shown, and only on what "
          "the check asks.", "",
          "각 검사의 **Verdict** 칸에 `pass` 또는 `fail`을, **Reason** 칸에 판정 이유(출력의 어느 부분 때문인지)를 "
-         "적어 주세요. 검사 문구(영어)는 judge가 받는 문장 그대로이고, 아래 한국어는 설명입니다. 끝나면 "
-         "`python scripts/hand_scoring_v5.py collect`를 실행합니다.", "",
+         "적는다. 검사 문구(영어)는 judge가 받는 문장 그대로이고, 아래 한국어는 설명이다. 작성 후 "
+         "`python scripts/hand_scoring_v5.py collect`로 판정을 모은다.", "",
          "Source: `eval_results/v5_base_outputs.jsonl` (analysis gpt-6.1-sol, purchase request gpt-4o; first "
          "answers, unmodified).", ""]
     for sid in CHOSEN:

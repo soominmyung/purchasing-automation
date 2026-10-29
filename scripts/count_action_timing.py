@@ -1,6 +1,6 @@
 """
 How the analysis agent's recommended actions state their timing, per base-output file
-(docs/approval_model_comparison.md, round 5). Per file: actions; those saying they come before the
+(docs/approval_model_selection.md). Per file: actions; those saying they come before the
 order, alongside it, after it; and dates in actions. "Overdue + before": an action that puts
 something before the order while concerning an item whose latest order date has passed or falls on
 the snapshot date, and does not also say the overdue order goes ahead now; read each one, since an

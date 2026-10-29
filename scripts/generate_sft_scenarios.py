@@ -1,5 +1,5 @@
 """
-Training scenarios for the SFT retraining (docs/sft_plan.md, section 2), in the evaluation set's
+Training scenarios for the SFT retraining, in the evaluation set's
 format: one supplier, its stock rows, and history documents with headers (supplier, items, date).
 
 The mix is fixed by type, not left to the generator. Names are kept apart from the 25

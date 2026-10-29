@@ -1,5 +1,5 @@
 """
-Tables for the Gemma 4 12B SFT results (docs/sft_gemma4_results.md): every model on the 25
+Tables for the Gemma 4 12B SFT results: every model on the 25
 evaluation cases (prompt with the figures_after_changes rule, tag fac-rule) and on the tie-in
 generalisation set (tag tie-in).
 

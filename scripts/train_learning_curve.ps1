@@ -1,4 +1,4 @@
-# The learning curve (docs/sft_plan.md): all passing runs first (seed 1), then 25 and 50 runs, then the
+# The learning curve: all passing runs first (seed 1), then 25 and 50 runs, then the
 # second seed of each. Each run is scripts/train_sft_v5.py in the Unsloth container; adapters and logs in C:\sft\runs.
 $Root = Split-Path $PSScriptRoot -Parent
 New-Item -ItemType Directory -Force C:\sft\work\scripts, C:\sft\work\training_data\sft_v5, C:\sft\runs | Out-Null

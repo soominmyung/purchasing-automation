@@ -1,5 +1,5 @@
 """
-SFT of the v5 analysis agent on Gemma 4 12B (docs/sft_plan.md, section 4), QLoRA with Unsloth on
+SFT of the v5 analysis agent on Gemma 4 12B, QLoRA with Unsloth on
 the RTX 5090, run inside the Unsloth container (scripts/train_learning_curve.ps1).
 
 The training examples are the teacher runs that passed every blocking check

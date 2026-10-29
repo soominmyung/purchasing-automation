@@ -1,5 +1,5 @@
 """
-Judge validation, the false-alarm test (docs/judge_validation.md): judge configurations score the
+Judge validation, the false-alarm test (docs/judge_selection.md): judge configurations score the
 six hand-scored v5 base outputs (eval_data/hand_scores_v5.jsonl: 89 verdicts, 88 pass and 1 fail),
 each output three times, with the production prompt and wording. A judge's "fail" on a check the
 person passed is a false alarm.
