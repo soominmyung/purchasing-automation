@@ -1,5 +1,5 @@
 """
-Teacher data for the SFT retraining (docs/sft_plan.md, section 2.2): gpt-6.1-sol at medium effort
+Teacher data for the SFT retraining: gpt-6.1-sol at medium effort
 as the production analysis agent on each generated scenario, scored by the production checks
 (code checks C1-C10 and the judge). Every run is kept with the exact messages sent and the raw
 text the model returned, so the training example is exactly what the pipeline sends and receives.
@@ -26,7 +26,7 @@ sys.path.insert(0, str(ROOT))
 from langchain_core.messages import HumanMessage, SystemMessage  # noqa: E402
 
 from config import settings  # noqa: E402
-from scripts.gen_eval_outputs_gpt4o import SNAPSHOT_DATE, preprocess  # noqa: E402
+from scripts.eval_scenarios import SNAPSHOT_DATE, preprocess  # noqa: E402
 from services.agents import (_extract_json_from_text, _llm, analysis_history, document_references,  # noqa: E402
                              from_model, history_for_model)
 from services.prompts import ANALYSIS_AGENT_SYSTEM, PROMPT_VERSION  # noqa: E402

@@ -2,7 +2,7 @@
 Base outputs for judge validation, prompt v5: the production analysis agent and approval agent
 on the 25 evaluation scenarios (eval_data/eval_scenarios.jsonl and holdout_scenarios.jsonl).
 
-Each scenario goes through the production preprocessing (scripts/gen_eval_outputs_gpt4o.py,
+Each scenario goes through the production preprocessing (scripts/eval_scenarios.py,
 preprocess), then one analysis call with the scenario's history documents in place of retrieval,
 then the purchase request's narrative from the same input the pipeline gives it. No checks and no
 rewrites: these are the outputs the calibration set is built from (seeded faults are edits of
@@ -25,7 +25,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from scripts.gen_eval_outputs_gpt4o import SNAPSHOT_DATE, load_scenarios, preprocess  # noqa: E402
+from scripts.eval_scenarios import SNAPSHOT_DATE, load_scenarios, preprocess  # noqa: E402
 from services import documents  # noqa: E402
 from services.agents import AGENT_MODELS, run_analysis_agent, run_approval_agent  # noqa: E402
 from services.prompts import ANALYSIS_AGENT_SYSTEM, APPROVAL_AGENT_SYSTEM, PROMPT_VERSION  # noqa: E402

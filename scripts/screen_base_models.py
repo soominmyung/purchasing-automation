@@ -1,5 +1,5 @@
 """
-SFT base-model screening (docs/sft_plan.md, section 5): every candidate, untuned, as the analysis
+SFT base-model screening: every candidate, untuned, as the analysis
 agent on the 25 evaluation scenarios, with the production prompt (v5) and the production checks
 (code checks C1-C10 and the judge, as in a run), against gpt-6.1-sol's outputs on the same prompt.
 
@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from config import settings  # noqa: E402
-from scripts.gen_eval_outputs_gpt4o import SNAPSHOT_DATE, load_scenarios, preprocess  # noqa: E402
+from scripts.eval_scenarios import SNAPSHOT_DATE, load_scenarios, preprocess  # noqa: E402
 from services import agents  # noqa: E402
 from services.prompts import ANALYSIS_AGENT_SYSTEM, PROMPT_VERSION  # noqa: E402
 from services.quality_checks import evaluate_analysis  # noqa: E402

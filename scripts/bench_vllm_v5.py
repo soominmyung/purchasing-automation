@@ -4,8 +4,7 @@ prompt and the pipeline's user JSON for the evaluation scenarios), sent at sever
 levels to a vLLM server. Reports output tokens/s across all requests and p50/p95 latency per
 level. Rising throughput with flat latency is continuous batching at work.
 
-scripts/bench_vllm.py measured the Llama-3-8B study with a short placeholder prompt and 128 output
-tokens. This one uses the real request (about 4,800 prompt tokens, answers up to max_tokens).
+The request is the real one (about 4,800 prompt tokens, answers up to max_tokens).
 
 Run (server on :8000): python scripts/bench_vllm_v5.py --model gemma-4-12b-it --label bf16
 Out: eval_results/serving_bench_<label>.json
@@ -23,7 +22,7 @@ sys.path.insert(0, str(ROOT))
 
 from openai import OpenAI  # noqa: E402
 
-from scripts.gen_eval_outputs_gpt4o import SNAPSHOT_DATE, load_scenarios, preprocess  # noqa: E402
+from scripts.eval_scenarios import SNAPSHOT_DATE, load_scenarios, preprocess  # noqa: E402
 from services.agents import analysis_history, history_for_model  # noqa: E402
 from services.prompts import ANALYSIS_AGENT_SYSTEM  # noqa: E402
 
