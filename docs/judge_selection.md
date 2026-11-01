@@ -26,9 +26,10 @@ are defined in `docs/eval_rubric.md`.
 
 ## 3. The tests
 
-1. **Seeded faults** (`eval_data/judge_calibration_v5.jsonl`): 51 samples, each a real output with
-   one fault planted for one check (46) or a real fault (5). Detection, and flip (the verdict
-   changing across three runs).
+1. **Seeded faults** (`eval_data/judge_calibration_v5.jsonl`): 51 samples: real outputs with
+   one fault planted for one check (46), real faults (3) and real outputs without a fault that a
+   judge had failed (2). Detection on the 49 with a fault, and flip (the verdict changing across
+   three runs), each judged three times.
 2. **False alarms**: six unmodified outputs, one of each kind of scenario, scored by hand on every
    check (89 verdicts, `eval_data/hand_scoring_sheet_v5.md`). A judge's fail where the hand score
    passed is a false alarm.
@@ -39,10 +40,13 @@ Rule set before the runs: detection ≥ 90%, false alarms ≤ 10%, flip ≤ 5%; 
 
 | Judge | Detection | Flip (seeded) | False alarms | Cost per judgement | Time |
 |---|---:|---:|---:|---:|---:|
-| Haiku, forced tool (no thinking) | 83.7% | 17.6% | 2.7% | $0.0018 | 6 s |
-| `gpt-6-luna` | 89.1% | — | 17.0% | $0.0020 | 34 s |
+| Haiku, forced tool (no thinking) | 83.7% | 17.6% | 2.7% | $0.0012 | 6 s |
+| `gpt-6-luna` | 89.1% | 7.8% | 17.0% | $0.0013 | 24 s |
 | Haiku, thinking, medium | 91.2% | 5.9% | 9.5% | $0.0018 | 12 s |
 | **Haiku, thinking, high** | **93.9%** | **3.9%** | **8.0%** | **$0.0024** | **16 s** |
+
+Detection, flip, cost and time are from the seeded-fault test, one call per judgement
+(`docs/judge_validation.md`, rounds 1 and 2, single mode); false alarms from the separate test.
 
 Gemini Flash-Lite did not finish a round reliably. Round 1 called Haiku through a forced tool call,
 which leaves it no room to think while Luna reasoned; round 2 therefore let Haiku think first and

@@ -104,7 +104,7 @@ any required price approval without delaying release".
 | `gpt-6-luna`, none | 2 | 7 | 3.6 s | $0.0002 |
 | `gpt-6-luna`, low | 3 | 6 | 4.1 s | $0.0003 |
 | `gpt-6-luna`, medium | 4 | 4 | 10.3 s | $0.0006 |
-| `gpt-6.1-sol`, low | 1 (a stricter reading) | 0 | 5.3 s | $0.0056 |
+| `gpt-6.1-sol`, low | 1 | 1 (an ambiguous date) | 5.3 s | $0.0056 |
 | `gpt-6.1-sol`, medium | 0 | 0 | 12.8 s | $0.0076 |
 
 Every "before ordering" left in the Sol texts carries over an analysis action that says so, for an
@@ -113,7 +113,12 @@ still misplaced figures and wording: the bridging delivery date given as the ord
 on 2026-03-02 for delivery by 2026-05-25"), a finding inverted ("ComponentZ has historically been
 substituted" for "ComponentZ historically substitutes"), frequencies weakened ("can experience" for
 "often experiences"), a quality finding attributed to the supplier. More reasoning helped Luna a
-little (7 → 6 → 4); Sol carried the same inputs over cleanly even at low effort (18 reasoning tokens).
+little (7 → 6 → 4); Sol carried the same inputs over cleanly even at low effort (18 reasoning tokens),
+apart from one ambiguous date at low: "conditional on confirmation of an achievable delivery
+commitment by 2026-09-14" means a commitment to deliver by that date, but also reads as a deadline
+for the confirmation, which the action puts before the order; the judge read it that way in 2 of 3
+runs. It was counted as an issue found by reading when the outputs were read again on 2026-11-01;
+the round-5 record (`docs/approval_model_comparison.md`) gives 0, as a stricter judge reading.
 
 ## 4. What each round showed
 
@@ -153,7 +158,8 @@ less. On the same inputs, the others did not:
 - `gpt-5.4-mini`: this tool's terms, false statements and empty placeholders in the approvers' text;
 - `gpt-4o`: its own assessment of the supplier, and figures wrong.
 
-**Why low effort:** on the latest prompts (round 5) low and medium both had no issue in 25 outputs;
+**Why low effort:** on the latest prompts (round 5) medium had no issue in 25 outputs and low one
+(an ambiguous date);
 low takes less than half the time (5.3 s against 12.8 s) and about three quarters of the cost
 ($0.0056 against $0.0076). The choice rests on the latest prompts: in rounds 2–4 low had more
 outputs with an issue (13 against 6, most of them a check moved before the order), but on prompts

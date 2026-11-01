@@ -81,9 +81,9 @@ Definitions: [`docs/eval_rubric.md`](docs/eval_rubric.md). Check ids were renumb
 records written before use the old ids (mapping: `LEGACY_IDS` in `services/quality_checks.py`).
 
 **The judge was validated before use** ([`docs/judge_selection.md`](docs/judge_selection.md)):
-on 51 samples with planted faults it caught 93.9%, with 3.9% of verdicts changing between runs and
-8.0% false alarms on 89 hand-scored verdicts. Letting Haiku reason before answering raised its
-detection from 83.7%.
+on 51 samples (49 with a fault, 2 without) it caught 93.9% of the faults, with 3.9% of verdicts
+changing between runs, and 8.0% false alarms on 89 hand-scored verdicts of six other outputs.
+Letting Haiku reason before answering raised its detection from 83.7%.
 
 ---
 
