@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from config import settings
+from services.prompts import prompt_hashes
 
 RUNS_DIR = Path(__file__).resolve().parent.parent / settings.run_records_dir
 
@@ -112,6 +113,7 @@ class RunRecord:
             "status": "running",
             "client_ip": ip,
             "prompt_version": settings.prompt_version,
+            "prompt_sha256": prompt_hashes(),
             "models": models,
             "input": {"filename": csv_filename, "raw_csv": csv_content},
             "groups": [],

@@ -11,7 +11,7 @@ the pipeline's real analysis request.
 
 - **Memory:** fp8 used 13.3 GiB against 23.9 GiB, 44% less, which fits an L4.
 - **Throughput:**
-  - fp8 gave 1.6–1.8× the throughput of bf16, with lower latency;
+  - fp8 gave 1.50–1.84× the throughput of bf16, with lower latency;
   - continuous batching raised throughput 8.6× (bf16) and 10× (fp8) from 1 to 16 concurrent
     requests.
 - **Quality:**

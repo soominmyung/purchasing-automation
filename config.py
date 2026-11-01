@@ -77,10 +77,11 @@ class Settings(BaseSettings):
     langchain_endpoint: str = "https://api.smith.langchain.com"
     langchain_api_key: Optional[str] = None
     langchain_project: str = "purchasing-automation"
-    # True wherever real company data runs: traces then carry structure, timings, token
-    # counts and model names, but no prompt or response text. Error messages are still
-    # sent, so exceptions must not quote data.
-    langsmith_hide_content: bool = False
+    # On by default, so that real company data never reaches LangSmith by omission: traces then
+    # carry structure, timings, token counts and model names, but no prompt or response text.
+    # Error messages are still sent, so exceptions must not quote data. Turn it off
+    # (LANGSMITH_HIDE_CONTENT=false) only on synthetic data.
+    langsmith_hide_content: bool = True
 
     class Config:
         env_file = ".env"

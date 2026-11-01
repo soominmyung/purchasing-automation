@@ -12,8 +12,8 @@ and by an LLM judge before the buyer sees it.
 |---|---|
 | Code and LLM roles | Code: risk, order dates and quantities, history retrieval, document assembly. LLM: reading the history, judgements, wording |
 | History retrieval | Metadata-based RAG: documents found by their supplier, item and date headers, given to the model whole |
-| Quality checks | 36 checks across the three documents (code and LLM judge); a failed analysis or email is sent back with the reasons, up to two rewrites |
-| Model choice | Every agent's model and effort chosen on the same inputs, scored by the checks and read by hand (see [Model choice](#model-choice)) |
+| Quality checks | 36 checks across the three documents (code and LLM judge); a blocking failure in the analysis, or internal data in the email, is sent back with the reasons for up to two rewrites, and review-only failures are noted in the draft |
+| Model choice | Every agent's model and effort chosen on the same inputs, scored by the checks and with every output reviewed manually (see [Model choice](#model-choice)) |
 | Time and cost | About 80 s and $0.05 for one supplier with seven items, all checks included, no rewrite |
 
 ---
@@ -28,13 +28,15 @@ and by an LLM judge before the buyer sees it.
   the system was rebuilt here from scratch, on synthetic data. The February commits record that
   reconstruction, not the first development.
 - **Mar–Aug 2026.** The fine-tuning reproduced here on synthetic data, and the model served with vLLM.
-- **Oct 2026: v5 overhaul.** The work between code and LLMs redrawn, the checks written and the
-  judge validated, every agent's model chosen by measurement, and the self-hosting question
-  measured again on the current pipeline.
+- **Oct 2026: v5 overhaul.** The division of work between code and LLMs redesigned, the checks
+  formalised, the judge validated, every agent's model benchmarked, and self-hosting reassessed on
+  the current pipeline.
 
 ---
 
 ## How a run works
+
+<img src="docs/images/pipeline.png" width="100%" alt="The pipeline from the stock CSV to the buyer's drafts: input and retrieval, analysis with code and judge checks and rewrites, documents written and checked in parallel, and the output with run records">
 
 1. **Input.** The buyer exports the stock position from an SAP Business One user query as a CSV and
    uploads it. The pipeline validates every row and groups the items by supplier, since ordering,
@@ -49,10 +51,11 @@ and by an LLM judge before the buyer sees it.
    facts it rests on. Code recalculates every figure after a proposed change.
 5. **Checks.** Code checks first; then the judge (`claude-haiku-5-5`). A blocking failure sends the
    analysis back with the reasons, up to two rewrites; if it still fails, the attempt with the
-   fewest failures is used and re-checked.
+   fewest blocking failures is used and re-checked.
 6. **Documents.** The analysis report is assembled in code. If anything needs ordering, the
-   purchase request (`gpt-6.1-sol`) and the supplier email (`gpt-6.1-sol`) are written in parallel,
-   each from only what it needs: the email agent never receives stock figures or risk levels.
+   purchase request (`gpt-6.1-sol`) is written first; its check then runs in parallel with the
+   supplier email (`gpt-6.1-sol`) and the email's validation. Each agent gets only what it needs: the
+   email input leaves out the stock and risk fields and the questions marked internal.
 7. **Document checks.** The purchase request is checked for added or altered facts; the email is
    checked for anything internal (code and Haiku, rewritten up to twice) and then for coverage and
    tone (judge, warnings).
@@ -89,7 +92,8 @@ Letting Haiku reason before answering raised its detection from 83.7%.
 
 ## Model choice
 
-Each agent's model was chosen on fixed inputs, scored by the checks above and read by hand:
+Each agent's model was chosen on fixed inputs, scored by the checks above, with every output
+reviewed manually:
 
 | Agent | Chosen | Compared with | Record |
 |---|---|---|---|
@@ -107,8 +111,8 @@ Gemma 4 12B was served with vLLM on one RTX 5090 and fine-tuned with QLoRA SFT
 ([`docs/serving_gemma4_vllm.md`](docs/serving_gemma4_vllm.md),
 [`docs/sft_gemma4.md`](docs/sft_gemma4.md): the training data and what one example is):
 
-- **Serving is feasible:** in FP8 it takes 13.3 GiB (fits one L4), with 1.6–1.8× the throughput of
-  bf16 and a quality difference within run-to-run variation.
+- **Serving is feasible:** in FP8 it takes 13.3 GiB (fits one L4), with 1.50–1.84× the throughput of
+  bf16 across 1 to 16 concurrent requests, and a quality difference within run-to-run variation.
 - **The model is not good enough:** on the 25 evaluation cases the untuned model passed every
   blocking check in 14, against 24 for `gpt-6.1-sol`; every fine-tuned adapter did worse (3–10).
   Production stays on `gpt-6.1-sol`.
@@ -120,10 +124,12 @@ short placeholder prompt; its figures are not comparable with these and are no l
 
 ## Data protection
 
-- The email agent is not given stock figures, risk levels or internal questions, and its output is
-  checked for them.
-- LangSmith receives the run tree, times, tokens and model names only; prompt and response text and
-  supplier names are kept out.
+- The email input leaves out the stock and risk fields and the questions marked internal; the
+  supplier questions it carries were checked for internal data in the analysis (J5), and the email
+  itself is checked again before it goes out (E1–E3).
+- LangSmith: content hiding is on by default (`langsmith_hide_content`). Prompt and response text is
+  hidden and supplier names are left out of trace names and metadata; timings, token counts, model
+  names and error messages are still sent, and error messages are written to carry no data.
 - Each run is recorded on the company server as JSON (inputs, history used, outputs, checks, times,
   tokens), with run and check statistics appended to CSV files.
 - All data in this repository is synthetic.
@@ -141,6 +147,9 @@ pip install -r requirements.txt
 cp .env.example .env        # set OPENAI_API_KEY, ANTHROPIC_API_KEY, API_ACCESS_TOKEN
 uvicorn main:app --reload   # API docs at http://localhost:8000/docs
 ```
+
+Tracing to LangSmith is on in `.env.example`; set `LANGCHAIN_TRACING_V2=false` to run without it. On
+synthetic data, `LANGSMITH_HIDE_CONTENT=false` shows the prompt and response text in the traces.
 
 Or with Docker: `docker build -t purchasing-ai .` then `docker run -p 8080:8080 --env-file .env purchasing-ai`.
 
@@ -186,7 +195,7 @@ runs one through the whole pipeline and records it under `dev/runs/`; a sample r
 | `routers/` | API: `pipeline` (run), `ingest` (history documents), `output` (downloads) |
 | `services/` | `agents` (LangGraph graph and agents), `quality_checks` (code checks and judge), `documents` (document assembly), `item_grouping` (risk, dates, quantities), `vector_store` and `history_folder` (history store and shared-folder sync), `run_record`, `security` |
 | `utils/` | CSV parsing and validation, PDF reading, Word output |
-| `prompts/v5/` | The prompts in use (`prompt_version` in `config.py`); a version is frozen once results are recorded with it, and changes go into a new version folder |
+| `prompts/v5/` | The prompts in use (`prompt_version` in `config.py`); each run record stores the version and a SHA-256 of every prompt as loaded, and development runs keep the full text |
 | `scripts/` | Model comparisons, judge validation, dev runs, SFT and serving experiments |
 | `eval_data/`, `eval_results/` | Evaluation scenarios, judge calibration samples and hand scores; raw results of every comparison |
 | `dev/` | Development cases (kept apart from the evaluation set) and one recorded run |
