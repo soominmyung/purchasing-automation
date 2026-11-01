@@ -6,7 +6,7 @@ request** for the approvers and a **draft email to the supplier**, one set per s
 retrieval and document assembly; LLMs read the history and write; every draft is checked by code
 and by an LLM judge before the buyer sees it.
 
-> **Portfolio (Korean, 7 pages):** [docs/Purchasing_AI_Suite_ko.pdf](docs/Purchasing_AI_Suite_ko.pdf)
+> **Portfolio (7 pages):** [English](docs/Purchasing_AI_Suite_en.pdf) · [Korean](docs/Purchasing_AI_Suite_ko.pdf)
 
 | | |
 |---|---|
@@ -190,7 +190,7 @@ runs one through the whole pipeline and records it under `dev/runs/`; a sample r
 | `scripts/` | Model comparisons, judge validation, dev runs, SFT and serving experiments |
 | `eval_data/`, `eval_results/` | Evaluation scenarios, judge calibration samples and hand scores; raw results of every comparison |
 | `dev/` | Development cases (kept apart from the evaluation set) and one recorded run |
-| `docs/` | Quality checks, model selection records, serving measurement, portfolio (Korean PDF) |
+| `docs/` | Quality checks, model selection records, serving measurement, portfolio (English and Korean PDFs) |
 | `mcp_servers/` | History and replenishment MCP servers, built and tested but not used in the pipeline |
 
 ## Tech stack
