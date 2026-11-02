@@ -2,7 +2,8 @@
 Quality checks on the analysis agent's output, defined once and used in two places:
 
 - the evaluation node, which checks every analysis the pipeline produces
-- scripts/eval_v2_score.py, which scores systems offline (see docs/eval_rubric.md)
+- the evaluation scripts (scripts/screen_base_models.py, build_sft_teacher_data.py and the judge
+  validation), which score outputs offline (see docs/eval_rubric.md)
 
 Code checks are deterministic and run on the structured output. Judge checks are yes/no
 questions put to a model that did not write the analysis. Which judge checks apply is

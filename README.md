@@ -151,6 +151,11 @@ uvicorn main:app --reload   # API docs at http://localhost:8000/docs
 Tracing to LangSmith is on in `.env.example`; set `LANGCHAIN_TRACING_V2=false` to run without it. On
 synthetic data, `LANGSMITH_HIDE_CONTENT=false` shows the prompt and response text in the traces.
 
+**Access.** Requests carry the `X-API-Key` header, checked against `API_ACCESS_TOKEN`; with no token
+set, every request passes, so set one wherever others can reach the API. The calls that run the
+models are also limited per client address per day (`RATE_LIMIT_PER_DAY`, default 5, counted in
+memory); behind a proxy, `TRUST_FORWARDED_FOR=true` counts each user rather than the proxy.
+
 Or with Docker: `docker build -t purchasing-ai .` then `docker run -p 8080:8080 --env-file .env purchasing-ai`.
 
 **History documents.** Upload PDFs to `POST /api/ingest/history` (or a ZIP to `/api/ingest/history/zip`).

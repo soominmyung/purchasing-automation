@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Depends
-from services.security import verify_api_access
+from services.security import verify_api_key
 from fastapi.responses import FileResponse
 
 from config import settings
@@ -31,7 +31,7 @@ def _resolve_path(filename: str) -> Path | None:
     return None
 
 
-@router.get("/output/list", dependencies=[Depends(verify_api_access)])
+@router.get("/output/list", dependencies=[Depends(verify_api_key)])
 def list_output():
     """
     List generated .docx in output/temp (when use_temp_for_output), for a download list.
@@ -48,7 +48,7 @@ def list_output():
     return {"files": files, "temp_expiry_minutes": getattr(settings, "temp_output_max_age_minutes", 5)}
 
 
-@router.get("/output/download", dependencies=[Depends(verify_api_access)])
+@router.get("/output/download", dependencies=[Depends(verify_api_key)])
 def download_output(filename: str):
     """
     Download a generated .docx from output/temp (when use_temp) or output/analysis|pr|email_draft.
