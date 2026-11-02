@@ -119,11 +119,13 @@ def main() -> None:
 
 
 def sheet() -> None:
-    """eval_results/approval_model_comparison.md: each scenario's input facts and the four models'
+    """eval_results/approval_model_comparison.md: each scenario's input facts and every setting's
     Purpose and Justification side by side, for reading."""
     rows = [json.loads(l) for l in open(OUT, encoding="utf-8") if l.strip()]
     bases = {b["scenario_id"]: b for b in (json.loads(l) for l in open(BASE, encoding="utf-8") if l.strip())}
-    L = ["# Purchase request narrative: four models, same input", "",
+    # each (model, effort) setting once, in the order they were run; rows of the first run carry no "config"
+    configs = list(dict.fromkeys(label(r["model"], r.get("effort")) for r in rows))
+    L = ["# Purchase request narrative: every setting, same input", "",
          "Each model got the approval input saved with the v5 base output (no style examples in the store).", ""]
     for sid in bases:
         b = bases[sid]
@@ -137,8 +139,9 @@ def sheet() -> None:
         L += [f"- Finding ({f['about']}) {f['text']} {f['documents'] or ''}" for f in p["findings"]]
         L += [f"- Change: {c['item']} {c['what']} {c['from']} → {c['to']}: {c['reason']}" for c in p["changes"]]
         L += [f"- Action: {a['action']}" for a in p["actions"]] + [""]
-        for cfg in dict.fromkeys(label(r["model"], r.get("effort")) for r in rows):
-            r = next((r for r in rows if label(r["model"], r.get("effort")) == cfg and r["scenario_id"] == sid), None)
+        for cfg in configs:
+            r = next((r for r in rows
+                      if label(r["model"], r.get("effort")) == cfg and r["scenario_id"] == sid), None)
             if not r:
                 continue
             ap = r["approval"]
