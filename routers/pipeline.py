@@ -33,7 +33,6 @@ from utils.docx_utils import (
 from services.item_grouping import group_by_supplier_and_recommend, group_risk_level, screen_rows
 from services.agents import (
     AGENT_MODELS,
-    run_purchasing_pipeline_graph,
     purchasing_graph,
 )
 from services.run_record import RunRecord, client_ip
@@ -95,11 +94,6 @@ def _run_pipeline_inner(
         _, excluded = screen_rows(rows)
         reasons = " ".join(e["line"] for e in excluded[:10])
         raise HTTPException(status_code=400, detail=f"No row could be analysed. {reasons}")
-    if not groups:
-        raise HTTPException(
-            status_code=400,
-            detail="No groups by supplier. Check SupplierName/Supplier column.",
-        )
     progress("item_grouping_done", {"count": len(groups)})
 
     reports = []
@@ -118,13 +112,6 @@ def _run_pipeline_inner(
             risk_level = group.get("risk_level") or group_risk_level(items)
             safe_supplier = _sanitize_filename(supplier)
 
-            # --- LangGraph Execution with Progress Streaming ---
-            input_data = {
-                "snapshot_date": snapshot_date,
-                "supplier": supplier,
-                "items": items,
-            }
-        
             # report progress as each node of the graph finishes
             for event in purchasing_graph.stream(
                 {
@@ -295,7 +282,9 @@ def _read_file_base64(path_str: str) -> str | None:
 async def run_pipeline_upload(request: Request, file: UploadFile = File(..., description="Stock CSV")):
     """
     Run the pipeline on an uploaded stock CSV. The snapshot date comes from the SnapshotDate line,
-    or else from a DDMMYY date in the file name (050425 -> 2025-04-05).
+    or else from a DDMMYY date in the file name (050425 -> 2025-04-05). The drafts come back
+    base64-encoded in the JSON response, not saved on the server; the evaluation report is saved
+    on the server in any case.
     """
     if not settings.openai_api_key:
         raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
@@ -309,26 +298,6 @@ async def run_pipeline_upload(request: Request, file: UploadFile = File(..., des
     except UnicodeDecodeError:
         csv_content = content.decode("cp1252", errors="replace")  # fallback
 
-    csv_filename = file.filename or "stock.csv"
-    return _run_pipeline(csv_content, csv_filename, progress_callback=None, embed_files=True,
-                         ip=client_ip(request))
-
-
-@router.post("/run/embed", response_model=RunPipelineResponse, dependencies=[Depends(verify_api_access)])
-async def run_pipeline_embed(request: Request, file: UploadFile = File(..., description="Stock CSV")):
-    """
-    Run the pipeline and return the generated .docx files base64-encoded in the JSON response,
-    without saving them on the server.
-    """
-    if not settings.openai_api_key:
-        raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
-    if not file.filename or not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=400, detail="CSV file required.")
-    content = await file.read()
-    try:
-        csv_content = content.decode("utf-8")
-    except UnicodeDecodeError:
-        csv_content = content.decode("cp1252", errors="replace")
     csv_filename = file.filename or "stock.csv"
     return _run_pipeline(csv_content, csv_filename, progress_callback=None, embed_files=True,
                          ip=client_ip(request))
@@ -373,7 +342,9 @@ async def _stream_pipeline_events(csv_content: str, csv_filename: str, ip: str =
 async def run_pipeline_stream(request: Request, file: UploadFile = File(..., description="Stock CSV")):
     """
     Run the pipeline and stream its progress as Server-Sent Events.
-    step: csv_parsing, item_grouping, item_grouping_done, analysis, report, pr, email, complete
+    step: csv_parsing, item_grouping, item_grouping_done; then per supplier the graph's nodes as they
+    finish (analysis, evaluation, rewrite, documents, finish), file_ready for each draft, or
+    nothing_to_request when every item is Low; complete at the end, or error.
     """
     if not settings.openai_api_key:
         raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
