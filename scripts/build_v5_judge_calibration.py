@@ -21,7 +21,6 @@ Out: eval_data/judge_calibration_v5.jsonl
 import copy
 import glob
 import json
-import re
 import sys
 from pathlib import Path
 

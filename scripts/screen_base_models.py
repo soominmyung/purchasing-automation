@@ -122,7 +122,7 @@ def run_sol() -> None:
 
 
 def report() -> None:
-    print(f"| Model | Parsed | Ready (all blocking passed) | Blocking failures by check | Time per analysis |")
+    print("| Model | Parsed | Ready (all blocking passed) | Blocking failures by check | Time per analysis |")
     print("|---|---|---|---|---|")
     for path in sorted(RESULTS.glob("sft_screen_*.jsonl")):
         rows = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]

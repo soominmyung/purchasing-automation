@@ -14,7 +14,6 @@ Run: python scripts/report_sft_results.py
 """
 import json
 import re
-import sys
 from collections import Counter
 from pathlib import Path
 

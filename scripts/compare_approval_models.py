@@ -137,12 +137,12 @@ def sheet() -> None:
         L += [f"- Finding ({f['about']}) {f['text']} {f['documents'] or ''}" for f in p["findings"]]
         L += [f"- Change: {c['item']} {c['what']} {c['from']} → {c['to']}: {c['reason']}" for c in p["changes"]]
         L += [f"- Action: {a['action']}" for a in p["actions"]] + [""]
-        for m in MODELS:
-            r = next((r for r in rows if r["model"] == m and r["scenario_id"] == sid), None)
+        for cfg in dict.fromkeys(label(r["model"], r.get("effort")) for r in rows):
+            r = next((r for r in rows if label(r["model"], r.get("effort")) == cfg and r["scenario_id"] == sid), None)
             if not r:
                 continue
             ap = r["approval"]
-            L += [f"### {m} · {r['justification_sentences']} sentences · {r['seconds']} s", "",
+            L += [f"### {cfg} ·{r['justification_sentences']} sentences · {r['seconds']} s", "",
                   f"**Purpose.** {ap.get('purpose', '')}", "", f"**Justification.** {ap.get('justification', '')}", ""]
         L += ["---", ""]
     (ROOT / "eval_results" / "approval_model_comparison.md").write_text("\n".join(L), encoding="utf-8")

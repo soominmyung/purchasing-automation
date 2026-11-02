@@ -141,7 +141,6 @@ def _run_pipeline_inner(
                         final_state[k] = v
 
             # --- outputs and files ---
-            analysis_output = final_state.get("analysis_output", {})
             report_md = final_state.get("report_md", "")
             pr_md = final_state.get("pr_md", "")
             email_text = final_state.get("email_md", "")

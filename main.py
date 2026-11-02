@@ -11,7 +11,6 @@ from config import settings
 
 # --- LangSmith (Observability) Setup ---
 # MUST BE DONE BEFORE ANY OTHER IMPORTS
-import os
 import re
 
 if settings.langchain_tracing_v2:
@@ -26,8 +25,6 @@ if settings.langchain_tracing_v2:
     if settings.langsmith_hide_content:
         os.environ["LANGSMITH_HIDE_INPUTS"] = "true"
         os.environ["LANGSMITH_HIDE_OUTPUTS"] = "true"
-
-import langsmith as ls
 
 from services.vector_store import get_vector_stores
 from routers import pipeline, ingest, output
