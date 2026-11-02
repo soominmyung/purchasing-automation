@@ -30,7 +30,7 @@ from utils.docx_utils import (
     markdown_to_docx_bytes,
     _sanitize_filename,
 )
-from services.item_grouping import group_by_supplier_and_recommend, group_risk_level, screen_rows
+from services.item_grouping import group_by_supplier_and_recommend, screen_rows
 from services.agents import (
     AGENT_MODELS,
     purchasing_graph,
@@ -109,7 +109,6 @@ def _run_pipeline_inner(
             snapshot_date = group["snapshot_date"]
             supplier = group["supplier"]
             items = group["items"]
-            risk_level = group.get("risk_level") or group_risk_level(items)
             safe_supplier = _sanitize_filename(supplier)
 
             # report progress as each node of the graph finishes
@@ -118,7 +117,6 @@ def _run_pipeline_inner(
                     "snapshot_date": snapshot_date,
                     "supplier": supplier,
                     "items": items,
-                    "risk_level": risk_level,
                     "data_issue_lines": group.get("data_issue_lines", []),
                     "run_id": record.run_id,
                     "iteration_count": 0,

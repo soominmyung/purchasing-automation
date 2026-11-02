@@ -6,7 +6,7 @@ report, the rest of the purchase request and the email's item lines are assemble
 """
 import json
 import re
-from typing import Any, TypedDict, Annotated, List, Union
+from typing import Any, TypedDict, Annotated
 import operator
 
 import copy
@@ -18,7 +18,7 @@ from langchain_openai import ChatOpenAI
 
 from config import settings
 from services import documents
-from services.item_grouping import data_issue_lines, group_risk_level
+from services.item_grouping import data_issue_lines
 # No style examples for the purchase request or the email (2026-10-25): the earlier examples
 # contradict the current rules (an email saying "our stock review", questions as a list).
 from services.vector_store import search_history
@@ -34,7 +34,7 @@ from services.prompts import (
 )
 from services.quality_checks import (
     BLOCKING, CHECK_NAMES, SEVERITY, approval_checks, approval_markdown, code_checks, email_checks, email_markdown,
-    evaluate_analysis, evaluation_markdown, has_history,
+    evaluate_analysis, evaluation_markdown,
 )
 from services.run_record import instrument
 
@@ -128,24 +128,6 @@ def history_for_model(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
             for n, d in enumerate(docs, 1)]
 
 
-def legacy_history_docs(supplier: str, items: list[dict], supplier_text: str | None,
-                        item_text: str | None) -> list[dict[str, Any]]:
-    """
-    History given as the earlier two free-text fields (training data generated before the
-    split was removed). The supplier text becomes a supplier-wide document; the item text
-    names no item in its header, so it is attached to every item in the input.
-    """
-    docs = []
-    if has_history(supplier_text):
-        docs.append({"supplier": supplier, "items": [], "item_codes": [], "date": "",
-                     "source": "history supplied with the request", "text": supplier_text})
-    if has_history(item_text):
-        docs.append({"supplier": "", "items": [str(i.get("item_name")) for i in items],
-                     "item_codes": [str(i.get("item_code")) for i in items], "date": "",
-                     "source": "history supplied with the request", "text": item_text})
-    return docs
-
-
 def _extract_json_from_text(text: str) -> dict | list:
     """Extract JSON block from markdown/text."""
     # ```json ... ``` or ``` ... ```
@@ -174,17 +156,14 @@ def document_references(docs: list[dict[str, Any]]) -> list[dict[str, str]]:
 # questions, actions and summary written from those figures. The report is assembled in code, so
 # the order of the fields does not have to follow the report's.
 
-def analysis_history(input_json: dict[str, Any], history_override: list[dict[str, Any]] | None = None,
-                     supplier_history_override: str | None = None,
-                     item_history_override: str | None = None) -> tuple[list[dict[str, Any]], dict | None]:
-    """The history documents for the analysis: retrieved in code, or supplied for evaluation and
-    training (history_override as documents, or the two earlier free-text fields)."""
-    supplier, items = str(input_json.get("supplier") or ""), input_json.get("items", [])
+def analysis_history(input_json: dict[str, Any],
+                     history_override: list[dict[str, Any]] | None = None) -> tuple[list[dict[str, Any]], dict | None]:
+    """The history documents for the analysis: retrieved in code, or supplied as documents
+    (history_override) for evaluation and training."""
     if history_override is not None:
         return history_override, None
-    if supplier_history_override or item_history_override:
-        return legacy_history_docs(supplier, items, supplier_history_override, item_history_override), None
-    return retrieve_history(supplier, items, str(input_json.get("snapshot_date") or ""))
+    return retrieve_history(str(input_json.get("supplier") or ""), input_json.get("items", []),
+                            str(input_json.get("snapshot_date") or ""))
 
 
 def from_model(out: dict[str, Any]) -> dict[str, Any]:
@@ -228,8 +207,6 @@ def _analysis_call(messages: list[BaseMessage]) -> dict[str, Any]:
 def run_analysis_agent(
     input_json: dict[str, Any],
     history_override: list[dict[str, Any]] | None = None,
-    supplier_history_override: str | None = None,
-    item_history_override: str | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """
     Analysis Agent: input = { snapshot_date, supplier, items[] }.
@@ -237,7 +214,7 @@ def run_analysis_agent(
     items in one call. Returns (analysis, history_docs): the documents exactly as the model was
     given them, for the evaluation node.
     """
-    docs, window = analysis_history(input_json, history_override, supplier_history_override, item_history_override)
+    docs, window = analysis_history(input_json, history_override)
     user_text = json.dumps({**input_json, "history": history_for_model(docs)}, ensure_ascii=False)
     analysis = _analysis_call([SystemMessage(content=ANALYSIS_AGENT_SYSTEM), HumanMessage(content=user_text)])
     if "unparsed_output" not in analysis:
@@ -292,10 +269,8 @@ def run_evaluation_agent(
 
 class PurchasingState(TypedDict):
     """LangGraph state definition."""
-    # Core fields retained for backward compatibility
     snapshot_date: str
     supplier: str
-    risk_level: str
     items: list[dict]
     # Problems in the input data, written by code and placed first in the report
     data_issue_lines: list[str]
@@ -324,11 +299,8 @@ class PurchasingState(TypedDict):
     # Every email check, for the run record only (the rewrite receives correction_feedback)
     validation_log: Annotated[list[dict], operator.add]
     
-    # History supplied instead of retrieved, for evaluation and training (optional):
-    # history_override as documents, or the two earlier free-text fields
+    # History documents supplied instead of retrieved, for evaluation and training (optional)
     history_override: list[dict]
-    supplier_history_override: str
-    item_history_override: str
 
     # History documents the Analysis Agent was given, passed to the evaluation node
     history_docs: list[dict]
@@ -339,38 +311,13 @@ class PurchasingState(TypedDict):
     analysis_rewrites_done: int
     analysis_used_attempt: int          # set when an earlier attempt is used for the documents
 
-def apply_system_notes(analysis: Any, items: list[dict]) -> Any:
-    """
-    (Prompt v4 and earlier: v5 has no per-item notes.)
-    Put the pipeline's fixed sentences (data gaps, invalid figures, Critical stockout
-    gaps) at the start of each item's notes. They are computed in code, so they must
-    reach the report whether or not the model repeated them.
-    """
-    if not isinstance(analysis, dict) or not isinstance(analysis.get("replenishment_timeline"), list):
-        return analysis
-    fixed_by_code = {str(it.get("item_code")): it.get("system_notes") or [] for it in items}
-    for entry in analysis["replenishment_timeline"]:
-        if not isinstance(entry, dict):
-            continue
-        existing = str(entry.get("notes") or "")
-        missing = [n for n in fixed_by_code.get(str(entry.get("item_code")), []) if n not in existing]
-        if missing:
-            entry["notes"] = " ".join(missing + ([existing] if existing else []))
-    return analysis
-
-
 def analysis_node(state: PurchasingState):
     input_json = {
         "snapshot_date": state["snapshot_date"],
         "supplier": state["supplier"],
         "items": state["items"],
     }
-    out, history_docs = run_analysis_agent(
-        input_json,
-        history_override=state.get("history_override"),
-        supplier_history_override=state.get("supplier_history_override"),
-        item_history_override=state.get("item_history_override"),
-    )
+    out, history_docs = run_analysis_agent(input_json, history_override=state.get("history_override"))
     return {"analysis_output": out, "history_docs": history_docs, "analysis_rewrites_done": 0}
 
 
@@ -515,8 +462,8 @@ def finish_node(state: PurchasingState):
     return update
 
 def email_draft_node(state: PurchasingState):
-    """The email agent's text. After a failed check, rewritten by a stronger model with the
-    validator's feedback."""
+    """The email agent's text. After a failed check, rewritten with the validator's feedback
+    (AGENT_MODELS["email_rewrite"])."""
     payload = documents.email_input(state["snapshot_date"], state["supplier"], state["items"],
                                     state["analysis_output"])
     if state.get("correction_feedback") and state["iteration_count"] > 0:
@@ -660,31 +607,9 @@ workflow.add_node("finish", finish_node)
 workflow.set_entry_point("analysis")
 workflow.add_edge("analysis", "evaluation")
 # a blocking failure, code or judge, sends the analysis back before any document is written
-# a blocking failure, code or judge, sends the analysis back before any document is written
 workflow.add_conditional_edges("evaluation", after_evaluation, {"rewrite": "rewrite", "documents": "documents"})
 workflow.add_edge("rewrite", "evaluation")
 workflow.add_edge("documents", "finish")
 workflow.add_edge("finish", END)
 
 purchasing_graph = workflow.compile()
-
-def run_purchasing_pipeline_graph(input_data: dict[str, Any]) -> dict[str, Any]:
-    """Execute full pipeline for one supplier group via LangGraph."""
-    initial_state = {
-        "snapshot_date": input_data["snapshot_date"],
-        "supplier": input_data["supplier"],
-        "items": input_data["items"],
-        "risk_level": group_risk_level(input_data["items"]),
-        "iteration_count": 0,
-        "correction_feedback": "",
-        "is_valid_email": False,
-        "history_override": input_data.get("history_override"),
-        "supplier_history_override": input_data.get("supplier_history_override"),
-        "item_history_override": input_data.get("item_history_override"),
-        "data_issue_lines": input_data.get("data_issue_lines", []),
-        "run_id": input_data.get("run_id", ""),
-    }
-    
-    # Execute graph
-    final_state = purchasing_graph.invoke(initial_state)
-    return final_state

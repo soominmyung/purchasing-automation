@@ -27,7 +27,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from config import settings  # noqa: E402
 from services import documents, run_record  # noqa: E402
 from services.agents import AGENT_EFFORT, AGENT_MODELS, purchasing_graph, run_email_draft_agent  # noqa: E402
-from services.item_grouping import group_by_supplier_and_recommend, group_risk_level  # noqa: E402
+from services.item_grouping import group_by_supplier_and_recommend  # noqa: E402
 from services.prompts import PROMPTS_DIR  # noqa: E402
 from utils.csv_utils import parse_csv_rows  # noqa: E402
 from utils.docx_utils import save_markdown_to_docx  # noqa: E402
@@ -66,7 +66,7 @@ def full_run(case: dict, group: dict, folder: Path) -> dict:
     nodes: list[dict] = []
     run_record._group_nodes.set(nodes)
     state0 = {"snapshot_date": group["snapshot_date"], "supplier": group["supplier"], "items": group["items"],
-              "risk_level": group_risk_level(group["items"]), "iteration_count": 0, "correction_feedback": "",
+              "iteration_count": 0, "correction_feedback": "",
               "is_valid_email": False, "history_override": case["history"],
               "data_issue_lines": group.get("data_issue_lines", []), "run_id": folder.name}
     state, started = dict(state0), time.perf_counter()
