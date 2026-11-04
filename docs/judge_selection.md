@@ -46,7 +46,8 @@ Rule set before the runs: detection ≥ 90%, false alarms ≤ 10%, flip ≤ 5%; 
 | **Haiku, thinking, high** | **93.9%** | **3.9%** | **8.0%** | **$0.0024** | **16 s** |
 
 Detection, flip, cost and time are from the seeded-fault test, one call per judgement
-(`docs/judge_validation.md`, rounds 1 and 2, single mode); false alarms from the separate test.
+(`eval_results/judge_validation_v5_round1_runs.jsonl` and `_round2_runs.jsonl`, single mode); false
+alarms from the separate test (`eval_results/judge_false_alarm_v5_runs.jsonl`).
 
 Gemini Flash-Lite did not finish a round reliably. Round 1 called Haiku through a forced tool call,
 which leaves it no room to think while Luna reasoned; round 2 therefore let Haiku think first and

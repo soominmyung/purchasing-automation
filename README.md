@@ -194,6 +194,8 @@ runs one through the whole pipeline and records it under `dev/runs/`; a sample r
 
 ## Repository
 
+Every file, folder by folder: [`FILES.md`](FILES.md).
+
 | Path | Contents |
 |---|---|
 | `main.py`, `config.py`, `schemas.py` | FastAPI app, settings, request and response models |

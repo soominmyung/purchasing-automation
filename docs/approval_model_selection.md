@@ -118,7 +118,7 @@ apart from one ambiguous date at low: "conditional on confirmation of an achieva
 commitment by 2026-09-14" means a commitment to deliver by that date, but also reads as a deadline
 for the confirmation, which the action puts before the order; the judge read it that way in 2 of 3
 runs. It was counted as an issue found by reading when the outputs were read again on 2026-11-01;
-the round-5 record (`docs/approval_model_comparison.md`) gives 0, as a stricter judge reading.
+the round-5 reading (`eval_results/approval_model_judged_timing.md`) gave 0, as a stricter judge reading.
 
 ## 4. What each round showed
 
