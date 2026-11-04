@@ -88,7 +88,8 @@ figures, risk levels), and it was of the writer's family.
 
 **What replaced it:** code checks first (internal terms; an item outside the order named by name or
 code), then a model told to fail internal information, a past problem of the supplier or when it
-happened, and an item outside the order referred to in other words.
+happened (a question about how a step of this order will proceed or be checked passes), and an item
+outside the order referred to in other words.
 
 **Test** (`scripts/compare_email_validators.py`): the 175 round-3 emails, 13 of them with a real
 fault, and Sol low's 25 clean emails with one fault planted in each copy (an item outside the order

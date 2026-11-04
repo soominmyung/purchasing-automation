@@ -6,7 +6,7 @@ request** for the approvers and a **draft email to the supplier**, one set per s
 retrieval and document assembly; LLMs read the history and write; every draft is checked by code
 and by an LLM judge before the buyer sees it.
 
-> **Portfolio (7 pages):** [English](docs/Purchasing_AI_Suite_en.pdf) · [Korean](docs/Purchasing_AI_Suite_ko.pdf)
+> **Portfolio (8 pages):** [English](docs/Purchasing_AI_Suite_en.pdf) · [Korean](docs/Purchasing_AI_Suite_ko.pdf)
 
 | | |
 |---|---|
@@ -77,7 +77,7 @@ citation resolves; the judge checks that each one supports what rests on it.
 |---|---|---|---|
 | Analysis | C1–C10 (format, items, figures, citations, recalculated dates) and J1a–J8 (history stated, not distorted, applied to the right supplier and item; changes justified and sized; supplier questions free of internal data) | Code, LLM judge | Blocking: rewrite (up to 2). Warnings: note in the draft |
 | Purchase request | P1a–c (nothing added, figures as given, meaning kept), P2 (length), P3 (citations) | LLM judge, code | Note in the draft |
-| Supplier email | E1–E3 (no internal data, no past supplier problem, no item outside the order) | Code, Haiku | Rewrite (up to 2), then note |
+| Supplier email | E1–E3 (no internal data; no past supplier problem, or when it occurred, mentioned directly, while questions about procedures for this order pass; no item outside the order) | Code, Haiku | Rewrite (up to 2), then note |
 | | E4–E7 (every point asked, no repeat, earliest dispatch asked, tone of a request) | LLM judge | Note in the draft |
 
 Definitions: [`docs/eval_rubric.md`](docs/eval_rubric.md). Check ids were renumbered on 29 Oct 2026;
