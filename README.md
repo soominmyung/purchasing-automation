@@ -7,6 +7,8 @@ retrieval and document assembly; LLMs read the history and write; every draft is
 and by an LLM judge before the buyer sees it.
 
 > **Portfolio (8 pages):** [English](docs/Purchasing_AI_Suite_en.pdf) · [Korean](docs/Purchasing_AI_Suite_ko.pdf)
+>
+> **One run, end to end:** one supplier's stock CSV and three history documents ([case](dev/cases/meridian_seals_walkthrough.json)), and the analysis report, purchase request and supplier email written from them, as Word and Markdown, with every check's verdict ([run](dev/runs/2026-11-04_162511_walkthrough-example-v2-supplier-wide-lead-time-not/)).
 
 | | |
 |---|---|
@@ -205,7 +207,7 @@ Every file, folder by folder: [`FILES.md`](FILES.md).
 | `prompts/v5/` | The prompts in use (`prompt_version` in `config.py`); each run record stores the version and a SHA-256 of every prompt as loaded, and development runs keep the full text |
 | `scripts/` | Model comparisons, judge validation, dev runs, SFT and serving experiments |
 | `eval_data/`, `eval_results/` | Evaluation scenarios, judge calibration samples and hand scores; raw results of every comparison |
-| `dev/` | Development cases (kept apart from the evaluation set) and one recorded run |
+| `dev/` | Development cases (kept apart from the evaluation set) and two recorded runs |
 | `docs/` | Quality checks, model selection records, serving measurement, portfolio (English and Korean PDFs) |
 | `mcp_servers/` | History and replenishment MCP servers, built and tested but not used in the pipeline |
 

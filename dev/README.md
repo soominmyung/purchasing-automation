@@ -10,9 +10,10 @@ particular rules. Synthetic data only.
 Run a case with `scripts/run_dev_case.py` (the whole pipeline, or the email agent alone on an
 earlier run's analysis). Each run is recorded in `dev/runs/`: what was changed before the run,
 prompt version, models, settings, the exact text of every prompt used, inputs, outputs, node
-times and checks, with each document as `.md` and `.docx`. One run is committed as a sample,
+times and checks, with each document as `.md` and `.docx`. Two runs are committed as samples:
 `kestrel_components` through the whole pipeline with the current prompts and checks
-(`runs/2026-10-29_004531_judge-checks-renumbered-without-gaps-j3a-c-j4-j8/`); the others are not committed.
+(`runs/2026-10-29_004531_judge-checks-renumbered-without-gaps-j3a-c-j4-j8/`), and `meridian_seals_walkthrough`,
+a short worked example of one run (`runs/2026-11-04_162511_walkthrough-example-v2-supplier-wide-lead-time-not/`); the others are not committed.
 
 ## Cases
 
@@ -23,3 +24,4 @@ times and checks, with each document as `.md` and `.docx`. One run is committed 
 | `delayvale_low_becomes_medium` | Every item Low at 18 weeks, but the supplier has announced lead times four weeks longer: at 22 weeks one item becomes Medium, so the run goes on to a purchase request and an email. |
 | `hanbit_demand_market` | Whether a quantity change rests only on UK demand: three items with the same figures and a demand rise of unstated size, differing only in the market (not stated, the UK, Korea). |
 | `lowfield_all_low` | Every item Low and no reason in the history to change that: the run ends with the analysis report, with no purchase request or email. |
+| `meridian_seals_walkthrough` | A short worked example of one run: a supplier-wide notice of lead times four weeks longer, which raises two items' risk and brings every order date forward; a customs hold the supplier says it has fixed, which the analysis may ask about but the supplier email must not mention directly; steady demand for the Low item; no document for the Critical item. |

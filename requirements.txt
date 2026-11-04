@@ -8,6 +8,9 @@ pydantic-settings>=2.1.0
 # Model APIs: OpenAI (analysis, purchase request, email), Anthropic (judge, email validator)
 openai>=1.12.0
 anthropic>=1.15.0
+# The Anthropic SDK's HTTP client (httpx2) decodes Brotli responses with an option older Brotli
+# releases lack; with brotli 1.0.9 every call fails as a connection error.
+brotli>=1.2.0
 
 # LangChain (agents, tools, embeddings)
 langchain>=0.1.0

@@ -244,8 +244,9 @@ Kept apart from the evaluation set: used to work on the prompts and the pipeline
 | `cases/hanbit_demand_market.json` | Whether a quantity change rests only on UK demand: the same demand rise, in different markets |
 | `cases/delayvale_low_becomes_medium.json` | A Low item that becomes Medium once a delay is allowed for |
 | `cases/lowfield_all_low.json` | Every item Low: only the analysis report is written |
+| `cases/meridian_seals_walkthrough.json` | A short worked example of one run: a four-week lead-time notice that raises two items' risk, and a customs hold since fixed that the email must not mention directly |
 
-One recorded run of the Kestrel case, `runs/2026-10-29_004531_judge-checks-renumbered-without-gaps-j3a-c-j4-j8/`:
+Two recorded runs, with the same files: the Kestrel case, `runs/2026-10-29_004531_judge-checks-renumbered-without-gaps-j3a-c-j4-j8/`, and the MeridianSeals worked example, `runs/2026-11-04_162511_walkthrough-example-v2-supplier-wide-lead-time-not/`:
 
 | File | What it is |
 |---|---|

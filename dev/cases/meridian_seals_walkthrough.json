@@ -1,0 +1,36 @@
+{
+  "name": "meridian_seals_walkthrough",
+  "purpose": "One supplier whose history exercises each step of a run, kept as a short worked example (2026-11-04): a supplier-wide notice of lead times four weeks longer, which raises two items' risk and brings every order date forward (GasketRing High to Critical with a 2-week gap, SealPlate Medium to High); a supplier-wide customs hold the supplier says it has fixed, which the analysis may ask about but the supplier email must not mention directly; steady demand for the Low item. The Critical item BushingSleeve has no document, so its bridging action rests on the stock figures alone. Weekly sales differ by item. Not part of the evaluation set.",
+  "known_limits": [],
+  "csv": "SnapshotDate,2025-04-05\n\nItemCode,ItemName,SupplierName,AvailableStock,WksToOOS\n610001,BushingSleeve,MeridianSeals,500,10\n610002,GasketRing,MeridianSeals,2000,20\n610003,ValveCap,MeridianSeals,2400,24\n610004,SealPlate,MeridianSeals,2800,28\n610005,OilRing,MeridianSeals,4500,50\n",
+  "history": [
+    {
+      "supplier": "MeridianSeals",
+      "items": [],
+      "item_codes": [],
+      "date": "2025-03-12",
+      "source": "meridian_lead_time_notice_2025-03.docx",
+      "text": "MeridianSeals announced that from 1 April 2025 lead times for all products are four weeks longer while a moulding line is refitted; the supplier expects this to last until the end of 2025."
+    },
+    {
+      "supplier": "MeridianSeals",
+      "items": [],
+      "item_codes": [],
+      "date": "2024-12-02",
+      "source": "meridian_customs_hold_2024-11.docx",
+      "text": "MeridianSeals shipments were held for three weeks in November 2024 after a customs documentation error at Felixstowe; the supplier says it has since changed how its export paperwork is checked."
+    },
+    {
+      "supplier": "",
+      "items": [
+        "OilRing"
+      ],
+      "item_codes": [
+        "610005"
+      ],
+      "date": "2024-12-10",
+      "source": "oilring_review_2024.docx",
+      "text": "OilRing demand has been steady over the past year."
+    }
+  ]
+}
